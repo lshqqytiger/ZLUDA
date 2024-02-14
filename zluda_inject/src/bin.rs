@@ -23,6 +23,11 @@ use winapi::um::{
 use winapi::um::winbase::{INFINITE, WAIT_FAILED};
 
 static REDIRECT_DLL: &'static str = "zluda_redirect.dll";
+static CUBLAS_DLL: &'static str = "cublas.dll";
+static CUDNN_DLL: &'static str = "cudnn.dll";
+static CUFFT_DLL: &'static str = "cufft.dll";
+static CUSPARSE_DLL: &'static str = "cusparse.dll";
+static NCCL_DLL: &'static str = "nccl.dll";
 static NVCUDA_DLL: &'static str = "nvcuda.dll";
 static NVML_DLL: &'static str = "nvml.dll";
 static NVAPI_DLL: &'static str = "nvapi64.dll";
@@ -33,6 +38,26 @@ include!("../../zluda_redirect/src/payload_guid.rs");
 #[derive(FromArgs)]
 /// Launch application with custom CUDA libraries
 struct ProgramArguments {
+    /// DLL to be injected instead of system cublas.dll. If not provided {0}, will use cublas.dll from its own directory
+    #[argh(option)]
+    cublas: Option<PathBuf>,
+
+    /// DLL to be injected instead of system cudnn.dll. If not provided {0}, will use cudnn.dll from its own directory
+    #[argh(option)]
+    cudnn: Option<PathBuf>,
+
+    /// DLL to be injected instead of system cufft.dll. If not provided {0}, will use cufft.dll from its own directory
+    #[argh(option)]
+    cufft: Option<PathBuf>,
+
+    /// DLL to be injected instead of system cusparse.dll. If not provided {0}, will use cusparse.dll from its own directory
+    #[argh(option)]
+    cusparse: Option<PathBuf>,
+
+    /// DLL to be injected instead of system nccl.dll. If not provided {0}, will use nccl.dll from its own directory
+    #[argh(option)]
+    nccl: Option<PathBuf>,
+
     /// DLL to be injected instead of system nvcuda.dll. If not provided {0}, will use nvcuda.dll from its own directory
     #[argh(option)]
     nvcuda: Option<PathBuf>,
@@ -65,6 +90,11 @@ pub fn main_impl() -> Result<(), Box<dyn Error>> {
     let mut startup_info = unsafe { mem::zeroed::<detours_sys::_STARTUPINFOW>() };
     let mut proc_info = unsafe { mem::zeroed::<detours_sys::_PROCESS_INFORMATION>() };
     let mut dlls_to_inject = vec![
+        environment.cublas_path_zero_terminated.as_ptr() as _,
+        //environment.cudnn_path_zero_terminated.as_ptr() as _,
+        environment.cufft_path_zero_terminated.as_ptr() as _,
+        environment.cusparse_path_zero_terminated.as_ptr() as _,
+        environment.nccl_path_zero_terminated.as_ptr() as _,
         environment.nvcuda_path_zero_terminated.as_ptr() as _,
         environment.nvml_path_zero_terminated.as_ptr() as *const i8,
         environment.redirect_path_zero_terminated.as_ptr() as _,
@@ -146,6 +176,11 @@ pub fn main_impl() -> Result<(), Box<dyn Error>> {
 }
 
 struct NormalizedArguments {
+    cublas_path: PathBuf,
+    cudnn_path: PathBuf,
+    cufft_path: PathBuf,
+    cusparse_path: PathBuf,
+    nccl_path: PathBuf,
     nvcuda_path: PathBuf,
     nvml_path: PathBuf,
     nvapi_path: Option<PathBuf>,
@@ -157,6 +192,16 @@ struct NormalizedArguments {
 impl NormalizedArguments {
     fn new(prog_args: ProgramArguments) -> Result<Self, Box<dyn Error>> {
         let current_exe = env::current_exe()?;
+        let cublas_path =
+            Self::get_absolute_path_or_default(&current_exe, prog_args.cublas, CUBLAS_DLL)?;
+        let cudnn_path =
+            Self::get_absolute_path_or_default(&current_exe, prog_args.cudnn, CUDNN_DLL)?;
+        let cufft_path =
+            Self::get_absolute_path_or_default(&current_exe, prog_args.cufft, CUFFT_DLL)?;
+        let cusparse_path =
+            Self::get_absolute_path_or_default(&current_exe, prog_args.cusparse, CUSPARSE_DLL)?;
+        let nccl_path =
+            Self::get_absolute_path_or_default(&current_exe, prog_args.nccl, NCCL_DLL)?;
         let nvcuda_path =
             Self::get_absolute_path_or_default(&current_exe, prog_args.nvcuda, NVCUDA_DLL)?;
         let nvml_path = Self::get_absolute_path_or_default(&current_exe, prog_args.nvml, NVML_DLL)?;
@@ -167,6 +212,11 @@ impl NormalizedArguments {
         let mut redirect_path = current_exe.parent().unwrap().to_path_buf();
         redirect_path.push(REDIRECT_DLL);
         Ok(Self {
+            cublas_path,
+            cudnn_path,
+            cufft_path,
+            cusparse_path,
+            nccl_path,
             nvcuda_path,
             nvml_path,
             nvapi_path,
@@ -224,6 +274,11 @@ impl NormalizedArguments {
 }
 
 struct Environment {
+    cublas_path_zero_terminated: String,
+    cudnn_path_zero_terminated: String,
+    cufft_path_zero_terminated: String,
+    cusparse_path_zero_terminated: String,
+    nccl_path_zero_terminated: String,
     nvcuda_path_zero_terminated: String,
     nvml_path_zero_terminated: String,
     nvapi_path_zero_terminated: Option<String>,
@@ -239,6 +294,31 @@ struct Environment {
 impl Environment {
     fn setup(args: NormalizedArguments) -> io::Result<Self> {
         let _temp_dir = TempDir::new()?;
+        let cublas_path_zero_terminated = Self::zero_terminate(Self::copy_to_correct_name(
+            args.cublas_path,
+            &_temp_dir,
+            CUBLAS_DLL,
+        )?);
+        let cudnn_path_zero_terminated = Self::zero_terminate(Self::copy_to_correct_name(
+            args.cudnn_path,
+            &_temp_dir,
+            CUDNN_DLL,
+        )?);
+        let cufft_path_zero_terminated = Self::zero_terminate(Self::copy_to_correct_name(
+            args.cufft_path,
+            &_temp_dir,
+            CUFFT_DLL,
+        )?);
+        let cusparse_path_zero_terminated = Self::zero_terminate(Self::copy_to_correct_name(
+            args.cusparse_path,
+            &_temp_dir,
+            CUSPARSE_DLL,
+        )?);
+        let nccl_path_zero_terminated = Self::zero_terminate(Self::copy_to_correct_name(
+            args.nccl_path,
+            &_temp_dir,
+            NCCL_DLL,
+        )?);
         let nvcuda_path_zero_terminated = Self::zero_terminate(Self::copy_to_correct_name(
             args.nvcuda_path,
             &_temp_dir,
@@ -269,6 +349,11 @@ impl Environment {
             .transpose()?;
         let redirect_path_zero_terminated = Self::zero_terminate(args.redirect_path);
         Ok(Self {
+            cublas_path_zero_terminated,
+            cudnn_path_zero_terminated,
+            cufft_path_zero_terminated,
+            cusparse_path_zero_terminated,
+            nccl_path_zero_terminated,
             nvcuda_path_zero_terminated,
             nvml_path_zero_terminated,
             nvapi_path_zero_terminated,

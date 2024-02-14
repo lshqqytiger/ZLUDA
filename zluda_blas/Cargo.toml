@@ -16,6 +16,5 @@ zluda_dark_api = { path = "../zluda_dark_api" }
 cuda_types = { path = "../cuda_types" }
 
 [package.metadata.zluda]
-linux_only = true
 linux_names = ["libcublas.so.10", "libcublas.so.11"]
 dump_names = ["libcublas.so"]

@@ -386,6 +386,71 @@ fn to_compute_type(compute_type: cublasComputeType_t) -> rocblas_datatype {
     }
 }
 
+unsafe fn gemm_strided_batched_ex(
+    handle: *mut cublasContext,
+    transa: cublasOperation_t,
+    transb: cublasOperation_t,
+    m: i32,
+    n: i32,
+    k: i32,
+    alpha: *const std::ffi::c_void,
+    a: *const std::ffi::c_void,
+    atype: cudaDataType_t,
+    lda: i32,
+    stride_a: i64,
+    b: *const std::ffi::c_void,
+    btype: cudaDataType_t,
+    ldb: i32,
+    stride_b: i64,
+    beta: *const std::ffi::c_void,
+    c: *mut std::ffi::c_void,
+    ctype: cudaDataType_t,
+    ldc: i32,
+    stride_c: i64,
+    batch_count: i32,
+    compute_type: cublasComputeType_t,
+    algo: cublasGemmAlgo_t,
+) -> cublasStatus_t {
+    let transa = op_from_cuda(transa);
+    let transb = op_from_cuda(transb);
+    let atype = type_from_cuda(atype);
+    let btype = type_from_cuda(btype);
+    let ctype = type_from_cuda(ctype);
+    let compute_type = to_compute_type(compute_type);
+    let algo = to_algo(algo);
+    to_cuda(rocblas_gemm_strided_batched_ex(
+        handle.cast(),
+        transa,
+        transb,
+        m,
+        n,
+        k,
+        alpha,
+        a,
+        atype,
+        lda,
+        stride_a,
+        b,
+        btype,
+        ldb,
+        stride_b,
+        beta,
+        c,
+        ctype,
+        ldc,
+        stride_c,
+        c,
+        ctype,
+        ldc,
+        stride_c,
+        batch_count,
+        compute_type,
+        algo,
+        0,
+        0,
+    ))
+}
+
 unsafe fn zgemm_strided_batch(
     handle: *mut cublasContext,
     transa: cublasOperation_t,

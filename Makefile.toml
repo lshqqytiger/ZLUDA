@@ -13,10 +13,15 @@ command = "cargo"
 args = [
     "build",
     "-p", "offline_compiler",
+    "-p", "zluda_blas",
+    "-p", "zluda_ccl",
+    "-p", "zluda_dnn",
     "-p", "zluda_dump",
     "-p", "zluda_inject",
+    "-p", "zluda_fft",
     "-p", "zluda_lib",
     "-p", "zluda_ml",
+    "-p", "zluda_sparse",
     "-p", "zluda_redirect",
 ]
 

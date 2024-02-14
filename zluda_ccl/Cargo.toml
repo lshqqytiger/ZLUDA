@@ -11,6 +11,5 @@ crate-type = ["cdylib"]
 [dependencies]
 
 [package.metadata.zluda]
-linux_only = true
 linux_names = ["libnccl.so.2"]
 dump_names = ["libnccl.so"]

@@ -17,6 +17,5 @@ slab = "0.4"
 lazy_static = "1.4.0"
 
 [package.metadata.zluda]
-linux_only = true
 linux_names = ["libcufft.so.10"]
 dump_names = ["libcufft.so"]
