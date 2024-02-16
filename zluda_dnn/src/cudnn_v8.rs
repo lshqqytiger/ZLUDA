@@ -4,7 +4,7 @@ use crate::types::*;
 
 #[no_mangle]
 pub unsafe extern "system" fn cudnnGetVersion() -> usize {
-    unimplemented!()
+    8700 as usize
 }
 
 #[no_mangle]
@@ -65,7 +65,7 @@ pub unsafe extern "system" fn cudnnGetStream(
     handle: cudnnHandle_t,
     streamId: *mut cudaStream_t,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::get_stream(handle, streamId)
 }
 
 #[no_mangle]
@@ -2793,7 +2793,18 @@ pub unsafe extern "system" fn cudnnSetConvolution2dDescriptor(
     mode: cudnnConvolutionMode_t,
     computeType: cudnnDataType_t,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    let pad_a = [pad_h, pad_w];
+    let filter_stride_a = [u, v];
+    let dilation_a = [dilation_h, dilation_w];
+    crate::set_convolution_nd_descriptor(
+        convDesc,
+        2,
+        pad_a.as_ptr(),
+        filter_stride_a.as_ptr(),
+        dilation_a.as_ptr(),
+        mode,
+        computeType,
+    )
 }
 
 #[no_mangle]
@@ -3411,14 +3422,27 @@ pub unsafe extern "system" fn cudnnBackendCreateDescriptor(
     descriptorType: cudnnBackendDescriptorType_t,
     descriptor: *mut cudnnBackendDescriptor_t,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    match descriptorType {
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_CONVOLUTION_DESCRIPTOR => crate::cudnn_create_convolution_descriptor(descriptor as _),
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_ENGINEHEUR_DESCRIPTOR => crate::cudnn_create_engineheur_descriptor(descriptor as _),
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR => crate::cudnn_create_operation_convolution_forward_descriptor(descriptor as _),
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATIONGRAPH_DESCRIPTOR => crate::cudnn_create_operationgraph_descriptor(descriptor as _),
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_VARIANT_PACK_DESCRIPTOR => cudnnStatus_t::CUDNN_STATUS_SUCCESS,
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_TENSOR_DESCRIPTOR => crate::cudnn_create_tensor_descriptor(descriptor as _),
+        _ => {
+            println!("[ZLUDA] Unsupported descriptor type: {}", descriptorType.0);
+            crate::unsupported()
+        },
+    }
 }
 
 #[no_mangle]
 pub unsafe extern "system" fn cudnnBackendDestroyDescriptor(
     descriptor: cudnnBackendDescriptor_t,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    // TODO
+    // Do not know how to destroy unknown descriptor.
+    cudnnStatus_t::CUDNN_STATUS_SUCCESS
 }
 
 #[no_mangle]
@@ -3432,7 +3456,7 @@ pub unsafe extern "system" fn cudnnBackendInitialize(
 pub unsafe extern "system" fn cudnnBackendFinalize(
     descriptor: cudnnBackendDescriptor_t,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    cudnnStatus_t::CUDNN_STATUS_SUCCESS
 }
 
 #[no_mangle]
@@ -3443,7 +3467,18 @@ pub unsafe extern "system" fn cudnnBackendSetAttribute(
     elementCount: i64,
     arrayOfElements: *const ::std::os::raw::c_void,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    match attributeName.0 {
+        100..=199 => crate::set_convolution_nd_descriptor_by_attribute(descriptor as _, attributeName, elementCount, arrayOfElements),
+        200..=299 => crate::set_engineheur_descriptor_by_attribute(descriptor as _, attributeName, elementCount, arrayOfElements),
+        700..=799 => crate::set_operation_convolution_forward_descriptor_by_attribute(descriptor as _, attributeName, elementCount, arrayOfElements as _),
+        800..=899 => crate::set_operationgraph_descriptor_by_attribute(descriptor as _, attributeName, elementCount, arrayOfElements as _),
+        900..=999 => crate::set_tensor_nd_decriptor_by_attribute(descriptor as _, attributeName, elementCount, arrayOfElements),
+        1000..=1099 => cudnnStatus_t::CUDNN_STATUS_SUCCESS,
+        _ => {
+            println!("[ZLUDA] Tried to set unsupported attribute: {}", attributeName.0);
+            crate::unsupported()
+        },
+    }
 }
 
 #[no_mangle]
@@ -3455,7 +3490,13 @@ pub unsafe extern "system" fn cudnnBackendGetAttribute(
     elementCount: *mut i64,
     arrayOfElements: *mut ::std::os::raw::c_void,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    match attributeName {
+        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINEHEUR_RESULTS => crate::get_engineheur_results(descriptor as _, requestedElementCount, elementCount, arrayOfElements),
+        _ => {
+            println!("[ZLUDA] Tried to get unsupported attribute: {}", attributeName.0);
+            crate::unsupported()
+        },
+    }
 }
 
 #[no_mangle]

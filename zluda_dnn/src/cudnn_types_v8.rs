@@ -151,6 +151,33 @@ pub struct cudnnTensorTransformStruct {
     _unused: [u8; 0],
 }
 pub type cudnnTensorTransformDescriptor_t = *mut cudnnTensorTransformStruct;
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct cudnnEngineHeurStruct {
+    pub operation_graph: cudnnOperationGraphDescriptor_t,
+}
+pub type cudnnEngineHeurDescriptor_t = *mut cudnnEngineHeurStruct;
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct cudnnOperationConvolutionForwardStruct {
+    pub x_desc: cudnnTensorDescriptor_t,
+    pub y_desc: cudnnTensorDescriptor_t,
+    pub w_desc: cudnnFilterDescriptor_t,
+    pub conv_desc: cudnnConvolutionDescriptor_t,
+}
+pub type cudnnOperationConvolutionForwardDescriptor_t = *mut cudnnOperationConvolutionForwardStruct;
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct cudnnOperationGraphStruct {
+    pub handle: cudnnHandle_t,
+    pub ops: *const cudnnBackendDescriptorType_t,
+}
+pub type cudnnOperationGraphDescriptor_t = *mut cudnnOperationGraphStruct;
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct cudnnVariantPackStruct {
+}
+pub type cudnnVariantPackDescriptor_t = *mut cudnnVariantPackStruct;
 impl cudnnDataType_t {
     pub const CUDNN_DATA_FLOAT: cudnnDataType_t = cudnnDataType_t(0);
 }
