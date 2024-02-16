@@ -56,6 +56,10 @@ Build by running:
 cargo xtask --release
 ```
 
+## Unknown issues
+
+If an application fails to start under ZLUDA or crashes please check [Known Issues](#known-issues) section below. If nothing there applies, then please read [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
 ## Known Issues
 
 ### Hardware
@@ -66,7 +70,7 @@ cargo xtask --release
 
   On Windows we recommend you use environment variable `HIP_VISIBLE_DEVICES=1` environment variable (more [here](https://rocmdocs.amd.com/en/latest/conceptual/gpu-isolation.html#hip-visible-devices)) or disable it system-wide in Device Manager.
 
-  On Linux we recommend you use environment variable `ROCR_VISIBLE_DEVICES=<UUID>` where `<UUID>` is the UUID of the dedicated GPU as reported by `rocminfo` command line tool (you can also use `HIP_VISIBLE_DEVICES=1`, but this does not seem to be stable). Alternatively you can disable integrated GPU syste-wide by passing `pci-stub.ids=<DEVICE_VENDOR>:<DEVICE_CODE>` to the kernel options. On Ubuntu you can pass additional kernel options by adding them to `/etc/default/grub` to the option `GRUB_CMDLINE_LINUX_DEFAULT`. You can find `<DEVICE_VENDOR>:<DEVICE_CODE>` with the help of `lspci -nn`. This will emit a series of lines with one of them matching you integrated GPU, for example:\
+  On Linux we recommend you use environment variable `ROCR_VISIBLE_DEVICES=<UUID>` where `<UUID>` is the UUID of the dedicated GPU as reported by `rocminfo` command line tool (you can also use `HIP_VISIBLE_DEVICES=1`, but this does not seem to be stable). Alternatively you can disable integrated GPU system-wide by passing `pci-stub.ids=<DEVICE_VENDOR>:<DEVICE_CODE>` to the kernel options. On Ubuntu you can pass additional kernel options by adding them to `/etc/default/grub` to the option `GRUB_CMDLINE_LINUX_DEFAULT`. You can find `<DEVICE_VENDOR>:<DEVICE_CODE>` with the help of `lspci -nn`. This will emit a series of lines with one of them matching you integrated GPU, for example:\
   `1b:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] Device [1002:164e] (rev c1)`\
   `<DEVICE_VENDOR>:<DEVICE_CODE>` ar at the end, in this case `1002:164e`.
 
@@ -122,6 +126,16 @@ cargo xtask --release
 - ZLUDA launcher (`zluda.exe`) does not support 32 bit processes. If an application launches 32 bit subprocess `a.exe` neither the 32 bit process `a.exe`, nor its 64 bit subprocess `a64.exe` will be able to use ZLUDA. This affects e.g. SiSoft Sandra.
 
 ### Applications
+
+#### llama.cpp
+
+If you are building llama.cpp with cmake and don't want it to crash on ZLUDA then you should use `CUDA_DOCKER_ARCH=compute_61` like this:
+```
+make CUDA_DOCKER_ARCH=compute_61 
+```
+Alternatively, building with cmake should work with no changes.
+
+Performance is currently much lower than the native HIP backend, see the discussion in #102.
 
 #### Arnold
 
@@ -188,12 +202,12 @@ cargo xtask --release
 #### 3DF Zephyr
 - ZLUDA is much slower than CUDA.
 
-  3DF Zephyr is triggering an uderlying ROCm/HIP performance issue.
+  3DF Zephyr is triggering an underlying ROCm/HIP performance issue.
 
 #### Reality Capture
 - ZLUDA is much slower than CUDA.
 
-  Reality Capture is triggering an uderlying ROCm/HIP performance issue.
+  Reality Capture is triggering an underlying ROCm/HIP performance issue.
 
 #### CompuBench
 
@@ -244,7 +258,7 @@ cargo xtask --release
 
 ## For developers
 
-If you are curious about ZLUDA's architecture, you can read a broad overview in [ARCHITECTURE.md](ARCHITECTURE.md).
+If you are curious about ZLUDA's architecture, you can read a broad overview in [ARCHITECTURE.md](ARCHITECTURE.md). If you want to debug ZLUDA check the "Debugging" section in [TROUBLESHOOTING.md](TROUBLESHOOTING.md#debugging).
 
 ## License
 
