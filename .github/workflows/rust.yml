@@ -17,7 +17,15 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build for Linux
-      run: cargo xtask --release
+      run: |
+        git submodules init
+        git submodules update
+        sudo apt update
+        wget https://repo.radeon.com/amdgpu-install/5.7.1/ubuntu/jammy/amdgpu-install_5.7.50701-1_all.deb
+        sudo apt install ./amdgpu-install_5.7.50701-1_all.deb
+        sudo apt update
+        sudo amdgpu-install --usecase=rocm,hip,hiplibsdk
+        cargo xtask --release
 
   build-windows:
 
@@ -25,5 +33,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build for Linux
-      run: cargo xtask --release
+    - name: Build for Windows
+      run: |
+        git submodules init
+        git submodules update
+        cargo xtask --release
