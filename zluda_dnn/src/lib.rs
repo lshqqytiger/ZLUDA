@@ -20,7 +20,7 @@ use types::*;
 
 use hip_runtime_sys::*;
 use miopen_sys::*;
-use std::{mem, ptr::{self, null, null_mut}, alloc::{self, Layout}};
+use std::{mem, ptr, alloc::{self, Layout}};
 
 macro_rules! call {
     ($expr:expr) => {{

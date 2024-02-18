@@ -6,8 +6,7 @@ pub use cublas::*;
 use cuda_types::*;
 use rocblas_sys::*;
 use rocsolver_sys::{
-    rocsolver_cgetrf_batched, rocsolver_cgetri_batched, rocsolver_cgetri_outofplace_batched,
-    rocsolver_zgetrf_batched, rocsolver_zgetri_batched, rocsolver_zgetri_outofplace_batched,
+    rocsolver_cgetrf_batched, rocsolver_cgetri_batched, rocsolver_cgetri_outofplace_batched, rocsolver_sgetrs_batched, rocsolver_zgetrf_batched, rocsolver_zgetri_batched, rocsolver_zgetri_outofplace_batched
 };
 use std::{mem, ptr};
 
@@ -79,6 +78,15 @@ fn op_from_cuda(trans: cublasOperation_t) -> rocblas_operation {
         cublasOperation_t::CUBLAS_OP_N => rocblas_operation::rocblas_operation_none,
         cublasOperation_t::CUBLAS_OP_T => rocblas_operation::rocblas_operation_transpose,
         cublasOperation_t::CUBLAS_OP_C => rocblas_operation::rocblas_operation_conjugate_transpose,
+        _ => panic!(),
+    }
+}
+
+fn op_from_cuda_for_solver(trans: cublasOperation_t) -> rocsolver_sys::rocblas_operation {
+    match trans {
+        cublasOperation_t::CUBLAS_OP_N => rocsolver_sys::rocblas_operation::rocblas_operation_none,
+        cublasOperation_t::CUBLAS_OP_T => rocsolver_sys::rocblas_operation::rocblas_operation_transpose,
+        cublasOperation_t::CUBLAS_OP_C => rocsolver_sys::rocblas_operation::rocblas_operation_conjugate_transpose,
         _ => panic!(),
     }
 }
@@ -652,6 +660,36 @@ unsafe fn cgetri_batched(
         c.cast(),
         ldc,
         info,
+        batch_size,
+    ))
+}
+
+unsafe fn sgetrs_batched(
+    handle: *mut cublasContext,
+    trans: cublasOperation_t,
+    n: i32,
+    nrhs: i32,
+    a: *const *const f32,
+    lda: i32,
+    dev_ipiv: *const i32,
+    b: *const *mut f32,
+    ldb: i32,
+    info: *mut i32,
+    batch_size: i32,
+) -> cublasStatus_t {
+    let trans = op_from_cuda_for_solver(trans);
+    let stride = n * nrhs;
+    to_cuda_solver(rocsolver_sgetrs_batched(
+        handle.cast(),
+        trans,
+        n,
+        nrhs,
+        a.cast(),
+        lda,
+        dev_ipiv,
+        stride as _,
+        b.cast(),
+        ldb,
         batch_size,
     ))
 }
