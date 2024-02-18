@@ -18,6 +18,8 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build for Linux
       run: |
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
         git submodule init
         git submodule update
         sudo apt update
@@ -37,4 +39,6 @@ jobs:
       run: |
         git submodule init
         git submodule update
+        wget https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-23.Q4-Win10-Win11-For-HIP.exe -OutFile "amdgpu-install.exe"
+        .\amdgpu-install.exe -Install
         cargo xtask --release
