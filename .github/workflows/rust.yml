@@ -39,6 +39,6 @@ jobs:
       run: |
         git submodule init
         git submodule update
-        wget https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-23.Q4-Win10-Win11-For-HIP.exe -OutFile "amdgpu-install.exe"
+        C:\msys64\usr\bin\wget.exe https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-23.Q4-Win10-Win11-For-HIP.exe -O "amdgpu-install.exe"
         .\amdgpu-install.exe -Install
         cargo xtask --release
