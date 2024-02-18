@@ -18,8 +18,8 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build for Linux
       run: |
-        git submodules init
-        git submodules update
+        git submodule init
+        git submodule update
         sudo apt update
         wget https://repo.radeon.com/amdgpu-install/5.7.1/ubuntu/jammy/amdgpu-install_5.7.50701-1_all.deb
         sudo apt install ./amdgpu-install_5.7.50701-1_all.deb
@@ -35,6 +35,6 @@ jobs:
     - uses: actions/checkout@v3
     - name: Build for Windows
       run: |
-        git submodules init
-        git submodules update
+        git submodule init
+        git submodule update
         cargo xtask --release
