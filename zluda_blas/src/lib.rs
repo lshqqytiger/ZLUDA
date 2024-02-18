@@ -6,7 +6,11 @@ pub use cublas::*;
 use cuda_types::*;
 use rocblas_sys::*;
 use rocsolver_sys::{
-    rocsolver_cgetrf_batched, rocsolver_cgetri_batched, rocsolver_cgetri_outofplace_batched, rocsolver_sgetrs_batched, rocsolver_zgetrf_batched, rocsolver_zgetri_batched, rocsolver_zgetri_outofplace_batched
+    rocsolver_cgetrf_batched,
+    rocsolver_cgetri_outofplace_batched,
+    rocsolver_sgetrs_batched,
+    rocsolver_zgetrf_batched,
+    rocsolver_zgetri_outofplace_batched,
 };
 use std::{mem, ptr};
 
