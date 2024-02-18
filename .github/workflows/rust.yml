@@ -44,7 +44,7 @@ jobs:
     - name: Prepare for release
       run: |
         cd ./target/release
-        tar -czvf ZLUDA-linux-amd64.tar.gz ./*.so*
+        tar -czvf ZLUDA-linux-amd64.tar.gz *.so*
     - name: Create Release
       uses: actions/create-release@v1
       id: create_release
