@@ -43,7 +43,8 @@ jobs:
         cargo xtask --release
     - name: Prepare for release
       run: |
-        tar -czvf ZLUDA-linux-amd64.tar.gz ./target/release/*.so*
+        cd ./target/release
+        tar -czvf ZLUDA-linux-amd64.tar.gz ./*.so*
     - name: Create Release
       uses: actions/create-release@v1
       id: create_release
