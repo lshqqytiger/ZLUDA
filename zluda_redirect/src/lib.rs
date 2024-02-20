@@ -52,10 +52,6 @@ use winapi::{
 include!("payload_guid.rs");
 
 const WIN_MAX_PATH: usize = 260;
-const CUBLAS_UTF8: &'static str = "CUBLAS.DLL";
-const CUBLAS_UTF16: &[u16] = wch!("CUBLAS.DLL");
-const CUDNN_UTF8: &'static str = "CUDNN.DLL";
-const CUDNN_UTF16: &[u16] = wch!("CUDNN.DLL");
 const NVCUDA1_UTF8: &'static str = "NVCUDA.DLL";
 const NVCUDA1_UTF16: &[u16] = wch!("NVCUDA.DLL");
 const NVCUDA2_UTF8: &'static str = "NVCUDA.DLL";
@@ -68,10 +64,6 @@ const NVOPTIX_UTF8: &'static str = "OPTIX.6.6.0.DLL";
 const NVOPTIX_UTF16: &[u16] = wch!("OPTIX.6.6.0.DLL");
 static mut ZLUDA_PATH_UTF8: Option<&'static [u8]> = None;
 static mut ZLUDA_PATH_UTF16: Vec<u16> = Vec::new();
-static mut ZLUDA_BLAS_PATH_UTF8: Option<&'static [u8]> = None;
-static mut ZLUDA_BLAS_PATH_UTF16: Vec<u16> = Vec::new();
-static mut ZLUDA_DNN_PATH_UTF8: Option<&'static [u8]> = None;
-static mut ZLUDA_DNN_PATH_UTF16: Vec<u16> = Vec::new();
 static mut ZLUDA_ML_PATH_UTF8: Option<&'static [u8]> = None;
 static mut ZLUDA_ML_PATH_UTF16: Vec<u16> = Vec::new();
 static mut ZLUDA_API_PATH_UTF8: Option<&'static [u8]> = None;
@@ -207,11 +199,7 @@ unsafe fn get_library_name_utf8(raw_library_name: *const u8) -> *const u8 {
             }
         }
     }
-    if is_cublas_dll_utf8(library_name) {
-        return ZLUDA_BLAS_PATH_UTF8.unwrap().as_ptr();
-    } /*else if is_cudnn_dll_utf8(library_name) {
-        return ZLUDA_DNN_PATH_UTF8.unwrap().as_ptr();
-    }*/ else if is_nvcuda_dll_utf8(library_name) {
+    if is_nvcuda_dll_utf8(library_name) {
         return ZLUDA_PATH_UTF8.unwrap().as_ptr();
     } else if is_nvml_dll_utf8(library_name) {
         return ZLUDA_ML_PATH_UTF8.unwrap().as_ptr();
@@ -249,11 +237,7 @@ unsafe fn get_library_name_utf16(raw_library_name: *const u16) -> *const u16 {
             }
         }
     }
-    if is_cublas_dll_utf16(library_name) {
-        return ZLUDA_BLAS_PATH_UTF16.as_ptr();
-    } /*else if is_cudnn_dll_utf16(library_name) {
-        return ZLUDA_DNN_PATH_UTF16.as_ptr();
-    }*/ else if is_nvcuda_dll_utf16(library_name) {
+    if is_nvcuda_dll_utf16(library_name) {
         return ZLUDA_PATH_UTF16.as_ptr();
     } else if is_nvml_dll_utf16(library_name) {
         return ZLUDA_ML_PATH_UTF16.as_ptr();
@@ -327,22 +311,6 @@ unsafe fn is_driverstore_utf8(lib: &[u8]) -> bool {
 
 unsafe fn is_driverstore_utf16(lib: &[u16]) -> bool {
     starts_with_ignore_case(lib, &DRIVERSTORE_UTF16, utf16_to_ascii_uppercase)
-}
-
-fn is_cublas_dll_utf8(lib: &[u8]) -> bool {
-    is_dll_utf8(lib, CUBLAS_UTF8.as_bytes())
-}
-
-fn is_cublas_dll_utf16(lib: &[u16]) -> bool {
-    is_dll_utf16(lib, CUBLAS_UTF16)
-}
-
-fn is_cudnn_dll_utf8(lib: &[u8]) -> bool {
-    is_dll_utf8(lib, CUDNN_UTF8.as_bytes())
-}
-
-fn is_cudnn_dll_utf16(lib: &[u16]) -> bool {
-    is_dll_utf16(lib, CUDNN_UTF16)
 }
 
 fn is_nvcuda_dll_utf8(lib: &[u8]) -> bool {

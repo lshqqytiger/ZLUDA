@@ -1,0 +1,17 @@
+[package]
+name = "zluda_rtc"
+version = "0.0.0"
+authors = ["Seunghoon Lee <op@lsh.sh>"]
+edition = "2018"
+
+[lib]
+name = "nvrtc"
+crate-type = ["cdylib"]
+
+[dependencies]
+hip_common = { path = "../hip_common" }
+hiprtc-sys = { path = "../hiprtc-sys" }
+
+[package.metadata.zluda]
+linux_names = ["libnvrtc.so.10", "libnvrtc.so.11"]
+dump_names = ["libnvrtc.so"]

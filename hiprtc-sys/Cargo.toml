@@ -1,0 +1,8 @@
+[package]
+name = "hiprtc-sys"
+version = "0.0.0"
+authors = ["Seunghoon Lee <op@lsh.sh>"]
+edition = "2018"
+links = "hiprtc"
+
+[lib]

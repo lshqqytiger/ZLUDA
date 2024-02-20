@@ -14,6 +14,7 @@ members = [
     "hipblaslt-sys",
     "hipfft-sys",
     "hiprt-sys",
+    "hiprtc-sys",
     "miopen-sys",
     "offline_compiler",
     "optix_base",
@@ -39,6 +40,7 @@ members = [
     "zluda_ml",
     "zluda_redirect",
     "zluda_rt",
+    "zluda_rtc",
     "zluda_sparse",
 ]
 
