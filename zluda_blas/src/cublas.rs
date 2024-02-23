@@ -2899,7 +2899,7 @@ pub unsafe extern "system" fn cublasDgemm_v2(
     C: *mut f64,
     ldc: ::std::os::raw::c_int,
 ) -> cublasStatus_t {
-    crate::dgemm(
+    crate::dgemm_v2(
         handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc,
     )
 }
@@ -6402,7 +6402,7 @@ pub unsafe extern "system" fn cublasZhpr2(
     unimplemented!()
 }
 
-/*#[no_mangle]
+#[no_mangle]
 pub unsafe extern "system" fn cublasSgemm(
     transa: ::std::os::raw::c_char,
     transb: ::std::os::raw::c_char,
@@ -6417,28 +6417,9 @@ pub unsafe extern "system" fn cublasSgemm(
     beta: f32,
     C: *mut f32,
     ldc: ::std::os::raw::c_int,
-) {
-    unimplemented!()
-}*/
-#[no_mangle]
-pub unsafe extern "system" fn cublasSgemm(
-    handle: cublasHandle_t,
-    transa: cublasOperation_t,
-    transb: cublasOperation_t,
-    m: ::std::os::raw::c_int,
-    n: ::std::os::raw::c_int,
-    k: ::std::os::raw::c_int,
-    alpha: *const f32,
-    A: *const f32,
-    lda: ::std::os::raw::c_int,
-    B: *const f32,
-    ldb: ::std::os::raw::c_int,
-    beta: *const f32,
-    C: *mut f32,
-    ldc: ::std::os::raw::c_int,
 ) -> cublasStatus_t {
-    crate::sgemm_v2(
-        handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc,
+    crate::sgemm(
+        transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc,
     )
 }
 
@@ -6457,8 +6438,10 @@ pub unsafe extern "system" fn cublasDgemm(
     beta: f64,
     C: *mut f64,
     ldc: ::std::os::raw::c_int,
-) {
-    unimplemented!()
+) -> cublasStatus_t {
+    crate::dgemm(
+        transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc,
+    )
 }
 
 #[no_mangle]

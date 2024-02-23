@@ -193,6 +193,50 @@ fn set_math_mode(handle: cublasHandle_t, mode: cublasMath_t) -> cublasStatus_t {
     cublasStatus_t::CUBLAS_STATUS_SUCCESS
 }
 
+unsafe fn sgemm(
+    transa: std::ffi::c_char,
+    transb: std::ffi::c_char,
+    m: i32,
+    n: i32,
+    k: i32,
+    alpha: f32,
+    a: *const f32,
+    lda: i32,
+    b: *const f32,
+    ldb: i32,
+    beta: f32,
+    c: *mut f32,
+    ldc: i32,
+) -> cublasStatus_t {
+    let transa = op_from_cuda(cublasOperation_t(transa as _));
+    let transb = op_from_cuda(cublasOperation_t(transb as _));
+    let mut handle = mem::zeroed();
+    let mut status = to_cuda(rocblas_create_handle(handle));
+    if status != cublasStatus_t::CUBLAS_STATUS_SUCCESS {
+        return status;
+    }
+    status = to_cuda(rocblas_sgemm(
+        handle.cast(),
+        transa,
+        transb,
+        m,
+        n,
+        k,
+        &alpha,
+        a,
+        lda,
+        b,
+        ldb,
+        &beta,
+        c,
+        ldc,
+    ));
+    if status != cublasStatus_t::CUBLAS_STATUS_SUCCESS {
+        return status;
+    }
+    to_cuda(rocblas_destroy_handle(*handle))
+}
+
 unsafe fn sgemm_v2(
     handle: cublasHandle_t,
     transa: cublasOperation_t,
@@ -212,7 +256,7 @@ unsafe fn sgemm_v2(
     let transa = op_from_cuda(transa);
     let transb = op_from_cuda(transb);
     to_cuda(rocblas_sgemm(
-        handle as _,
+        handle.cast(),
         transa,
         transb,
         m,
@@ -890,6 +934,50 @@ unsafe fn dger(
 }
 
 unsafe fn dgemm(
+    transa: std::ffi::c_char,
+    transb: std::ffi::c_char,
+    m: i32,
+    n: i32,
+    k: i32,
+    alpha: f64,
+    a: *const f64,
+    lda: i32,
+    b: *const f64,
+    ldb: i32,
+    beta: f64,
+    c: *mut f64,
+    ldc: i32,
+) -> cublasStatus_t {
+    let transa = op_from_cuda(cublasOperation_t(transa as _));
+    let transb = op_from_cuda(cublasOperation_t(transb as _));
+    let mut handle = mem::zeroed();
+    let mut status = to_cuda(rocblas_create_handle(handle));
+    if status != cublasStatus_t::CUBLAS_STATUS_SUCCESS {
+        return status;
+    }
+    status = to_cuda(rocblas_dgemm(
+        handle.cast(),
+        transa,
+        transb,
+        m,
+        n,
+        k,
+        &alpha,
+        a,
+        lda,
+        b,
+        ldb,
+        &beta,
+        c,
+        ldc,
+    ));
+    if status != cublasStatus_t::CUBLAS_STATUS_SUCCESS {
+        return status;
+    }
+    to_cuda(rocblas_destroy_handle(*handle))
+}
+
+unsafe fn dgemm_v2(
     handle: *mut cublasContext,
     transa: cublasOperation_t,
     transb: cublasOperation_t,
