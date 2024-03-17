@@ -88,13 +88,13 @@ jobs:
           mkdir unpacked
           set "PATH=C:\Program Files\7-Zip;.\unpacked;%PATH%"
           7z e .\amdgpu-install.exe -ounpacked -y
-          msiexec /i .\unpacked\ROCm_SDK_Core.msi /qn /norestart
-          msiexec /i .\unpacked\ROCm_Libs_Dev.msi /qn /norestart
-          msiexec /i .\unpacked\ROCm_Libs_RT.msi /qn /norestart
-          msiexec /i .\unpacked\ROCm_RTC_Dev.msi /qn /norestart
-          msiexec /i .\unpacked\ROCm_RTC_RT.msi /qn /norestart
-          msiexec /i .\unpacked\ROCm_RayTracing_Dev.msi /qn /norestart
-          msiexec /i .\unpacked\ROCm_RayTracing_RT.msi /qn /norestart
+          ATISetup -Install -Use .\unpacked\ROCm_SDK_Core.msi
+          ATISetup -Install -Use .\unpacked\ROCm_Libs_Dev.msi
+          ATISetup -Install -Use .\unpacked\ROCm_Libs_RT.msi
+          ATISetup -Install -Use .\unpacked\ROCm_RTC_Dev.msi
+          ATISetup -Install -Use .\unpacked\ROCm_RTC_RT.msi
+          ATISetup -Install -Use .\unpacked\ROCm_RayTracing_Dev.msi
+          ATISetup -Install -Use .\unpacked\ROCm_RayTracing_RT.msi
       - name: Build for Windows
         run: |
           cargo xtask --release
