@@ -97,8 +97,8 @@ jobs:
           cargo xtask --release
       - name: Prepare for release
         run: |
-          cd ./target/release
-          7z ZLUDA-windows-amd64.zip *.dll
+          cd .\target\release
+          7z a .\ZLUDA-windows-amd64.zip .\*.dll
       - name: Create Release
         uses: actions/create-release@v1
         id: create_release
