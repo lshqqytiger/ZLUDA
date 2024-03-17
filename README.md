@@ -37,7 +37,7 @@ Make sure you have the following installed:
 * Rust (1.66.1 or newer)
 * C++ compiler
 * (Linux only) ROCm 5.7+ (_not ROCm 6_) (https://rocm.docs.amd.com/en/latest/deploy/linux/install_overview.html)
-* (Windows only) Recent AMD Radeon Software Adrenalin (https://rocm.docs.amd.com/en/latest/deploy/linux/install_overview.html)
+* (Windows only) Recent [AMD Radeon Software Adrenalin](https://www.amd.com/en/technologies/software)
 * (Recommended, optional) Ninja (https://ninja-build.org/)
 
 Alternatively, if you are building for Linux, [.devcontainer](.devcontainer) directory contains various developer Dockerfiles with all the required dependencies
@@ -66,7 +66,7 @@ If an application fails to start under ZLUDA or crashes please check [Known Issu
 
 - If both integrated AMD GPU and dedicated AMD GPU are present in the system, ZLUDA uses the integrated GPU.
 
-  This is a bug in underying ROCm/HIP runtime. You can work around it by disabling the integrated GPU.
+  This is a bug in underlying ROCm/HIP runtime. You can work around it by disabling the integrated GPU.
 
   On Windows we recommend you use environment variable `HIP_VISIBLE_DEVICES=1` environment variable (more [here](https://rocmdocs.amd.com/en/latest/conceptual/gpu-isolation.html#hip-visible-devices)) or disable it system-wide in Device Manager.
 
