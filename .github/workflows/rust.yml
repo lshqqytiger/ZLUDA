@@ -69,7 +69,7 @@ jobs:
           asset_content_type: application/gzip
 
   build-windows:
-    runs-on: self-hosted #runs-on: windows-latest
+    runs-on: windows-latest
     permissions:
       contents: write
       pull-requests: write
@@ -91,6 +91,8 @@ jobs:
           Wait-Process -Id $setupId
       - name: Build for Windows
         run: |
+          echo $Env:PATH
+          echo $Env:HIP_PATH
           cargo xtask --release
       - name: Prepare for release
         run: |
