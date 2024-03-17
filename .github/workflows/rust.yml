@@ -69,7 +69,7 @@ jobs:
           asset_content_type: application/gzip
 
   build-windows:
-    runs-on: windows-latest
+    runs-on: self-hosted #runs-on: windows-latest
     permissions:
       contents: write
       pull-requests: write
@@ -85,7 +85,7 @@ jobs:
       - name: Install AMD HIP SDK
         run: |
           C:\msys64\usr\bin\wget.exe https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-23.Q4-Win10-Win11-For-HIP.exe -O "amdgpu-install.exe"
-          .\amdgpu-install.exe -Install
+          .\amdgpu-install.exe -Install -View:1
           Start-Sleep -Seconds 60
           $setupId = (Get-Process ATISetup).id
           Wait-Process -Id $setupId
