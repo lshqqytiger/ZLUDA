@@ -86,7 +86,7 @@ jobs:
         run: |
           C:\msys64\usr\bin\wget.exe https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-23.Q4-Win10-Win11-For-HIP.exe -O "amdgpu-install.exe"
           mkdir unpacked
-          set PATH=%PATH%;C:\Program Files\7-Zip;.\unpacked
+          set "PATH=C:\Program Files\7-Zip;.\unpacked;%PATH%"
           7z e .\amdgpu-install.exe -ounpacked -y
           msiexec /i .\unpacked\ROCm_SDK_Core.msi /qn /norestart
           msiexec /i .\unpacked\ROCm_Libs_Dev.msi /qn /norestart
