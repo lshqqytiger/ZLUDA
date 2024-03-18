@@ -9,6 +9,7 @@ use rocsolver_sys::{
     rocsolver_cgetrf_batched,
     rocsolver_cgetri_outofplace_batched,
     rocsolver_sgetrs_batched,
+    rocsolver_dgetrs_batched,
     rocsolver_zgetrf_batched,
     rocsolver_zgetri_outofplace_batched,
 };
@@ -737,6 +738,36 @@ unsafe fn sgetrs_batched(
         dev_ipiv,
         stride as _,
         b.cast(),
+        ldb,
+        batch_size,
+    ))
+}
+
+unsafe fn dgetrs_batched(
+    handle: *mut cublasContext,
+    trans: cublasOperation_t,
+    n: i32,
+    nrhs: i32,
+    a: *const *const f64,
+    lda: i32,
+    dev_ipiv: *const i32,
+    b: *const *mut f64,
+    ldb: i32,
+    info: *mut i32,
+    batch_size: i32,
+) -> cublasStatus_t {
+    let trans = op_from_cuda_for_solver(trans);
+    let stride = n * nrhs;
+    to_cuda_solver(rocsolver_dgetrs_batched(
+        handle.cast(),
+        trans,
+        n,
+        nrhs,
+        a.cast(),
+        lda,
+        dev_ipiv,
+        stride as _,
+        b,
         ldb,
         batch_size,
     ))

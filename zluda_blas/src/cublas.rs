@@ -4366,7 +4366,19 @@ pub unsafe extern "system" fn cublasDgetrsBatched(
     info: *mut ::std::os::raw::c_int,
     batchSize: ::std::os::raw::c_int,
 ) -> cublasStatus_t {
-    crate::unsupported()
+    crate::dgetrs_batched(
+        handle,
+        trans,
+        n,
+        nrhs,
+        Aarray,
+        lda,
+        devIpiv,
+        Barray,
+        ldb,
+        info,
+        batchSize,
+    )
 }
 
 #[no_mangle]
