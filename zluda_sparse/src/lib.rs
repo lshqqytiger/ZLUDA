@@ -109,6 +109,13 @@ fn index_base(index_base: cusparseIndexBase_t) -> rocsparse_index_base {
     }
 }
 
+fn order(order: cusparseOrder_t) -> rocsprase_order {
+    match order {
+        cusparseOrder_t::CUSPARSE_ORDER_COL => rocsparse_order::rocsparse_order_column,
+        cusparseOrder_t::CUSPARSE_ORDER_ROW => rocsparse_order::rocsparse_order_row,
+    }
+}
+
 unsafe fn create_csrsv2_info(info: *mut *mut csrsv2Info) -> cusparseStatus_t {
     to_cuda(rocsparse_create_mat_info(info.cast()))
 }
@@ -1304,5 +1311,99 @@ unsafe fn dcsrilu02(
         info.cast(),
         solve,
         p_buffer,
+    ))
+}
+
+unsafe fn create_dn_mat(
+    dn_mat_descr: *mut cusparseDnMatDescr_t,
+    rows: i64,
+    cols: i64,
+    ld: i64,
+    values: *mut ::std::os::raw::c_void,
+    value_type: cudaDataType,
+    o: cusparseOrder_t,
+) -> cusparseStatus_t {
+    let value_type = data_type(value_type);
+    let o = order(o);
+    to_cuda(rocsparse_create_dnmat_descr(
+        dn_mat_descr.cast(),
+        rows,
+        cols,
+        ld,
+        values,
+        value_type,
+        o,
+    ))
+}
+
+unsafe fn destroy_dn_mat(
+    dn_mat_descr: cusparseDnMatDescr_t,
+) -> cusparseStatus_t {
+    to_cuda(rocsparse_destroy_dnmat_descr(dn_mat_descr.cast()))
+}
+
+unsafe fn dn_mat_get(
+    dn_mat_descr: cusparseDnMatDescr_t,
+    rows: *mut i64,
+    cols: *mut i64,
+    ld: *mut i64,
+    values: *mut *mut ::std::os::raw::c_void,
+    type_: *mut cudaDataType,
+    o: *mut cusparseOrder_t,
+) -> cusparseStatus_t {
+    let type_ = data_type(type_);
+    let o = order(o);
+    to_cuda(rocsparse_dnmat_get(
+        dn_mat_descr.cast(),
+        rows,
+        cols,
+        ld,
+        values,
+        type_,
+        o,
+    ))
+}
+
+unsafe fn dn_mat_get_values(
+    dn_mat_descr: cusparseDnMatDescr_t,
+    values: *mut *mut ::std::os::raw::c_void,
+) -> cusparseStatus_t {
+    to_cuda(rocsparse_dnmat_get_values(
+        dn_mat_descr.cast(),
+        values,
+    ))
+}
+
+unsafe fn dn_mat_set_values(
+    dn_mat_descr: cusparseDnMatDescr_t,
+    values: *mut ::std::os::raw::c_void,
+) -> cusparseStatus_t {
+    to_cuda(rocsparse_dnmat_set_values(
+        dn_mat_descr.cast(),
+        values,
+    ))
+}
+
+unsafe fn dn_mat_set_strided_batch(
+    dn_mat_descr: cusparseDnMatDescr_t,
+    batch_count: i32,
+    batch_stride: i64,
+) -> cusparseStatus_t {
+    to_cuda(rocsparse_dnmat_set_strided_batch(
+        dn_mat_descr.cast(),
+        batch_count,
+        batch_stride,
+    ))
+}
+
+unsafe fn dn_mat_get_strided_batch(
+    dn_mat_descr: cusparseDnMatDescr_t,
+    batch_count: *mut i32,
+    batch_stride: *mut i64,
+) -> cusparseStatus_t {
+    to_cuda(rocsparse_dnmat_get_strided_batch(
+        dn_mat_descr.cast(),
+        batch_count,
+        batch_stride,
     ))
 }

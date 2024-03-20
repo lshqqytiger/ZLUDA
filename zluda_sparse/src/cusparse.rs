@@ -7980,14 +7980,22 @@ pub unsafe extern "system" fn cusparseCreateDnMat(
     valueType: cudaDataType,
     order: cusparseOrder_t,
 ) -> cusparseStatus_t {
-    crate::unsupported()
+    crate::create_dn_mat(
+        dnMatDescr,
+        rows,
+        cols,
+        ld,
+        values,
+        valueType,
+        order,
+    )
 }
 
 #[no_mangle]
 pub unsafe extern "system" fn cusparseDestroyDnMat(
     dnMatDescr: cusparseDnMatDescr_t,
 ) -> cusparseStatus_t {
-    crate::unsupported()
+    crate::destroy_dn_mat(dnMatDescr)
 }
 
 #[no_mangle]
@@ -8000,7 +8008,15 @@ pub unsafe extern "system" fn cusparseDnMatGet(
     type_: *mut cudaDataType,
     order: *mut cusparseOrder_t,
 ) -> cusparseStatus_t {
-    crate::unsupported()
+    crate::dn_mat_get(
+        dnMatDescr,
+        rows,
+        cols,
+        ld,
+        values,
+        type_,
+        order,
+    )
 }
 
 #[no_mangle]
@@ -8008,7 +8024,10 @@ pub unsafe extern "system" fn cusparseDnMatGetValues(
     dnMatDescr: cusparseDnMatDescr_t,
     values: *mut *mut ::std::os::raw::c_void,
 ) -> cusparseStatus_t {
-    crate::unsupported()
+    crate::dn_mat_get_values(
+        dnMatDescr,
+        values,
+    )
 }
 
 #[no_mangle]
@@ -8016,7 +8035,10 @@ pub unsafe extern "system" fn cusparseDnMatSetValues(
     dnMatDescr: cusparseDnMatDescr_t,
     values: *mut ::std::os::raw::c_void,
 ) -> cusparseStatus_t {
-    crate::unsupported()
+    crate::dn_mat_set_values(
+        dnMatDescr,
+        values,
+    )
 }
 
 #[no_mangle]
@@ -8025,7 +8047,11 @@ pub unsafe extern "system" fn cusparseDnMatSetStridedBatch(
     batchCount: ::std::os::raw::c_int,
     batchStride: i64,
 ) -> cusparseStatus_t {
-    crate::unsupported()
+    crate::dn_mat_set_strided_batch(
+        dnMatDescr,
+        batchCount,
+        batchStride,
+    )
 }
 
 #[no_mangle]
@@ -8034,7 +8060,11 @@ pub unsafe extern "system" fn cusparseDnMatGetStridedBatch(
     batchCount: *mut ::std::os::raw::c_int,
     batchStride: *mut i64,
 ) -> cusparseStatus_t {
-    crate::unsupported()
+    crate::dn_mat_get_strided_batch(
+        dnMatDescr,
+        batchCount,
+        batchStride,
+    )
 }
 
 #[no_mangle]
