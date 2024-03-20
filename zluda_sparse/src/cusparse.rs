@@ -5661,7 +5661,14 @@ pub unsafe extern "system" fn cusparseXcoo2csr(
     csrSortedRowPtr: *mut ::std::os::raw::c_int,
     idxBase: cusparseIndexBase_t,
 ) -> cusparseStatus_t {
-    crate::unsupported()
+    crate::xcoo2csr(
+        handle,
+        cooRowInd,
+        nnz,
+        m,
+        csrSortedRowPtr,
+        idxBase,
+    )
 }
 
 #[no_mangle]
