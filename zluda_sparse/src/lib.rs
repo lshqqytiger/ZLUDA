@@ -1014,6 +1014,25 @@ unsafe fn csr2cscex2(
     ))
 }
 
+unsafe fn xcoo2csr(
+    handle: *mut cusparseContext,
+    coo_row_ind: *const i32,
+    nnz: i32,
+    m: i32,
+    csr_sorted_row_ptr: *mut i32,
+    idx_base: cusparseIndexBase_t,
+) -> cusparseStatus_t {
+    let idx_base = index_base(idx_base);
+    to_cuda(rocsparse_coo2csr(
+        handle.cast(),
+        coo_row_ind,
+        nnz,
+        m,
+        csr_sorted_row_ptr,
+        idx_base,
+    ))
+}
+
 unsafe fn destory_dnvec(dn_vec_descr: *mut cusparseDnVecDescr) -> cusparseStatus_t {
     if dn_vec_descr == ptr::null_mut() {
         cusparseStatus_t::CUSPARSE_STATUS_SUCCESS
