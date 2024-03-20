@@ -113,6 +113,7 @@ fn order(order: cusparseOrder_t) -> rocsparse_order {
     match order {
         cusparseOrder_t::CUSPARSE_ORDER_COL => rocsparse_order::rocsparse_order_column,
         cusparseOrder_t::CUSPARSE_ORDER_ROW => rocsparse_order::rocsparse_order_row,
+        _ => panic!(),
     }
 }
 
