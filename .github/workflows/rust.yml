@@ -112,6 +112,7 @@ jobs:
         run: |
           cd .\target\release
           7z a .\ZLUDA-windows-amd64.zip .\*.dll
+          7z a .\ZLUDA-windows-amd64.zip .\*.exe
       - name: Upload Windows artifact
         uses: actions/upload-release-asset@v1
         env:
