@@ -109,7 +109,7 @@ fn index_base(index_base: cusparseIndexBase_t) -> rocsparse_index_base {
     }
 }
 
-fn order(order: cusparseOrder_t) -> rocsprase_order {
+fn order(order: cusparseOrder_t) -> rocsparse_order {
     match order {
         cusparseOrder_t::CUSPARSE_ORDER_COL => rocsparse_order::rocsparse_order_column,
         cusparseOrder_t::CUSPARSE_ORDER_ROW => rocsparse_order::rocsparse_order_row,
@@ -1351,16 +1351,16 @@ unsafe fn dn_mat_get(
     type_: *mut cudaDataType,
     o: *mut cusparseOrder_t,
 ) -> cusparseStatus_t {
-    let type_ = data_type(type_);
-    let o = order(o);
+    let mut type_ = data_type(*type_);
+    let mut o = order(*o);
     to_cuda(rocsparse_dnmat_get(
         dn_mat_descr.cast(),
         rows,
         cols,
         ld,
         values,
-        type_,
-        o,
+        &mut type_,
+        &mut o,
     ))
 }
 
