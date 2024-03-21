@@ -1,0 +1,3 @@
+bindgen \\wsl.localhost\Ubuntu-22.04\usr\include\cuda_runtime.h -o src/cudart.rs --allowlist-function="^cuda.*" --allowlist-type="cu.*"  --default-enum-style=newtype --no-layout-tests --no-derive-debug -- -I\\wsl.localhost\Ubuntu-22.04\usr\include
+sed -i -e 's/extern "C" {//g' -e 's/-> cudaError_t;/-> cudaError_t { crate::unsupported()/g' -e 's/pub fn /#[no_mangle] pub extern "system" fn /g' src/cudart.rs
+rustfmt src/cudart.rs
