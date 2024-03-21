@@ -19,19 +19,22 @@ fn to_nvrtc(status: hiprtc_sys::hiprtcResult) -> nvrtcResult {
     match status {
         hiprtc_sys::hiprtcResult::HIPRTC_SUCCESS => nvrtcResult::NVRTC_SUCCESS,
         hiprtc_sys::hiprtcResult::HIPRTC_ERROR_INVALID_PROGRAM => nvrtcResult::NVRTC_ERROR_INVALID_PROGRAM,
+        hiprtc_sys::hiprtcResult::HIPRTC_ERROR_COMPILATION => nvrtcResult::NVRTC_ERROR_COMPILATION,
         err => panic!("[ZLUDA] HIPRTC failed: {}", err.0),
     }
 }
 
-fn get_error_string(result: nvrtcResult) -> *const ::std::os::raw::c_char {
-    let error_string = 
-        match result {
-            nvrtcResult::NVRTC_ERROR_INTERNAL_ERROR => String::from("NVRTC_ERROR_INTERNAL_ERROR"),
-            _ => result.0.to_string(),
-        };
-    println!("[ZLUDA] HIPRTC failed: {}", error_string);
-    let cstr = std::ffi::CString::new("").unwrap();
-    cstr.as_ptr()
+fn to_hiprtc(status: nvrtcResult) -> hiprtc_sys::hiprtcResult {
+    match status {
+        nvrtcResult::NVRTC_SUCCESS => hiprtc_sys::hiprtcResult::HIPRTC_SUCCESS,
+        nvrtcResult::NVRTC_ERROR_INVALID_PROGRAM => hiprtc_sys::hiprtcResult::HIPRTC_ERROR_INVALID_PROGRAM,
+        nvrtcResult::NVRTC_ERROR_COMPILATION => hiprtc_sys::hiprtcResult::HIPRTC_ERROR_COMPILATION,
+        err => panic!("[ZLUDA] HIPRTC failed: {}", err.0),
+    }
+}
+
+unsafe fn get_error_string(result: nvrtcResult) -> *const ::std::os::raw::c_char {
+    hiprtcGetErrorString(to_hiprtc(result))
 }
 
 unsafe fn create_program(

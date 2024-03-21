@@ -43,7 +43,7 @@ pub struct nvrtcResult(pub ::std::os::raw::c_int);
 
 #[doc = " \\ingroup error\n \\brief   nvrtcGetErrorString is a helper function that returns a string\n          describing the given nvrtcResult code, e.g., NVRTC_SUCCESS to\n          \\c \"NVRTC_SUCCESS\".\n          For unrecognized enumeration values, it returns\n          \\c \"NVRTC_ERROR unknown\".\n\n \\param   [in] result CUDA Runtime Compilation API result code.\n \\return  Message string for the given #nvrtcResult code."]
 #[no_mangle]
-pub extern "system" fn nvrtcGetErrorString(result: nvrtcResult) -> *const ::std::os::raw::c_char {
+pub unsafe extern "system" fn nvrtcGetErrorString(result: nvrtcResult) -> *const ::std::os::raw::c_char {
     crate::get_error_string(result)
 }
 
