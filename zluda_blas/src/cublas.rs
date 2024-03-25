@@ -802,7 +802,15 @@ pub unsafe extern "system" fn cublasSdot_v2(
     incy: ::std::os::raw::c_int,
     result: *mut f32,
 ) -> cublasStatus_t {
-    crate::unsupported()
+    crate::sdot_v2(
+        handle,
+        n,
+        x,
+        incx,
+        y,
+        incy,
+        result,
+    )
 }
 
 #[no_mangle]
@@ -4920,7 +4928,13 @@ pub unsafe extern "system" fn cublasSdot(
     y: *const f32,
     incy: ::std::os::raw::c_int,
 ) -> f32 {
-    unimplemented!()
+    crate::sdot(
+        n,
+        x,
+        incx,
+        y,
+        incy,
+    )
 }
 
 #[no_mangle]
