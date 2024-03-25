@@ -285,26 +285,21 @@ unsafe fn sdot(
     incx: i32,
     y: *const f32,
     incy: i32,
-) -> cublasStatus_t {
+) -> f32 {
     let mut handle = mem::zeroed();
-    let mut status = to_cuda(rocblas_create_handle(handle));
-    if status != cublasStatus_t::CUBLAS_STATUS_SUCCESS {
-        return status;
-    }
-    let result = mem::zeroed();
-    status = to_cuda(rocblas_sdot(
+    let mut status = rocblas_create_handle(handle);
+    let mut result = 0.0;
+    status = rocblas_sdot(
         handle.cast(),
         n,
         x,
         incx,
         y,
         incy,
-        result,
-    ));
-    if status != cublasStatus_t::CUBLAS_STATUS_SUCCESS {
-        return status;
-    }
-    to_cuda(rocblas_destroy_handle(*handle))
+        &mut result,
+    );
+    status = rocblas_destroy_handle(*handle);
+    result
 }
 
 unsafe fn dasum_v2(
