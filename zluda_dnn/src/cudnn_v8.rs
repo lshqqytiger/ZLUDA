@@ -993,7 +993,7 @@ pub unsafe extern "system" fn cudnnDestroyAlgorithmDescriptor(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnCreateAlgorithmPerformance(
+pub extern "system" fn cudnnCreateAlgorithmPerformance(
     algoPerf: *mut cudnnAlgorithmPerformance_t,
     numberToCreate: ::std::os::raw::c_int,
 ) -> cudnnStatus_t {
@@ -1001,7 +1001,7 @@ pub unsafe extern "system" fn cudnnCreateAlgorithmPerformance(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetAlgorithmPerformance(
+pub extern "system" fn cudnnSetAlgorithmPerformance(
     algoPerf: cudnnAlgorithmPerformance_t,
     algoDesc: cudnnAlgorithmDescriptor_t,
     status: cudnnStatus_t,
@@ -1012,7 +1012,7 @@ pub unsafe extern "system" fn cudnnSetAlgorithmPerformance(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetAlgorithmPerformance(
+pub extern "system" fn cudnnGetAlgorithmPerformance(
     algoPerf: cudnnAlgorithmPerformance_t,
     algoDesc: *mut cudnnAlgorithmDescriptor_t,
     status: *mut cudnnStatus_t,
@@ -1023,7 +1023,7 @@ pub unsafe extern "system" fn cudnnGetAlgorithmPerformance(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnDestroyAlgorithmPerformance(
+pub extern "system" fn cudnnDestroyAlgorithmPerformance(
     algoPerf: *mut cudnnAlgorithmPerformance_t,
     numberToDestroy: ::std::os::raw::c_int,
 ) -> cudnnStatus_t {
@@ -1031,7 +1031,7 @@ pub unsafe extern "system" fn cudnnDestroyAlgorithmPerformance(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetAlgorithmSpaceSize(
+pub extern "system" fn cudnnGetAlgorithmSpaceSize(
     handle: cudnnHandle_t,
     algoDesc: cudnnAlgorithmDescriptor_t,
     algoSpaceSizeInBytes: *mut usize,
@@ -1040,7 +1040,7 @@ pub unsafe extern "system" fn cudnnGetAlgorithmSpaceSize(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSaveAlgorithm(
+pub extern "system" fn cudnnSaveAlgorithm(
     handle: cudnnHandle_t,
     algoDesc: cudnnAlgorithmDescriptor_t,
     algoSpace: *mut ::std::os::raw::c_void,
@@ -1050,7 +1050,7 @@ pub unsafe extern "system" fn cudnnSaveAlgorithm(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRestoreAlgorithm(
+pub extern "system" fn cudnnRestoreAlgorithm(
     handle: cudnnHandle_t,
     algoSpace: *mut ::std::os::raw::c_void,
     algoSpaceSizeInBytes: usize,
@@ -1060,7 +1060,7 @@ pub unsafe extern "system" fn cudnnRestoreAlgorithm(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetCallback(
+pub extern "system" fn cudnnSetCallback(
     mask: ::std::os::raw::c_uint,
     udata: *mut ::std::os::raw::c_void,
     fptr: cudnnCallback_t,
@@ -1069,7 +1069,7 @@ pub unsafe extern "system" fn cudnnSetCallback(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetCallback(
+pub extern "system" fn cudnnGetCallback(
     mask: *mut ::std::os::raw::c_uint,
     udata: *mut *mut ::std::os::raw::c_void,
     fptr: *mut cudnnCallback_t,
@@ -1078,12 +1078,12 @@ pub unsafe extern "system" fn cudnnGetCallback(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnOpsInferVersionCheck() -> cudnnStatus_t {
+pub extern "system" fn cudnnOpsInferVersionCheck() -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSoftmaxBackward(
+pub extern "system" fn cudnnSoftmaxBackward(
     handle: cudnnHandle_t,
     algo: cudnnSoftmaxAlgorithm_t,
     mode: cudnnSoftmaxMode_t,
@@ -1100,7 +1100,7 @@ pub unsafe extern "system" fn cudnnSoftmaxBackward(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnPoolingBackward(
+pub extern "system" fn cudnnPoolingBackward(
     handle: cudnnHandle_t,
     poolingDesc: cudnnPoolingDescriptor_t,
     alpha: *const ::std::os::raw::c_void,
@@ -1118,7 +1118,7 @@ pub unsafe extern "system" fn cudnnPoolingBackward(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnActivationBackward(
+pub extern "system" fn cudnnActivationBackward(
     handle: cudnnHandle_t,
     activationDesc: cudnnActivationDescriptor_t,
     alpha: *const ::std::os::raw::c_void,
@@ -1136,7 +1136,7 @@ pub unsafe extern "system" fn cudnnActivationBackward(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnLRNCrossChannelBackward(
+pub extern "system" fn cudnnLRNCrossChannelBackward(
     handle: cudnnHandle_t,
     normDesc: cudnnLRNDescriptor_t,
     lrnMode: cudnnLRNMode_t,
@@ -1155,7 +1155,7 @@ pub unsafe extern "system" fn cudnnLRNCrossChannelBackward(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnDivisiveNormalizationBackward(
+pub extern "system" fn cudnnDivisiveNormalizationBackward(
     handle: cudnnHandle_t,
     normDesc: cudnnLRNDescriptor_t,
     mode: cudnnDivNormMode_t,
@@ -1175,7 +1175,7 @@ pub unsafe extern "system" fn cudnnDivisiveNormalizationBackward(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetBatchNormalizationForwardTrainingExWorkspaceSize(
+pub extern "system" fn cudnnGetBatchNormalizationForwardTrainingExWorkspaceSize(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     bnOps: cudnnBatchNormOps_t,
@@ -1190,7 +1190,7 @@ pub unsafe extern "system" fn cudnnGetBatchNormalizationForwardTrainingExWorkspa
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetBatchNormalizationBackwardExWorkspaceSize(
+pub extern "system" fn cudnnGetBatchNormalizationBackwardExWorkspaceSize(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     bnOps: cudnnBatchNormOps_t,
@@ -1207,7 +1207,7 @@ pub unsafe extern "system" fn cudnnGetBatchNormalizationBackwardExWorkspaceSize(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetBatchNormalizationTrainingExReserveSpaceSize(
+pub extern "system" fn cudnnGetBatchNormalizationTrainingExReserveSpaceSize(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     bnOps: cudnnBatchNormOps_t,
@@ -1219,7 +1219,7 @@ pub unsafe extern "system" fn cudnnGetBatchNormalizationTrainingExReserveSpaceSi
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnBatchNormalizationForwardTraining(
+pub extern "system" fn cudnnBatchNormalizationForwardTraining(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     alpha: *const ::std::os::raw::c_void,
@@ -1242,7 +1242,7 @@ pub unsafe extern "system" fn cudnnBatchNormalizationForwardTraining(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnBatchNormalizationForwardTrainingEx(
+pub extern "system" fn cudnnBatchNormalizationForwardTrainingEx(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     bnOps: cudnnBatchNormOps_t,
@@ -1273,7 +1273,7 @@ pub unsafe extern "system" fn cudnnBatchNormalizationForwardTrainingEx(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnBatchNormalizationBackward(
+pub extern "system" fn cudnnBatchNormalizationBackward(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     alphaDataDiff: *const ::std::os::raw::c_void,
@@ -1298,7 +1298,7 @@ pub unsafe extern "system" fn cudnnBatchNormalizationBackward(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnBatchNormalizationBackwardEx(
+pub extern "system" fn cudnnBatchNormalizationBackwardEx(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     bnOps: cudnnBatchNormOps_t,
@@ -1334,7 +1334,7 @@ pub unsafe extern "system" fn cudnnBatchNormalizationBackwardEx(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetNormalizationForwardTrainingWorkspaceSize(
+pub extern "system" fn cudnnGetNormalizationForwardTrainingWorkspaceSize(
     handle: cudnnHandle_t,
     mode: cudnnNormMode_t,
     normOps: cudnnNormOps_t,
@@ -1352,7 +1352,7 @@ pub unsafe extern "system" fn cudnnGetNormalizationForwardTrainingWorkspaceSize(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetNormalizationBackwardWorkspaceSize(
+pub extern "system" fn cudnnGetNormalizationBackwardWorkspaceSize(
     handle: cudnnHandle_t,
     mode: cudnnNormMode_t,
     normOps: cudnnNormOps_t,
@@ -1372,7 +1372,7 @@ pub unsafe extern "system" fn cudnnGetNormalizationBackwardWorkspaceSize(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetNormalizationTrainingReserveSpaceSize(
+pub extern "system" fn cudnnGetNormalizationTrainingReserveSpaceSize(
     handle: cudnnHandle_t,
     mode: cudnnNormMode_t,
     normOps: cudnnNormOps_t,
@@ -1386,7 +1386,7 @@ pub unsafe extern "system" fn cudnnGetNormalizationTrainingReserveSpaceSize(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnNormalizationForwardTraining(
+pub extern "system" fn cudnnNormalizationForwardTraining(
     handle: cudnnHandle_t,
     mode: cudnnNormMode_t,
     normOps: cudnnNormOps_t,
@@ -1420,7 +1420,7 @@ pub unsafe extern "system" fn cudnnNormalizationForwardTraining(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnNormalizationBackward(
+pub extern "system" fn cudnnNormalizationBackward(
     handle: cudnnHandle_t,
     mode: cudnnNormMode_t,
     normOps: cudnnNormOps_t,
@@ -1459,7 +1459,7 @@ pub unsafe extern "system" fn cudnnNormalizationBackward(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSpatialTfGridGeneratorBackward(
+pub extern "system" fn cudnnSpatialTfGridGeneratorBackward(
     handle: cudnnHandle_t,
     stDesc: cudnnSpatialTransformerDescriptor_t,
     dgrid: *const ::std::os::raw::c_void,
@@ -1469,7 +1469,7 @@ pub unsafe extern "system" fn cudnnSpatialTfGridGeneratorBackward(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSpatialTfSamplerBackward(
+pub extern "system" fn cudnnSpatialTfSamplerBackward(
     handle: cudnnHandle_t,
     stDesc: cudnnSpatialTransformerDescriptor_t,
     alpha: *const ::std::os::raw::c_void,
@@ -1489,7 +1489,7 @@ pub unsafe extern "system" fn cudnnSpatialTfSamplerBackward(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnDropoutBackward(
+pub extern "system" fn cudnnDropoutBackward(
     handle: cudnnHandle_t,
     dropoutDesc: cudnnDropoutDescriptor_t,
     dydesc: cudnnTensorDescriptor_t,
@@ -1503,26 +1503,26 @@ pub unsafe extern "system" fn cudnnDropoutBackward(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnOpsTrainVersionCheck() -> cudnnStatus_t {
+pub extern "system" fn cudnnOpsTrainVersionCheck() -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnCreateRNNDescriptor(
+pub extern "system" fn cudnnCreateRNNDescriptor(
     rnnDesc: *mut cudnnRNNDescriptor_t,
 ) -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnDestroyRNNDescriptor(
+pub extern "system" fn cudnnDestroyRNNDescriptor(
     rnnDesc: cudnnRNNDescriptor_t,
 ) -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetRNNDescriptor_v8(
+pub extern "system" fn cudnnSetRNNDescriptor_v8(
     rnnDesc: cudnnRNNDescriptor_t,
     algo: cudnnRNNAlgo_t,
     cellMode: cudnnRNNMode_t,
@@ -1543,7 +1543,7 @@ pub unsafe extern "system" fn cudnnSetRNNDescriptor_v8(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNDescriptor_v8(
+pub extern "system" fn cudnnGetRNNDescriptor_v8(
     rnnDesc: cudnnRNNDescriptor_t,
     algo: *mut cudnnRNNAlgo_t,
     cellMode: *mut cudnnRNNMode_t,
@@ -1564,7 +1564,7 @@ pub unsafe extern "system" fn cudnnGetRNNDescriptor_v8(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetRNNDescriptor_v6(
+pub extern "system" fn cudnnSetRNNDescriptor_v6(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     hiddenSize: ::std::os::raw::c_int,
@@ -1580,7 +1580,7 @@ pub unsafe extern "system" fn cudnnSetRNNDescriptor_v6(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNDescriptor_v6(
+pub extern "system" fn cudnnGetRNNDescriptor_v6(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     hiddenSize: *mut ::std::os::raw::c_int,
@@ -1596,7 +1596,7 @@ pub unsafe extern "system" fn cudnnGetRNNDescriptor_v6(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetRNNMatrixMathType(
+pub extern "system" fn cudnnSetRNNMatrixMathType(
     rnnDesc: cudnnRNNDescriptor_t,
     mType: cudnnMathType_t,
 ) -> cudnnStatus_t {
@@ -1604,7 +1604,7 @@ pub unsafe extern "system" fn cudnnSetRNNMatrixMathType(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNMatrixMathType(
+pub extern "system" fn cudnnGetRNNMatrixMathType(
     rnnDesc: cudnnRNNDescriptor_t,
     mType: *mut cudnnMathType_t,
 ) -> cudnnStatus_t {
@@ -1612,7 +1612,7 @@ pub unsafe extern "system" fn cudnnGetRNNMatrixMathType(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetRNNBiasMode(
+pub extern "system" fn cudnnSetRNNBiasMode(
     rnnDesc: cudnnRNNDescriptor_t,
     biasMode: cudnnRNNBiasMode_t,
 ) -> cudnnStatus_t {
@@ -1620,7 +1620,7 @@ pub unsafe extern "system" fn cudnnSetRNNBiasMode(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNBiasMode(
+pub extern "system" fn cudnnGetRNNBiasMode(
     rnnDesc: cudnnRNNDescriptor_t,
     biasMode: *mut cudnnRNNBiasMode_t,
 ) -> cudnnStatus_t {
@@ -1628,7 +1628,7 @@ pub unsafe extern "system" fn cudnnGetRNNBiasMode(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRNNSetClip_v8(
+pub extern "system" fn cudnnRNNSetClip_v8(
     rnnDesc: cudnnRNNDescriptor_t,
     clipMode: cudnnRNNClipMode_t,
     clipNanOpt: cudnnNanPropagation_t,
@@ -1639,7 +1639,7 @@ pub unsafe extern "system" fn cudnnRNNSetClip_v8(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRNNGetClip_v8(
+pub extern "system" fn cudnnRNNGetClip_v8(
     rnnDesc: cudnnRNNDescriptor_t,
     clipMode: *mut cudnnRNNClipMode_t,
     clipNanOpt: *mut cudnnNanPropagation_t,
@@ -1650,7 +1650,7 @@ pub unsafe extern "system" fn cudnnRNNGetClip_v8(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRNNSetClip(
+pub extern "system" fn cudnnRNNSetClip(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     clipMode: cudnnRNNClipMode_t,
@@ -1662,7 +1662,7 @@ pub unsafe extern "system" fn cudnnRNNSetClip(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRNNGetClip(
+pub extern "system" fn cudnnRNNGetClip(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     clipMode: *mut cudnnRNNClipMode_t,
@@ -1674,7 +1674,7 @@ pub unsafe extern "system" fn cudnnRNNGetClip(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetRNNProjectionLayers(
+pub extern "system" fn cudnnSetRNNProjectionLayers(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     recProjSize: ::std::os::raw::c_int,
@@ -1684,7 +1684,7 @@ pub unsafe extern "system" fn cudnnSetRNNProjectionLayers(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNProjectionLayers(
+pub extern "system" fn cudnnGetRNNProjectionLayers(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     recProjSize: *mut ::std::os::raw::c_int,
@@ -1694,7 +1694,7 @@ pub unsafe extern "system" fn cudnnGetRNNProjectionLayers(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnCreatePersistentRNNPlan(
+pub extern "system" fn cudnnCreatePersistentRNNPlan(
     rnnDesc: cudnnRNNDescriptor_t,
     minibatch: ::std::os::raw::c_int,
     dataType: cudnnDataType_t,
@@ -1704,14 +1704,14 @@ pub unsafe extern "system" fn cudnnCreatePersistentRNNPlan(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnDestroyPersistentRNNPlan(
+pub extern "system" fn cudnnDestroyPersistentRNNPlan(
     plan: cudnnPersistentRNNPlan_t,
 ) -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetPersistentRNNPlan(
+pub extern "system" fn cudnnSetPersistentRNNPlan(
     rnnDesc: cudnnRNNDescriptor_t,
     plan: cudnnPersistentRNNPlan_t,
 ) -> cudnnStatus_t {
@@ -1719,7 +1719,7 @@ pub unsafe extern "system" fn cudnnSetPersistentRNNPlan(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnBuildRNNDynamic(
+pub extern "system" fn cudnnBuildRNNDynamic(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     miniBatch: ::std::os::raw::c_int,
@@ -1728,7 +1728,7 @@ pub unsafe extern "system" fn cudnnBuildRNNDynamic(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNWorkspaceSize(
+pub extern "system" fn cudnnGetRNNWorkspaceSize(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     seqLength: ::std::os::raw::c_int,
@@ -1739,7 +1739,7 @@ pub unsafe extern "system" fn cudnnGetRNNWorkspaceSize(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNTrainingReserveSize(
+pub extern "system" fn cudnnGetRNNTrainingReserveSize(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     seqLength: ::std::os::raw::c_int,
@@ -1750,7 +1750,7 @@ pub unsafe extern "system" fn cudnnGetRNNTrainingReserveSize(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNTempSpaceSizes(
+pub extern "system" fn cudnnGetRNNTempSpaceSizes(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     fwdMode: cudnnForwardMode_t,
@@ -1762,7 +1762,7 @@ pub unsafe extern "system" fn cudnnGetRNNTempSpaceSizes(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNParamsSize(
+pub extern "system" fn cudnnGetRNNParamsSize(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     xDesc: cudnnTensorDescriptor_t,
@@ -1773,7 +1773,7 @@ pub unsafe extern "system" fn cudnnGetRNNParamsSize(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNWeightSpaceSize(
+pub extern "system" fn cudnnGetRNNWeightSpaceSize(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     weightSpaceSize: *mut usize,
@@ -1782,7 +1782,7 @@ pub unsafe extern "system" fn cudnnGetRNNWeightSpaceSize(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNLinLayerMatrixParams(
+pub extern "system" fn cudnnGetRNNLinLayerMatrixParams(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     pseudoLayer: ::std::os::raw::c_int,
@@ -1797,7 +1797,7 @@ pub unsafe extern "system" fn cudnnGetRNNLinLayerMatrixParams(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNLinLayerBiasParams(
+pub extern "system" fn cudnnGetRNNLinLayerBiasParams(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     pseudoLayer: ::std::os::raw::c_int,
@@ -1812,7 +1812,7 @@ pub unsafe extern "system" fn cudnnGetRNNLinLayerBiasParams(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNWeightParams(
+pub extern "system" fn cudnnGetRNNWeightParams(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     pseudoLayer: i32,
@@ -1828,7 +1828,7 @@ pub unsafe extern "system" fn cudnnGetRNNWeightParams(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRNNForwardInference(
+pub extern "system" fn cudnnRNNForwardInference(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     seqLength: ::std::os::raw::c_int,
@@ -1853,7 +1853,7 @@ pub unsafe extern "system" fn cudnnRNNForwardInference(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetRNNPaddingMode(
+pub extern "system" fn cudnnSetRNNPaddingMode(
     rnnDesc: cudnnRNNDescriptor_t,
     paddingMode: ::std::os::raw::c_uint,
 ) -> cudnnStatus_t {
@@ -1861,7 +1861,7 @@ pub unsafe extern "system" fn cudnnSetRNNPaddingMode(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNPaddingMode(
+pub extern "system" fn cudnnGetRNNPaddingMode(
     rnnDesc: cudnnRNNDescriptor_t,
     paddingMode: *mut ::std::os::raw::c_uint,
 ) -> cudnnStatus_t {
@@ -1869,21 +1869,21 @@ pub unsafe extern "system" fn cudnnGetRNNPaddingMode(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnCreateRNNDataDescriptor(
+pub extern "system" fn cudnnCreateRNNDataDescriptor(
     rnnDataDesc: *mut cudnnRNNDataDescriptor_t,
 ) -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnDestroyRNNDataDescriptor(
+pub extern "system" fn cudnnDestroyRNNDataDescriptor(
     rnnDataDesc: cudnnRNNDataDescriptor_t,
 ) -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetRNNDataDescriptor(
+pub extern "system" fn cudnnSetRNNDataDescriptor(
     rnnDataDesc: cudnnRNNDataDescriptor_t,
     dataType: cudnnDataType_t,
     layout: cudnnRNNDataLayout_t,
@@ -1897,7 +1897,7 @@ pub unsafe extern "system" fn cudnnSetRNNDataDescriptor(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNDataDescriptor(
+pub extern "system" fn cudnnGetRNNDataDescriptor(
     rnnDataDesc: cudnnRNNDataDescriptor_t,
     dataType: *mut cudnnDataType_t,
     layout: *mut cudnnRNNDataLayout_t,
@@ -1912,7 +1912,7 @@ pub unsafe extern "system" fn cudnnGetRNNDataDescriptor(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRNNForwardInferenceEx(
+pub extern "system" fn cudnnRNNForwardInferenceEx(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     xDesc: cudnnRNNDataDescriptor_t,
@@ -1944,7 +1944,7 @@ pub unsafe extern "system" fn cudnnRNNForwardInferenceEx(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRNNForward(
+pub extern "system" fn cudnnRNNForward(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     fwdMode: cudnnForwardMode_t,
@@ -1970,7 +1970,7 @@ pub unsafe extern "system" fn cudnnRNNForward(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetRNNAlgorithmDescriptor(
+pub extern "system" fn cudnnSetRNNAlgorithmDescriptor(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     algoDesc: cudnnAlgorithmDescriptor_t,
@@ -1979,7 +1979,7 @@ pub unsafe extern "system" fn cudnnSetRNNAlgorithmDescriptor(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNForwardInferenceAlgorithmMaxCount(
+pub extern "system" fn cudnnGetRNNForwardInferenceAlgorithmMaxCount(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     count: *mut ::std::os::raw::c_int,
@@ -1988,7 +1988,7 @@ pub unsafe extern "system" fn cudnnGetRNNForwardInferenceAlgorithmMaxCount(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnFindRNNForwardInferenceAlgorithmEx(
+pub extern "system" fn cudnnFindRNNForwardInferenceAlgorithmEx(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     seqLength: ::std::os::raw::c_int,
@@ -2017,21 +2017,21 @@ pub unsafe extern "system" fn cudnnFindRNNForwardInferenceAlgorithmEx(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnCreateSeqDataDescriptor(
+pub extern "system" fn cudnnCreateSeqDataDescriptor(
     seqDataDesc: *mut cudnnSeqDataDescriptor_t,
 ) -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnDestroySeqDataDescriptor(
+pub extern "system" fn cudnnDestroySeqDataDescriptor(
     seqDataDesc: cudnnSeqDataDescriptor_t,
 ) -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetSeqDataDescriptor(
+pub extern "system" fn cudnnSetSeqDataDescriptor(
     seqDataDesc: cudnnSeqDataDescriptor_t,
     dataType: cudnnDataType_t,
     nbDims: ::std::os::raw::c_int,
@@ -2045,7 +2045,7 @@ pub unsafe extern "system" fn cudnnSetSeqDataDescriptor(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetSeqDataDescriptor(
+pub extern "system" fn cudnnGetSeqDataDescriptor(
     seqDataDesc: cudnnSeqDataDescriptor_t,
     dataType: *mut cudnnDataType_t,
     nbDims: *mut ::std::os::raw::c_int,
@@ -2061,21 +2061,21 @@ pub unsafe extern "system" fn cudnnGetSeqDataDescriptor(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnCreateAttnDescriptor(
+pub extern "system" fn cudnnCreateAttnDescriptor(
     attnDesc: *mut cudnnAttnDescriptor_t,
 ) -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnDestroyAttnDescriptor(
+pub extern "system" fn cudnnDestroyAttnDescriptor(
     attnDesc: cudnnAttnDescriptor_t,
 ) -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetAttnDescriptor(
+pub extern "system" fn cudnnSetAttnDescriptor(
     attnDesc: cudnnAttnDescriptor_t,
     attnMode: ::std::os::raw::c_uint,
     nHeads: ::std::os::raw::c_int,
@@ -2101,7 +2101,7 @@ pub unsafe extern "system" fn cudnnSetAttnDescriptor(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetAttnDescriptor(
+pub extern "system" fn cudnnGetAttnDescriptor(
     attnDesc: cudnnAttnDescriptor_t,
     attnMode: *mut ::std::os::raw::c_uint,
     nHeads: *mut ::std::os::raw::c_int,
@@ -2127,7 +2127,7 @@ pub unsafe extern "system" fn cudnnGetAttnDescriptor(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetMultiHeadAttnBuffers(
+pub extern "system" fn cudnnGetMultiHeadAttnBuffers(
     handle: cudnnHandle_t,
     attnDesc: cudnnAttnDescriptor_t,
     weightSizeInBytes: *mut usize,
@@ -2138,7 +2138,7 @@ pub unsafe extern "system" fn cudnnGetMultiHeadAttnBuffers(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetMultiHeadAttnWeights(
+pub extern "system" fn cudnnGetMultiHeadAttnWeights(
     handle: cudnnHandle_t,
     attnDesc: cudnnAttnDescriptor_t,
     wKind: cudnnMultiHeadAttnWeightKind_t,
@@ -2151,7 +2151,7 @@ pub unsafe extern "system" fn cudnnGetMultiHeadAttnWeights(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnMultiHeadAttnForward(
+pub extern "system" fn cudnnMultiHeadAttnForward(
     handle: cudnnHandle_t,
     attnDesc: cudnnAttnDescriptor_t,
     currIdx: ::std::os::raw::c_int,
@@ -2179,12 +2179,12 @@ pub unsafe extern "system" fn cudnnMultiHeadAttnForward(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnAdvInferVersionCheck() -> cudnnStatus_t {
+pub extern "system" fn cudnnAdvInferVersionCheck() -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRNNForwardTraining(
+pub extern "system" fn cudnnRNNForwardTraining(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     seqLength: ::std::os::raw::c_int,
@@ -2211,7 +2211,7 @@ pub unsafe extern "system" fn cudnnRNNForwardTraining(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRNNBackwardData(
+pub extern "system" fn cudnnRNNBackwardData(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     seqLength: ::std::os::raw::c_int,
@@ -2244,7 +2244,7 @@ pub unsafe extern "system" fn cudnnRNNBackwardData(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRNNBackwardData_v8(
+pub extern "system" fn cudnnRNNBackwardData_v8(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     devSeqLengths: *const i32,
@@ -2272,7 +2272,7 @@ pub unsafe extern "system" fn cudnnRNNBackwardData_v8(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRNNBackwardWeights(
+pub extern "system" fn cudnnRNNBackwardWeights(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     seqLength: ::std::os::raw::c_int,
@@ -2293,7 +2293,7 @@ pub unsafe extern "system" fn cudnnRNNBackwardWeights(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRNNBackwardWeights_v8(
+pub extern "system" fn cudnnRNNBackwardWeights_v8(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     addGrad: cudnnWgradMode_t,
@@ -2315,7 +2315,7 @@ pub unsafe extern "system" fn cudnnRNNBackwardWeights_v8(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRNNForwardTrainingEx(
+pub extern "system" fn cudnnRNNForwardTrainingEx(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     xDesc: cudnnRNNDataDescriptor_t,
@@ -2349,7 +2349,7 @@ pub unsafe extern "system" fn cudnnRNNForwardTrainingEx(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRNNBackwardDataEx(
+pub extern "system" fn cudnnRNNBackwardDataEx(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     yDesc: cudnnRNNDataDescriptor_t,
@@ -2385,7 +2385,7 @@ pub unsafe extern "system" fn cudnnRNNBackwardDataEx(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnRNNBackwardWeightsEx(
+pub extern "system" fn cudnnRNNBackwardWeightsEx(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     xDesc: cudnnRNNDataDescriptor_t,
@@ -2405,7 +2405,7 @@ pub unsafe extern "system" fn cudnnRNNBackwardWeightsEx(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNForwardTrainingAlgorithmMaxCount(
+pub extern "system" fn cudnnGetRNNForwardTrainingAlgorithmMaxCount(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     count: *mut ::std::os::raw::c_int,
@@ -2414,7 +2414,7 @@ pub unsafe extern "system" fn cudnnGetRNNForwardTrainingAlgorithmMaxCount(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnFindRNNForwardTrainingAlgorithmEx(
+pub extern "system" fn cudnnFindRNNForwardTrainingAlgorithmEx(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     seqLength: ::std::os::raw::c_int,
@@ -2445,7 +2445,7 @@ pub unsafe extern "system" fn cudnnFindRNNForwardTrainingAlgorithmEx(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNBackwardDataAlgorithmMaxCount(
+pub extern "system" fn cudnnGetRNNBackwardDataAlgorithmMaxCount(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     count: *mut ::std::os::raw::c_int,
@@ -2454,7 +2454,7 @@ pub unsafe extern "system" fn cudnnGetRNNBackwardDataAlgorithmMaxCount(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnFindRNNBackwardDataAlgorithmEx(
+pub extern "system" fn cudnnFindRNNBackwardDataAlgorithmEx(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     seqLength: ::std::os::raw::c_int,
@@ -2491,7 +2491,7 @@ pub unsafe extern "system" fn cudnnFindRNNBackwardDataAlgorithmEx(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetRNNBackwardWeightsAlgorithmMaxCount(
+pub extern "system" fn cudnnGetRNNBackwardWeightsAlgorithmMaxCount(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     count: *mut ::std::os::raw::c_int,
@@ -2500,7 +2500,7 @@ pub unsafe extern "system" fn cudnnGetRNNBackwardWeightsAlgorithmMaxCount(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnFindRNNBackwardWeightsAlgorithmEx(
+pub extern "system" fn cudnnFindRNNBackwardWeightsAlgorithmEx(
     handle: cudnnHandle_t,
     rnnDesc: cudnnRNNDescriptor_t,
     seqLength: ::std::os::raw::c_int,
@@ -2525,7 +2525,7 @@ pub unsafe extern "system" fn cudnnFindRNNBackwardWeightsAlgorithmEx(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnMultiHeadAttnBackwardData(
+pub extern "system" fn cudnnMultiHeadAttnBackwardData(
     handle: cudnnHandle_t,
     attnDesc: cudnnAttnDescriptor_t,
     loWinIdx: *const ::std::os::raw::c_int,
@@ -2554,7 +2554,7 @@ pub unsafe extern "system" fn cudnnMultiHeadAttnBackwardData(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnMultiHeadAttnBackwardWeights(
+pub extern "system" fn cudnnMultiHeadAttnBackwardWeights(
     handle: cudnnHandle_t,
     attnDesc: cudnnAttnDescriptor_t,
     addGrad: cudnnWgradMode_t,
@@ -2578,14 +2578,14 @@ pub unsafe extern "system" fn cudnnMultiHeadAttnBackwardWeights(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnCreateCTCLossDescriptor(
+pub extern "system" fn cudnnCreateCTCLossDescriptor(
     ctcLossDesc: *mut cudnnCTCLossDescriptor_t,
 ) -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetCTCLossDescriptor(
+pub extern "system" fn cudnnSetCTCLossDescriptor(
     ctcLossDesc: cudnnCTCLossDescriptor_t,
     compType: cudnnDataType_t,
 ) -> cudnnStatus_t {
@@ -2593,7 +2593,7 @@ pub unsafe extern "system" fn cudnnSetCTCLossDescriptor(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetCTCLossDescriptorEx(
+pub extern "system" fn cudnnSetCTCLossDescriptorEx(
     ctcLossDesc: cudnnCTCLossDescriptor_t,
     compType: cudnnDataType_t,
     normMode: cudnnLossNormalizationMode_t,
@@ -2603,7 +2603,7 @@ pub unsafe extern "system" fn cudnnSetCTCLossDescriptorEx(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetCTCLossDescriptor_v8(
+pub extern "system" fn cudnnSetCTCLossDescriptor_v8(
     ctcLossDesc: cudnnCTCLossDescriptor_t,
     compType: cudnnDataType_t,
     normMode: cudnnLossNormalizationMode_t,
@@ -2614,7 +2614,7 @@ pub unsafe extern "system" fn cudnnSetCTCLossDescriptor_v8(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetCTCLossDescriptor(
+pub extern "system" fn cudnnGetCTCLossDescriptor(
     ctcLossDesc: cudnnCTCLossDescriptor_t,
     compType: *mut cudnnDataType_t,
 ) -> cudnnStatus_t {
@@ -2622,7 +2622,7 @@ pub unsafe extern "system" fn cudnnGetCTCLossDescriptor(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetCTCLossDescriptorEx(
+pub extern "system" fn cudnnGetCTCLossDescriptorEx(
     ctcLossDesc: cudnnCTCLossDescriptor_t,
     compType: *mut cudnnDataType_t,
     normMode: *mut cudnnLossNormalizationMode_t,
@@ -2632,7 +2632,7 @@ pub unsafe extern "system" fn cudnnGetCTCLossDescriptorEx(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetCTCLossDescriptor_v8(
+pub extern "system" fn cudnnGetCTCLossDescriptor_v8(
     ctcLossDesc: cudnnCTCLossDescriptor_t,
     compType: *mut cudnnDataType_t,
     normMode: *mut cudnnLossNormalizationMode_t,
@@ -2643,14 +2643,14 @@ pub unsafe extern "system" fn cudnnGetCTCLossDescriptor_v8(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnDestroyCTCLossDescriptor(
+pub extern "system" fn cudnnDestroyCTCLossDescriptor(
     ctcLossDesc: cudnnCTCLossDescriptor_t,
 ) -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnCTCLoss(
+pub extern "system" fn cudnnCTCLoss(
     handle: cudnnHandle_t,
     probsDesc: cudnnTensorDescriptor_t,
     probs: *const ::std::os::raw::c_void,
@@ -2669,7 +2669,7 @@ pub unsafe extern "system" fn cudnnCTCLoss(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnCTCLoss_v8(
+pub extern "system" fn cudnnCTCLoss_v8(
     handle: cudnnHandle_t,
     algo: cudnnCTCLossAlgo_t,
     ctcLossDesc: cudnnCTCLossDescriptor_t,
@@ -2688,7 +2688,7 @@ pub unsafe extern "system" fn cudnnCTCLoss_v8(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetCTCLossWorkspaceSize(
+pub extern "system" fn cudnnGetCTCLossWorkspaceSize(
     handle: cudnnHandle_t,
     probsDesc: cudnnTensorDescriptor_t,
     gradientsDesc: cudnnTensorDescriptor_t,
@@ -2703,7 +2703,7 @@ pub unsafe extern "system" fn cudnnGetCTCLossWorkspaceSize(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetCTCLossWorkspaceSize_v8(
+pub extern "system" fn cudnnGetCTCLossWorkspaceSize_v8(
     handle: cudnnHandle_t,
     algo: cudnnCTCLossAlgo_t,
     ctcLossDesc: cudnnCTCLossDescriptor_t,
@@ -2715,7 +2715,7 @@ pub unsafe extern "system" fn cudnnGetCTCLossWorkspaceSize_v8(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnAdvTrainVersionCheck() -> cudnnStatus_t {
+pub extern "system" fn cudnnAdvTrainVersionCheck() -> cudnnStatus_t {
     crate::unsupported()
 }
 
@@ -2742,7 +2742,7 @@ pub unsafe extern "system" fn cudnnSetConvolutionMathType(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetConvolutionMathType(
+pub extern "system" fn cudnnGetConvolutionMathType(
     convDesc: cudnnConvolutionDescriptor_t,
     mathType: *mut cudnnMathType_t,
 ) -> cudnnStatus_t {
@@ -2758,7 +2758,7 @@ pub unsafe extern "system" fn cudnnSetConvolutionGroupCount(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetConvolutionGroupCount(
+pub extern "system" fn cudnnGetConvolutionGroupCount(
     convDesc: cudnnConvolutionDescriptor_t,
     groupCount: *mut ::std::os::raw::c_int,
 ) -> cudnnStatus_t {
@@ -2766,7 +2766,7 @@ pub unsafe extern "system" fn cudnnGetConvolutionGroupCount(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetConvolutionReorderType(
+pub extern "system" fn cudnnSetConvolutionReorderType(
     convDesc: cudnnConvolutionDescriptor_t,
     reorderType: cudnnReorderType_t,
 ) -> cudnnStatus_t {
@@ -2774,7 +2774,7 @@ pub unsafe extern "system" fn cudnnSetConvolutionReorderType(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetConvolutionReorderType(
+pub extern "system" fn cudnnGetConvolutionReorderType(
     convDesc: cudnnConvolutionDescriptor_t,
     reorderType: *mut cudnnReorderType_t,
 ) -> cudnnStatus_t {
@@ -2808,7 +2808,7 @@ pub unsafe extern "system" fn cudnnSetConvolution2dDescriptor(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetConvolution2dDescriptor(
+pub extern "system" fn cudnnGetConvolution2dDescriptor(
     convDesc: cudnnConvolutionDescriptor_t,
     pad_h: *mut ::std::os::raw::c_int,
     pad_w: *mut ::std::os::raw::c_int,
@@ -2844,7 +2844,7 @@ pub unsafe extern "system" fn cudnnSetConvolutionNdDescriptor(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetConvolutionNdDescriptor(
+pub extern "system" fn cudnnGetConvolutionNdDescriptor(
     convDesc: cudnnConvolutionDescriptor_t,
     arrayLengthRequested: ::std::os::raw::c_int,
     arrayLength: *mut ::std::os::raw::c_int,
@@ -2858,7 +2858,7 @@ pub unsafe extern "system" fn cudnnGetConvolutionNdDescriptor(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetConvolution2dForwardOutputDim(
+pub extern "system" fn cudnnGetConvolution2dForwardOutputDim(
     convDesc: cudnnConvolutionDescriptor_t,
     inputTensorDesc: cudnnTensorDescriptor_t,
     filterDesc: cudnnFilterDescriptor_t,
@@ -2888,7 +2888,7 @@ pub unsafe extern "system" fn cudnnGetConvolutionNdForwardOutputDim(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetConvolutionForwardAlgorithmMaxCount(
+pub extern "system" fn cudnnGetConvolutionForwardAlgorithmMaxCount(
     handle: cudnnHandle_t,
     count: *mut ::std::os::raw::c_int,
 ) -> cudnnStatus_t {
@@ -2896,7 +2896,7 @@ pub unsafe extern "system" fn cudnnGetConvolutionForwardAlgorithmMaxCount(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetConvolutionForwardAlgorithm_v7(
+pub extern "system" fn cudnnGetConvolutionForwardAlgorithm_v7(
     handle: cudnnHandle_t,
     srcDesc: cudnnTensorDescriptor_t,
     filterDesc: cudnnFilterDescriptor_t,
@@ -2966,7 +2966,7 @@ pub unsafe extern "system" fn cudnnFindConvolutionForwardAlgorithmEx(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnIm2Col(
+pub extern "system" fn cudnnIm2Col(
     handle: cudnnHandle_t,
     xDesc: cudnnTensorDescriptor_t,
     x: *const ::std::os::raw::c_void,
@@ -2978,7 +2978,7 @@ pub unsafe extern "system" fn cudnnIm2Col(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnReorderFilterAndBias(
+pub extern "system" fn cudnnReorderFilterAndBias(
     handle: cudnnHandle_t,
     filterDesc: cudnnFilterDescriptor_t,
     reorderType: cudnnReorderType_t,
@@ -3046,7 +3046,7 @@ pub unsafe extern "system" fn cudnnConvolutionForward(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnConvolutionBiasActivationForward(
+pub extern "system" fn cudnnConvolutionBiasActivationForward(
     handle: cudnnHandle_t,
     alpha1: *const ::std::os::raw::c_void,
     xDesc: cudnnTensorDescriptor_t,
@@ -3078,7 +3078,7 @@ pub unsafe extern "system" fn cudnnGetConvolutionBackwardDataAlgorithmMaxCount(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnFindConvolutionBackwardDataAlgorithm(
+pub extern "system" fn cudnnFindConvolutionBackwardDataAlgorithm(
     handle: cudnnHandle_t,
     wDesc: cudnnFilterDescriptor_t,
     dyDesc: cudnnTensorDescriptor_t,
@@ -3092,7 +3092,7 @@ pub unsafe extern "system" fn cudnnFindConvolutionBackwardDataAlgorithm(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnFindConvolutionBackwardDataAlgorithmEx(
+pub extern "system" fn cudnnFindConvolutionBackwardDataAlgorithmEx(
     handle: cudnnHandle_t,
     wDesc: cudnnFilterDescriptor_t,
     w: *const ::std::os::raw::c_void,
@@ -3189,7 +3189,7 @@ pub unsafe extern "system" fn cudnnConvolutionBackwardData(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetFoldedConvBackwardDataDescriptors(
+pub extern "system" fn cudnnGetFoldedConvBackwardDataDescriptors(
     handle: cudnnHandle_t,
     filterDesc: cudnnFilterDescriptor_t,
     diffDesc: cudnnTensorDescriptor_t,
@@ -3209,12 +3209,12 @@ pub unsafe extern "system" fn cudnnGetFoldedConvBackwardDataDescriptors(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnCnnInferVersionCheck() -> cudnnStatus_t {
+pub extern "system" fn cudnnCnnInferVersionCheck() -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetConvolutionBackwardFilterAlgorithmMaxCount(
+pub extern "system" fn cudnnGetConvolutionBackwardFilterAlgorithmMaxCount(
     handle: cudnnHandle_t,
     count: *mut ::std::os::raw::c_int,
 ) -> cudnnStatus_t {
@@ -3222,7 +3222,7 @@ pub unsafe extern "system" fn cudnnGetConvolutionBackwardFilterAlgorithmMaxCount
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnFindConvolutionBackwardFilterAlgorithm(
+pub extern "system" fn cudnnFindConvolutionBackwardFilterAlgorithm(
     handle: cudnnHandle_t,
     xDesc: cudnnTensorDescriptor_t,
     dyDesc: cudnnTensorDescriptor_t,
@@ -3236,7 +3236,7 @@ pub unsafe extern "system" fn cudnnFindConvolutionBackwardFilterAlgorithm(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnFindConvolutionBackwardFilterAlgorithmEx(
+pub extern "system" fn cudnnFindConvolutionBackwardFilterAlgorithmEx(
     handle: cudnnHandle_t,
     xDesc: cudnnTensorDescriptor_t,
     x: *const ::std::os::raw::c_void,
@@ -3255,7 +3255,7 @@ pub unsafe extern "system" fn cudnnFindConvolutionBackwardFilterAlgorithmEx(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetConvolutionBackwardFilterAlgorithm_v7(
+pub extern "system" fn cudnnGetConvolutionBackwardFilterAlgorithm_v7(
     handle: cudnnHandle_t,
     srcDesc: cudnnTensorDescriptor_t,
     diffDesc: cudnnTensorDescriptor_t,
@@ -3269,7 +3269,7 @@ pub unsafe extern "system" fn cudnnGetConvolutionBackwardFilterAlgorithm_v7(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetConvolutionBackwardFilterWorkspaceSize(
+pub extern "system" fn cudnnGetConvolutionBackwardFilterWorkspaceSize(
     handle: cudnnHandle_t,
     xDesc: cudnnTensorDescriptor_t,
     dyDesc: cudnnTensorDescriptor_t,
@@ -3282,7 +3282,7 @@ pub unsafe extern "system" fn cudnnGetConvolutionBackwardFilterWorkspaceSize(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnConvolutionBackwardFilter(
+pub extern "system" fn cudnnConvolutionBackwardFilter(
     handle: cudnnHandle_t,
     alpha: *const ::std::os::raw::c_void,
     xDesc: cudnnTensorDescriptor_t,
@@ -3301,7 +3301,7 @@ pub unsafe extern "system" fn cudnnConvolutionBackwardFilter(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnConvolutionBackwardBias(
+pub extern "system" fn cudnnConvolutionBackwardBias(
     handle: cudnnHandle_t,
     alpha: *const ::std::os::raw::c_void,
     dyDesc: cudnnTensorDescriptor_t,
@@ -3314,7 +3314,7 @@ pub unsafe extern "system" fn cudnnConvolutionBackwardBias(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnCreateFusedOpsConstParamPack(
+pub extern "system" fn cudnnCreateFusedOpsConstParamPack(
     constPack: *mut cudnnFusedOpsConstParamPack_t,
     ops: cudnnFusedOps_t,
 ) -> cudnnStatus_t {
@@ -3322,14 +3322,14 @@ pub unsafe extern "system" fn cudnnCreateFusedOpsConstParamPack(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnDestroyFusedOpsConstParamPack(
+pub extern "system" fn cudnnDestroyFusedOpsConstParamPack(
     constPack: cudnnFusedOpsConstParamPack_t,
 ) -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetFusedOpsConstParamPackAttribute(
+pub extern "system" fn cudnnSetFusedOpsConstParamPackAttribute(
     constPack: cudnnFusedOpsConstParamPack_t,
     paramLabel: cudnnFusedOpsConstParamLabel_t,
     param: *const ::std::os::raw::c_void,
@@ -3338,7 +3338,7 @@ pub unsafe extern "system" fn cudnnSetFusedOpsConstParamPackAttribute(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnGetFusedOpsConstParamPackAttribute(
+pub extern "system" fn cudnnGetFusedOpsConstParamPackAttribute(
     constPack: cudnnFusedOpsConstParamPack_t,
     paramLabel: cudnnFusedOpsConstParamLabel_t,
     param: *mut ::std::os::raw::c_void,
@@ -3348,7 +3348,7 @@ pub unsafe extern "system" fn cudnnGetFusedOpsConstParamPackAttribute(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnCreateFusedOpsVariantParamPack(
+pub extern "system" fn cudnnCreateFusedOpsVariantParamPack(
     varPack: *mut cudnnFusedOpsVariantParamPack_t,
     ops: cudnnFusedOps_t,
 ) -> cudnnStatus_t {
@@ -3356,23 +3356,14 @@ pub unsafe extern "system" fn cudnnCreateFusedOpsVariantParamPack(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnDestroyFusedOpsVariantParamPack(
+pub extern "system" fn cudnnDestroyFusedOpsVariantParamPack(
     varPack: cudnnFusedOpsVariantParamPack_t,
 ) -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnSetFusedOpsVariantParamPackAttribute(
-    varPack: cudnnFusedOpsVariantParamPack_t,
-    paramLabel: cudnnFusedOpsVariantParamLabel_t,
-    ptr: *mut ::std::os::raw::c_void,
-) -> cudnnStatus_t {
-    crate::unsupported()
-}
-
-#[no_mangle]
-pub unsafe extern "system" fn cudnnGetFusedOpsVariantParamPackAttribute(
+pub extern "system" fn cudnnSetFusedOpsVariantParamPackAttribute(
     varPack: cudnnFusedOpsVariantParamPack_t,
     paramLabel: cudnnFusedOpsVariantParamLabel_t,
     ptr: *mut ::std::os::raw::c_void,
@@ -3381,7 +3372,16 @@ pub unsafe extern "system" fn cudnnGetFusedOpsVariantParamPackAttribute(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnCreateFusedOpsPlan(
+pub extern "system" fn cudnnGetFusedOpsVariantParamPackAttribute(
+    varPack: cudnnFusedOpsVariantParamPack_t,
+    paramLabel: cudnnFusedOpsVariantParamLabel_t,
+    ptr: *mut ::std::os::raw::c_void,
+) -> cudnnStatus_t {
+    crate::unsupported()
+}
+
+#[no_mangle]
+pub extern "system" fn cudnnCreateFusedOpsPlan(
     plan: *mut cudnnFusedOpsPlan_t,
     ops: cudnnFusedOps_t,
 ) -> cudnnStatus_t {
@@ -3389,12 +3389,12 @@ pub unsafe extern "system" fn cudnnCreateFusedOpsPlan(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnDestroyFusedOpsPlan(plan: cudnnFusedOpsPlan_t) -> cudnnStatus_t {
+pub extern "system" fn cudnnDestroyFusedOpsPlan(plan: cudnnFusedOpsPlan_t) -> cudnnStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnMakeFusedOpsPlan(
+pub extern "system" fn cudnnMakeFusedOpsPlan(
     handle: cudnnHandle_t,
     plan: cudnnFusedOpsPlan_t,
     constPack: cudnnFusedOpsConstParamPack_t,
@@ -3404,7 +3404,7 @@ pub unsafe extern "system" fn cudnnMakeFusedOpsPlan(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnFusedOpsExecute(
+pub extern "system" fn cudnnFusedOpsExecute(
     handle: cudnnHandle_t,
     plan: cudnnFusedOpsPlan_t,
     varPack: cudnnFusedOpsVariantParamPack_t,
@@ -3413,7 +3413,7 @@ pub unsafe extern "system" fn cudnnFusedOpsExecute(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnCnnTrainVersionCheck() -> cudnnStatus_t {
+pub extern "system" fn cudnnCnnTrainVersionCheck() -> cudnnStatus_t {
     crate::unsupported()
 }
 
@@ -3422,31 +3422,21 @@ pub unsafe extern "system" fn cudnnBackendCreateDescriptor(
     descriptorType: cudnnBackendDescriptorType_t,
     descriptor: *mut cudnnBackendDescriptor_t,
 ) -> cudnnStatus_t {
-    match descriptorType {
-        cudnnBackendDescriptorType_t::CUDNN_BACKEND_CONVOLUTION_DESCRIPTOR => crate::cudnn_create_convolution_descriptor(descriptor as _),
-        cudnnBackendDescriptorType_t::CUDNN_BACKEND_ENGINEHEUR_DESCRIPTOR => crate::cudnn_create_engineheur_descriptor(descriptor as _),
-        cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR => crate::cudnn_create_operation_convolution_forward_descriptor(descriptor as _),
-        cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATIONGRAPH_DESCRIPTOR => crate::cudnn_create_operationgraph_descriptor(descriptor as _),
-        cudnnBackendDescriptorType_t::CUDNN_BACKEND_VARIANT_PACK_DESCRIPTOR => cudnnStatus_t::CUDNN_STATUS_SUCCESS,
-        cudnnBackendDescriptorType_t::CUDNN_BACKEND_TENSOR_DESCRIPTOR => crate::cudnn_create_tensor_descriptor(descriptor as _),
-        _ => {
-            println!("[ZLUDA] Unsupported descriptor type: {}", descriptorType.0);
-            crate::unsupported()
-        },
-    }
+    crate::backend_create_descriptor(
+        descriptorType,
+        descriptor,
+    )
 }
 
 #[no_mangle]
 pub unsafe extern "system" fn cudnnBackendDestroyDescriptor(
     descriptor: cudnnBackendDescriptor_t,
 ) -> cudnnStatus_t {
-    // TODO
-    // Do not know how to destroy unknown descriptor.
-    cudnnStatus_t::CUDNN_STATUS_SUCCESS
+    crate::backend_destroy_descriptor(descriptor)
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cudnnBackendInitialize(
+pub extern "system" fn cudnnBackendInitialize(
     descriptor: cudnnBackendDescriptor_t,
 ) -> cudnnStatus_t {
     crate::unsupported()
@@ -3456,7 +3446,7 @@ pub unsafe extern "system" fn cudnnBackendInitialize(
 pub unsafe extern "system" fn cudnnBackendFinalize(
     descriptor: cudnnBackendDescriptor_t,
 ) -> cudnnStatus_t {
-    cudnnStatus_t::CUDNN_STATUS_SUCCESS
+    crate::backend_finalize(descriptor)
 }
 
 #[no_mangle]
@@ -3467,18 +3457,13 @@ pub unsafe extern "system" fn cudnnBackendSetAttribute(
     elementCount: i64,
     arrayOfElements: *const ::std::os::raw::c_void,
 ) -> cudnnStatus_t {
-    match attributeName.0 {
-        100..=199 => crate::set_convolution_nd_descriptor_by_attribute(descriptor as _, attributeName, elementCount, arrayOfElements),
-        200..=299 => crate::set_engineheur_descriptor_by_attribute(descriptor as _, attributeName, elementCount, arrayOfElements),
-        700..=799 => crate::set_operation_convolution_forward_descriptor_by_attribute(descriptor as _, attributeName, elementCount, arrayOfElements as _),
-        800..=899 => crate::set_operationgraph_descriptor_by_attribute(descriptor as _, attributeName, elementCount, arrayOfElements as _),
-        900..=999 => crate::set_tensor_nd_decriptor_by_attribute(descriptor as _, attributeName, elementCount, arrayOfElements),
-        1000..=1099 => cudnnStatus_t::CUDNN_STATUS_SUCCESS,
-        _ => {
-            println!("[ZLUDA] Tried to set unsupported attribute: {}", attributeName.0);
-            crate::unsupported()
-        },
-    }
+    crate::backend_set_attribute(
+        descriptor,
+        attributeName,
+        attributeType,
+        elementCount,
+        arrayOfElements,
+    )
 }
 
 #[no_mangle]
@@ -3490,13 +3475,14 @@ pub unsafe extern "system" fn cudnnBackendGetAttribute(
     elementCount: *mut i64,
     arrayOfElements: *mut ::std::os::raw::c_void,
 ) -> cudnnStatus_t {
-    match attributeName {
-        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINEHEUR_RESULTS => crate::get_engineheur_results(descriptor as _, requestedElementCount, elementCount, arrayOfElements),
-        _ => {
-            println!("[ZLUDA] Tried to get unsupported attribute: {}", attributeName.0);
-            crate::unsupported()
-        },
-    }
+    crate::backend_get_attribute(
+        descriptor,
+        attributeName,
+        attributeType,
+        requestedElementCount,
+        elementCount,
+        arrayOfElements,
+    )
 }
 
 #[no_mangle]
@@ -3505,5 +3491,9 @@ pub unsafe extern "system" fn cudnnBackendExecute(
     executionPlan: cudnnBackendDescriptor_t,
     variantPack: cudnnBackendDescriptor_t,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::backend_execute(
+        handle,
+        executionPlan,
+        variantPack,
+    )
 }

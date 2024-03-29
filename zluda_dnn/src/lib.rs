@@ -46,25 +46,27 @@ fn to_cudnn(status: miopen_sys::miopenStatus_t) -> cudnnStatus_t {
         miopen_sys::miopenStatus_t::miopenStatusSuccess => cudnnStatus_t::CUDNN_STATUS_SUCCESS,
         miopen_sys::miopenStatus_t::miopenStatusInvalidValue => cudnnStatus_t::CUDNN_STATUS_INVALID_VALUE,
         miopen_sys::miopenStatus_t::miopenStatusBadParm => cudnnStatus_t::CUDNN_STATUS_BAD_PARAM,
+        miopen_sys::miopenStatus_t::miopenStatusNotImplemented => cudnnStatus_t::CUDNN_STATUS_NOT_SUPPORTED,
         miopen_sys::miopenStatus_t::miopenStatusUnknownError => cudnnStatus_t::CUDNN_STATUS_INTERNAL_ERROR,
+        miopen_sys::miopenStatus_t::miopenStatusUnsupportedOp => cudnnStatus_t::CUDNN_STATUS_NOT_SUPPORTED,
         err => panic!("[ZLUDA] MIOpen failed: {}", err.0), //cudnnStatus_t::CUDNN_STATUS_INTERNAL_ERROR,
     }
 }
 
 unsafe fn create(handle: *mut cudnnHandle_t) -> cudnnStatus_t {
-    to_cudnn(miopen_sys::miopenCreate(handle as _))
+    to_cudnn(miopenCreate(handle as _))
 }
 
 unsafe fn cudnn_create_tensor_descriptor(
     tensor_desc: *mut cudnnTensorDescriptor_t,
 ) -> cudnnStatus_t {
-    to_cudnn(miopen_sys::miopenCreateTensorDescriptor(tensor_desc as _))
+    to_cudnn(miopenCreateTensorDescriptor(tensor_desc as _))
 }
 
 unsafe fn cudnn_create_activation_descriptor(
     activation_desc: *mut cudnnActivationDescriptor_t,
 ) -> cudnnStatus_t {
-    to_cudnn(miopen_sys::miopenCreateActivationDescriptor(
+    to_cudnn(miopenCreateActivationDescriptor(
         activation_desc as _,
     ))
 }
@@ -72,7 +74,7 @@ unsafe fn cudnn_create_activation_descriptor(
 unsafe fn cudnn_create_convolution_descriptor(
     conv_desc: *mut cudnnConvolutionDescriptor_t,
 ) -> cudnnStatus_t {
-    to_cudnn(miopen_sys::miopenCreateConvolutionDescriptor(
+    to_cudnn(miopenCreateConvolutionDescriptor(
         conv_desc as _,
     ))
 }
@@ -80,17 +82,17 @@ unsafe fn cudnn_create_convolution_descriptor(
 unsafe fn cudnn_create_filter_descriptor(
     filter_desc: *mut cudnnFilterDescriptor_t,
 ) -> cudnnStatus_t {
-    to_cudnn(miopen_sys::miopenCreateTensorDescriptor(filter_desc as _))
+    to_cudnn(miopenCreateTensorDescriptor(filter_desc as _))
 }
 
 unsafe fn cudnn_create_lrn_descriptor(norm_desc: *mut cudnnLRNDescriptor_t) -> cudnnStatus_t {
-    to_cudnn(miopen_sys::miopenCreateLRNDescriptor(norm_desc as _))
+    to_cudnn(miopenCreateLRNDescriptor(norm_desc as _))
 }
 
 unsafe fn cudnn_create_pooling_descriptor(
     pooling_desc: *mut cudnnPoolingDescriptor_t,
 ) -> cudnnStatus_t {
-    to_cudnn(miopen_sys::miopenCreatePoolingDescriptor(
+    to_cudnn(miopenCreatePoolingDescriptor(
         pooling_desc as _,
     ))
 }
@@ -123,7 +125,7 @@ unsafe fn get_tensor_size(
     tensor_desc: *mut cudnnTensorStruct,
     size: *mut i32,
 ) -> cudnnStatus_t {
-    to_cudnn(miopen_sys::miopenGetTensorDescriptorSize(
+    to_cudnn(miopenGetTensorDescriptorSize(
         tensor_desc as _,
         size,
     ))
@@ -225,7 +227,7 @@ unsafe fn set_tensor_nd_decriptor(
     dim_a: *const i32,
     stride_a: *const i32,
 ) -> cudnnStatus_t {
-    to_cudnn(miopen_sys::miopenSetTensorDescriptor(
+    to_cudnn(miopenSetTensorDescriptor(
         tensor_desc as _,
         from_data_type(data_type),
         nb_dims,
@@ -241,7 +243,7 @@ unsafe fn get_tensor_nd_decriptor(
     stride_a: *mut i32,
 ) -> cudnnStatus_t {
     let mut miopen_data_type = from_data_type(*data_type);
-    let status = miopen_sys::miopenGetTensorDescriptor(
+    let status = miopenGetTensorDescriptor(
         tensor_desc as _,
         &mut miopen_data_type,
         dim_a as _,
@@ -415,7 +417,7 @@ unsafe fn set_convolution_nd_descriptor(
     let d_h = *dilation_a.add(0);
     let d_w = *dilation_a.add(1);
     let mode = conv_mode_to_cudnn(mode);
-    to_cudnn(miopen_sys::miopenInitConvolutionDescriptor(
+    to_cudnn(miopenInitConvolutionDescriptor(
         conv_desc as _,
         mode,
         pad_h,
@@ -438,7 +440,7 @@ unsafe fn get_convolution_nd_descriptor(
 ) -> cudnnStatus_t {
     *array_length = 2; // TODO
     let mut miopen_conv_mode = conv_mode_to_cudnn(*mode);
-    let status = miopen_sys::miopenGetConvolutionDescriptor(
+    let status = miopenGetConvolutionDescriptor(
         conv_desc as _,
         &mut miopen_conv_mode,
         pad_a.add(0),
@@ -479,7 +481,7 @@ unsafe fn get_convolution_nd_forward_output_dim(
     mut nb_dims: i32,
     tensor_ouput_dim_a: *mut i32,
 ) -> cudnnStatus_t {
-    to_cudnn(miopen_sys::miopenGetConvolutionNdForwardOutputDim(
+    to_cudnn(miopenGetConvolutionNdForwardOutputDim(
         conv_desc as _,
         input_tensor_desc as _,
         filter_desc as _,
@@ -1417,24 +1419,19 @@ unsafe fn set_engineheur_descriptor_by_attribute(
 
 unsafe fn get_engineheur_results(
     engineheur_desc: *mut cudnnEngineHeurStruct,
-    requested_algo_count: i64,
-    returned_algo_count: *mut i64,
+    requested_algo_count: i32,
+    returned_algo_count: *mut i32,
     perf_results: *mut std::ffi::c_void,
 ) -> cudnnStatus_t {
     let operation_graph = *(*engineheur_desc).operation_graph;
     let ops = *(operation_graph.ops as cudnnOperationConvolutionForwardDescriptor_t);
-    let mut req = requested_algo_count as i32;
-    if requested_algo_count == 0 { // total?
-        // TODO
-        req = 10;
-    }
     find_convolution_forward_algorithm(
         operation_graph.handle,
         ops.x_desc,
         ops.w_desc,
         ops.conv_desc,
         ops.y_desc,
-        req,
+        requested_algo_count,
         returned_algo_count as _,
         perf_results as _,
     )
@@ -1495,5 +1492,137 @@ unsafe fn get_stream(
     to_cudnn(miopenGetStream(
         handle as _,
         stream_id as _,
+    ))
+}
+
+fn to_backend_descriptor_type(descriptor_type: cudnnBackendDescriptorType_t) -> miopenBackendDescriptorType_t {
+    match descriptor_type {
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_CONVOLUTION_DESCRIPTOR => miopenBackendDescriptorType_t::MIOPEN_BACKEND_CONVOLUTION_DESCRIPTOR,
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR => miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR,
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATIONGRAPH_DESCRIPTOR => miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATIONGRAPH_DESCRIPTOR,
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_TENSOR_DESCRIPTOR => miopenBackendDescriptorType_t::MIOPEN_BACKEND_TENSOR_DESCRIPTOR,
+        _ => panic!("[ZLUDA] Unknown descriptor type: {}", descriptor_type.0),
+    }
+}
+
+unsafe fn backend_create_descriptor(
+    descriptor_type: cudnnBackendDescriptorType_t,
+    descriptor: *mut cudnnBackendDescriptor_t,
+) -> cudnnStatus_t {
+    let descriptor_type = to_backend_descriptor_type(descriptor_type);
+    to_cudnn(miopenBackendCreateDescriptor(
+        descriptor_type,
+        descriptor.cast(),
+    ))
+}
+
+unsafe fn backend_destroy_descriptor(
+    descriptor: cudnnBackendDescriptor_t,
+) -> cudnnStatus_t {
+    to_cudnn(miopenBackendDestroyDescriptor(
+        descriptor.cast(),
+    ))
+}
+
+unsafe fn backend_finalize(
+    descriptor: cudnnBackendDescriptor_t,
+) -> cudnnStatus_t {
+    to_cudnn(miopenBackendFinalize(
+        descriptor.cast(),
+    ))
+}
+
+fn to_backend_attribute_name(name: cudnnBackendAttributeName_t) -> miopenBackendAttributeName_t {
+    match name {
+        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_COMP_TYPE => miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_COMP_TYPE,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_CONV_MODE => miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_CONV_MODE,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_DILATIONS => miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_DILATIONS,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_FILTER_STRIDES => miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_FILTER_STRIDES,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_POST_PADDINGS => miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_POST_PADDINGS,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_PRE_PADDINGS => miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_PRE_PADDINGS,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_SPATIAL_DIMS => miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_SPATIAL_DIMS,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_ALPHA => miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_ALPHA,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_BETA => miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_BETA,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_CONV_DESC => miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_CONV_DESC,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_W => miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_W,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_X => miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_X,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_Y => miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_Y,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_BYTE_ALIGNMENT => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_BYTE_ALIGNMENT,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_DATA_TYPE => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_DATA_TYPE,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_DIMENSIONS => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_DIMENSIONS,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_STRIDES => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_STRIDES,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_UNIQUE_ID => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_UNIQUE_ID,
+        _ => panic!("[ZLUDA] Unknown attribute name: {}", name.0),
+    }
+}
+
+fn is_unsupported_attribute_name(name: cudnnBackendAttributeName_t) -> bool {
+    match name {
+        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_BYTE_ALIGNMENT => true,
+        _ => false,
+    }
+}
+
+fn to_backend_attribute_type(attribute_type: cudnnBackendAttributeType_t) -> miopenBackendAttributeType_t {
+    match attribute_type {
+        cudnnBackendAttributeType_t::CUDNN_TYPE_DATA_TYPE => miopenBackendAttributeType_t::MIOPEN_TYPE_DATA_TYPE,
+        cudnnBackendAttributeType_t::CUDNN_TYPE_INT64 => miopenBackendAttributeType_t::MIOPEN_TYPE_INT64,
+        cudnnBackendAttributeType_t::CUDNN_TYPE_FLOAT => miopenBackendAttributeType_t::MIOPEN_TYPE_FLOAT,
+        cudnnBackendAttributeType_t::CUDNN_TYPE_CONVOLUTION_MODE => miopenBackendAttributeType_t::MIOPEN_TYPE_CONVOLUTION_MODE,
+        cudnnBackendAttributeType_t::CUDNN_TYPE_BACKEND_DESCRIPTOR => miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR,
+        _ => panic!("[ZLUDA] Unknown attribute type: {}", attribute_type.0),
+    }
+}
+
+unsafe fn backend_set_attribute(
+    descriptor: cudnnBackendDescriptor_t,
+    attribute_name: cudnnBackendAttributeName_t,
+    attribute_type: cudnnBackendAttributeType_t,
+    element_count: i64,
+    array_of_elements: *const ::std::os::raw::c_void,
+) -> cudnnStatus_t {
+    if is_unsupported_attribute_name(attribute_name) { // temporary skip unimplemented attribute names
+        return cudnnStatus_t::CUDNN_STATUS_SUCCESS;
+    }
+    let attribute_name = to_backend_attribute_name(attribute_name);
+    let attribute_type = to_backend_attribute_type(attribute_type);
+    to_cudnn(miopenBackendSetAttribute(
+        descriptor.cast(),
+        attribute_name,
+        attribute_type,
+        element_count,
+        array_of_elements.cast_mut(),
+    ))
+}
+
+unsafe fn backend_get_attribute(
+    descriptor: cudnnBackendDescriptor_t,
+    attribute_name: cudnnBackendAttributeName_t,
+    attribute_type: cudnnBackendAttributeType_t,
+    requested_element_count: i64,
+    element_count: *mut i64,
+    array_of_elements: *mut ::std::os::raw::c_void,
+) -> cudnnStatus_t {
+    let attribute_name = to_backend_attribute_name(attribute_name);
+    let attribute_type = to_backend_attribute_type(attribute_type);
+    to_cudnn(miopenBackendGetAttribute(
+        descriptor.cast(),
+        attribute_name,
+        attribute_type,
+        requested_element_count,
+        element_count,
+        array_of_elements,
+    ))
+}
+
+unsafe fn backend_execute(
+    handle: cudnnHandle_t,
+    execution_plan: cudnnBackendDescriptor_t,
+    variant_pack: cudnnBackendDescriptor_t,
+) -> cudnnStatus_t {
+    to_cudnn(miopenBackendExecute(
+        handle.cast(),
+        execution_plan.cast(),
+        variant_pack.cast(),
     ))
 }
