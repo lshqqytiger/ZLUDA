@@ -309,6 +309,18 @@ fn to_cuda_stream_capture_status(stream_capture_status: hipStreamCaptureStatus) 
     }
 }
 
+fn to_hip_device_attr(device_attr: cudaDeviceAttr) -> hipDeviceAttribute_t {
+    match device_attr {
+        _ => panic!()
+    }
+}
+
+fn to_cuda_device_attr(device_attr: hipDeviceAttribute_t) -> cudaDeviceAttr {
+    match device_attr {
+        _ => panic!()
+    }
+}
+
 fn to_cuda_dim3(dim3: hip_runtime_api::dim3) -> cudart::dim3 {
     cudart::dim3 {
         x: dim3.x,
@@ -679,6 +691,29 @@ unsafe fn get_device_count(
     count: *mut i32,
 ) -> cudaError_t {
     to_cuda(hipGetDeviceCount(count))
+}
+
+unsafe fn get_device_properties(
+    prop: *mut cudaDeviceProp,
+    device: i32,
+) -> cudaError_t {
+    to_cuda(hipGetDeviceProperties(
+        prop.cast(),
+        device,
+    ))
+}
+
+unsafe fn device_get_attribute(
+    value: *mut i32,
+    attr: cudaDeviceAttr,
+    device: i32,
+) -> cudaError_t {
+    let attr = to_hip_device_attr(attr);
+    to_cuda(hipDeviceGetAttribute(
+        value,
+        attr,
+        device,
+    ))
 }
 
 unsafe fn device_get_default_mem_pool(
