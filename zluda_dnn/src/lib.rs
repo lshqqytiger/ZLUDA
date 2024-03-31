@@ -1152,11 +1152,14 @@ unsafe fn transform_tensor(
     ))
 }
 
-unsafe fn set_stream(stream_id: *mut CUstream_st) -> cudnnStatus_t {
-    if stream_id != ptr::null_mut() {
-        todo!()
-    }
-    cudnnStatus_t::CUDNN_STATUS_SUCCESS
+unsafe fn set_stream(
+    handle: cudnnHandle_t,
+    stream_id: cudaStream_t,
+) -> cudnnStatus_t {
+    to_cudnn(miopenSetStream(
+        handle.cast(),
+        stream_id.cast(),
+    ))
 }
 
 fn set_convolution_math_type(
@@ -1419,8 +1422,8 @@ unsafe fn set_engineheur_descriptor_by_attribute(
 
 unsafe fn get_engineheur_results(
     engineheur_desc: *mut cudnnEngineHeurStruct,
-    requested_algo_count: i32,
-    returned_algo_count: *mut i32,
+    requested_algo_count: i64,
+    returned_algo_count: *mut i64,
     perf_results: *mut std::ffi::c_void,
 ) -> cudnnStatus_t {
     let operation_graph = *(*engineheur_desc).operation_graph;
@@ -1431,9 +1434,9 @@ unsafe fn get_engineheur_results(
         ops.w_desc,
         ops.conv_desc,
         ops.y_desc,
-        requested_algo_count,
+        requested_algo_count as _,
         returned_algo_count as _,
-        perf_results as _,
+        perf_results.cast(),
     )
 }
 
@@ -1498,6 +1501,7 @@ unsafe fn get_stream(
 fn to_backend_descriptor_type(descriptor_type: cudnnBackendDescriptorType_t) -> miopenBackendDescriptorType_t {
     match descriptor_type {
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_CONVOLUTION_DESCRIPTOR => miopenBackendDescriptorType_t::MIOPEN_BACKEND_CONVOLUTION_DESCRIPTOR,
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_ENGINEHEUR_DESCRIPTOR => miopenBackendDescriptorType_t::MIOPEN_BACKEND_ENGINEHEUR_DESCRIPTOR,
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR => miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR,
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATIONGRAPH_DESCRIPTOR => miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATIONGRAPH_DESCRIPTOR,
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_TENSOR_DESCRIPTOR => miopenBackendDescriptorType_t::MIOPEN_BACKEND_TENSOR_DESCRIPTOR,
@@ -1541,12 +1545,17 @@ fn to_backend_attribute_name(name: cudnnBackendAttributeName_t) -> miopenBackend
         cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_POST_PADDINGS => miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_POST_PADDINGS,
         cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_PRE_PADDINGS => miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_PRE_PADDINGS,
         cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_SPATIAL_DIMS => miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_SPATIAL_DIMS,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINEHEUR_MODE => miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINEHEUR_MODE,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINEHEUR_OPERATION_GRAPH => miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINEHEUR_OPERATION_GRAPH,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINEHEUR_RESULTS => miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINEHEUR_RESULTS,
         cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_ALPHA => miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_ALPHA,
         cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_BETA => miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_BETA,
         cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_CONV_DESC => miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_CONV_DESC,
         cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_W => miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_W,
         cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_X => miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_X,
         cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_Y => miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_Y,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATIONGRAPH_HANDLE => miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATIONGRAPH_HANDLE,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATIONGRAPH_OPS => miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATIONGRAPH_OPS,
         cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_BYTE_ALIGNMENT => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_BYTE_ALIGNMENT,
         cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_DATA_TYPE => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_DATA_TYPE,
         cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_DIMENSIONS => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_DIMENSIONS,

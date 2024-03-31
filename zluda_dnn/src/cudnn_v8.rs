@@ -57,7 +57,10 @@ pub unsafe extern "system" fn cudnnSetStream(
     handle: cudnnHandle_t,
     streamId: cudaStream_t,
 ) -> cudnnStatus_t {
-    crate::set_stream(streamId)
+    crate::set_stream(
+        handle,
+        streamId,
+    )
 }
 
 #[no_mangle]
