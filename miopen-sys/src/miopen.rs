@@ -208,6 +208,12 @@ pub struct miopenReduceTensorDescriptor {
 pub type miopenReduceTensorDescriptor_t = *mut miopenReduceTensorDescriptor;
 #[repr(C)]
 #[derive(Copy, Clone)]
+pub struct miopenMhaDescriptor {
+    pub _address: u8,
+}
+pub type miopenMhaDescriptor_t = *mut miopenMhaDescriptor;
+#[repr(C)]
+#[derive(Copy, Clone)]
 pub struct miopenSoftmaxDescriptor {
     pub _address: u8,
 }
@@ -3091,37 +3097,89 @@ impl miopenTensorArgumentId_t {
     pub const miopenTensorConvolutionY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(3);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorActivationX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(4);
+    pub const miopenTensorMhaK: miopenTensorArgumentId_t = miopenTensorArgumentId_t(4);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorActivationY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(5);
+    pub const miopenTensorMhaQ: miopenTensorArgumentId_t = miopenTensorArgumentId_t(5);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorActivationDX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(6);
+    pub const miopenTensorMhaV: miopenTensorArgumentId_t = miopenTensorArgumentId_t(6);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorActivationDY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(7);
+    pub const miopenTensorMhaDescaleK: miopenTensorArgumentId_t = miopenTensorArgumentId_t(7);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorBiasX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(8);
+    pub const miopenTensorMhaDescaleQ: miopenTensorArgumentId_t = miopenTensorArgumentId_t(8);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorBiasY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(9);
+    pub const miopenTensorMhaDescaleV: miopenTensorArgumentId_t = miopenTensorArgumentId_t(9);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorBias: miopenTensorArgumentId_t = miopenTensorArgumentId_t(10);
+    pub const miopenTensorMhaDescaleS: miopenTensorArgumentId_t = miopenTensorArgumentId_t(10);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorSoftmaxX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(11);
+    pub const miopenTensorMhaScaleS: miopenTensorArgumentId_t = miopenTensorArgumentId_t(11);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorSoftmaxY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(12);
+    pub const miopenTensorMhaScaleO: miopenTensorArgumentId_t = miopenTensorArgumentId_t(12);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorSoftmaxDX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(13);
+    pub const miopenTensorMhaDropoutProbability: miopenTensorArgumentId_t =
+        miopenTensorArgumentId_t(13);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorSoftmaxDY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(14);
+    pub const miopenTensorMhaDropoutSeed: miopenTensorArgumentId_t = miopenTensorArgumentId_t(14);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorMhaDropoutOffset: miopenTensorArgumentId_t = miopenTensorArgumentId_t(15);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorMhaO: miopenTensorArgumentId_t = miopenTensorArgumentId_t(16);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorMhaAmaxO: miopenTensorArgumentId_t = miopenTensorArgumentId_t(17);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorMhaAmaxS: miopenTensorArgumentId_t = miopenTensorArgumentId_t(18);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorMhaM: miopenTensorArgumentId_t = miopenTensorArgumentId_t(19);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorMhaZInv: miopenTensorArgumentId_t = miopenTensorArgumentId_t(20);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorActivationX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(21);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorActivationY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(22);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorActivationDX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(23);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorActivationDY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(24);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBiasX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(25);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBiasY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(26);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBias: miopenTensorArgumentId_t = miopenTensorArgumentId_t(27);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorSoftmaxX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(28);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorSoftmaxY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(29);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorSoftmaxDX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(30);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorSoftmaxDY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(31);
 }
 #[repr(transparent)]
 #[doc = " @enum miopenTensorArgumentId_t\n Identifiers for tensor arguments of problems and operations."]
@@ -3145,6 +3203,33 @@ extern "C" {
         problem: *mut miopenProblem_t,
         operatorDesc: miopenConvolutionDescriptor_t,
         direction: miopenProblemDirection_t,
+    ) -> miopenStatus_t;
+}
+extern "C" {
+    #[must_use]
+    #[doc = " @brief Initializes a problem object describing a Mha operation.\n\n @param problem      Pointer to the problem to initialize\n @param operatorDesc Descriptor of the operator to be used\n @param direction    Direction of the operation\n @return             miopenStatus_t"]
+    pub fn miopenCreateMhaProblem(
+        problem: *mut miopenProblem_t,
+        operatorDesc: miopenMhaDescriptor_t,
+        direction: miopenProblemDirection_t,
+    ) -> miopenStatus_t;
+}
+extern "C" {
+    #[must_use]
+    #[doc = " @brief Creates the mha descriptor object\n\n @param mhaDesc     Pointer to a mha descriptor type\n @return            miopenStatus_t"]
+    pub fn miopenCreateMhaDescriptor(mhaDesc: *mut miopenMhaDescriptor_t) -> miopenStatus_t;
+}
+extern "C" {
+    #[must_use]
+    #[doc = " @brief Sets the Mha descriptor details\n\n Sets all of the descriptor details for the Mha\n\n @param mhaDesc               Pointer to a Mha descriptor\n @param scale                 Scale\n @return                      miopenStatus_t"]
+    pub fn miopenSetMhaDescriptor(mhaDesc: miopenMhaDescriptor_t, scale: f32) -> miopenStatus_t;
+}
+extern "C" {
+    #[must_use]
+    #[doc = " @brief Gets the Mha descriptor details\n\n Retrieves all of the descriptor details for the Mha.\n\n @param mhaDesc       Pointer to a Mha descriptor\n @param scale         Scale (output)\n @return              miopenStatus_t"]
+    pub fn miopenGetMhaDescriptor(
+        mhaDesc: miopenMhaDescriptor_t,
+        scale: *mut f32,
     ) -> miopenStatus_t;
 }
 extern "C" {
@@ -3450,129 +3535,127 @@ extern "C" {
     ) -> miopenStatus_t;
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_POINTWISE_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_CONVOLUTION_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(0);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_CONVOLUTION_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_ENGINE_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(1);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_ENGINE_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_ENGINECFG_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(2);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_ENGINECFG_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_ENGINEHEUR_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(3);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_ENGINEHEUR_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_EXECUTION_PLAN_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(4);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_EXECUTION_PLAN_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_INTERMEDIATE_INFO_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(5);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_INTERMEDIATE_INFO_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_KNOB_CHOICE_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(6);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_KNOB_CHOICE_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_KNOB_INFO_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(7);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_KNOB_INFO_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_LAYOUT_INFO_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(8);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_LAYOUT_INFO_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_MATMUL_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(9);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR:
-        miopenBackendDescriptorType_t = miopenBackendDescriptorType_t(10);
-}
-impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_OPERATION_CONVOLUTION_BACKWARD_FILTER_DESCRIPTOR:
-        miopenBackendDescriptorType_t = miopenBackendDescriptorType_t(11);
+    pub const MIOPEN_BACKEND_OPERATION_CONCAT_DESCRIPTOR: miopenBackendDescriptorType_t =
+        miopenBackendDescriptorType_t(10);
 }
 impl miopenBackendDescriptorType_t {
     pub const MIOPEN_BACKEND_OPERATION_CONVOLUTION_BACKWARD_DATA_DESCRIPTOR:
+        miopenBackendDescriptorType_t = miopenBackendDescriptorType_t(11);
+}
+impl miopenBackendDescriptorType_t {
+    pub const MIOPEN_BACKEND_OPERATION_CONVOLUTION_BACKWARD_FILTER_DESCRIPTOR:
         miopenBackendDescriptorType_t = miopenBackendDescriptorType_t(12);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_OPERATION_POINTWISE_DESCRIPTOR: miopenBackendDescriptorType_t =
-        miopenBackendDescriptorType_t(13);
+    pub const MIOPEN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR:
+        miopenBackendDescriptorType_t = miopenBackendDescriptorType_t(13);
 }
 impl miopenBackendDescriptorType_t {
     pub const MIOPEN_BACKEND_OPERATION_GEN_STATS_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(14);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_OPERATIONGRAPH_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_OPERATION_MATMUL_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(15);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_VARIANT_PACK_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_OPERATION_NORM_BACKWARD_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(16);
 }
 impl miopenBackendDescriptorType_t {
-    #[doc = "< Tensor"]
-    pub const MIOPEN_BACKEND_TENSOR_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_OPERATION_NORM_FORWARD_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(17);
 }
 impl miopenBackendDescriptorType_t {
-    #[doc = "< Matrix multiplication"]
-    pub const MIOPEN_BACKEND_MATMUL_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_OPERATION_POINTWISE_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(18);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_OPERATION_MATMUL_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_OPERATION_REDUCTION_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(19);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_OPERATION_BN_FINALIZE_STATISTICS_DESCRIPTOR:
-        miopenBackendDescriptorType_t = miopenBackendDescriptorType_t(20);
-}
-impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_REDUCTION_DESCRIPTOR: miopenBackendDescriptorType_t =
-        miopenBackendDescriptorType_t(21);
-}
-impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_OPERATION_REDUCTION_DESCRIPTOR: miopenBackendDescriptorType_t =
-        miopenBackendDescriptorType_t(22);
-}
-impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_OPERATION_BN_BWD_WEIGHTS_DESCRIPTOR: miopenBackendDescriptorType_t =
-        miopenBackendDescriptorType_t(23);
-}
-impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_RESAMPLE_DESCRIPTOR: miopenBackendDescriptorType_t =
-        miopenBackendDescriptorType_t(24);
+    pub const MIOPEN_BACKEND_OPERATION_RESAMPLE_BWD_DESCRIPTOR: miopenBackendDescriptorType_t =
+        miopenBackendDescriptorType_t(20);
 }
 impl miopenBackendDescriptorType_t {
     pub const MIOPEN_BACKEND_OPERATION_RESAMPLE_FWD_DESCRIPTOR: miopenBackendDescriptorType_t =
-        miopenBackendDescriptorType_t(25);
+        miopenBackendDescriptorType_t(21);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_OPERATION_RESAMPLE_BWD_DESCRIPTOR: miopenBackendDescriptorType_t =
-        miopenBackendDescriptorType_t(26);
-}
-impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_OPERATION_CONCAT_DESCRIPTOR: miopenBackendDescriptorType_t =
-        miopenBackendDescriptorType_t(27);
+    pub const MIOPEN_BACKEND_OPERATION_RNG_DESCRIPTOR: miopenBackendDescriptorType_t =
+        miopenBackendDescriptorType_t(22);
 }
 impl miopenBackendDescriptorType_t {
     pub const MIOPEN_BACKEND_OPERATION_SIGNAL_DESCRIPTOR: miopenBackendDescriptorType_t =
+        miopenBackendDescriptorType_t(23);
+}
+impl miopenBackendDescriptorType_t {
+    pub const MIOPEN_BACKEND_OPERATIONGRAPH_DESCRIPTOR: miopenBackendDescriptorType_t =
+        miopenBackendDescriptorType_t(24);
+}
+impl miopenBackendDescriptorType_t {
+    pub const MIOPEN_BACKEND_POINTWISE_DESCRIPTOR: miopenBackendDescriptorType_t =
+        miopenBackendDescriptorType_t(25);
+}
+impl miopenBackendDescriptorType_t {
+    pub const MIOPEN_BACKEND_REDUCTION_DESCRIPTOR: miopenBackendDescriptorType_t =
+        miopenBackendDescriptorType_t(26);
+}
+impl miopenBackendDescriptorType_t {
+    pub const MIOPEN_BACKEND_RESAMPLE_DESCRIPTOR: miopenBackendDescriptorType_t =
+        miopenBackendDescriptorType_t(27);
+}
+impl miopenBackendDescriptorType_t {
+    pub const MIOPEN_BACKEND_RNG_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(28);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_OPERATION_NORM_FORWARD_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_TENSOR_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(29);
 }
 impl miopenBackendDescriptorType_t {
-    pub const MIOPEN_BACKEND_OPERATION_NORM_BACKWARD_DESCRIPTOR: miopenBackendDescriptorType_t =
+    pub const MIOPEN_BACKEND_VARIANT_PACK_DESCRIPTOR: miopenBackendDescriptorType_t =
         miopenBackendDescriptorType_t(30);
 }
 #[repr(transparent)]
