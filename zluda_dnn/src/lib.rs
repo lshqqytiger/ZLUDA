@@ -121,105 +121,6 @@ unsafe fn cudnn_create_operationgraph_descriptor(
     cudnnStatus_t::CUDNN_STATUS_SUCCESS
 }
 
-unsafe fn get_tensor_size(
-    tensor_desc: *mut cudnnTensorStruct,
-    size: *mut i32,
-) -> cudnnStatus_t {
-    to_cudnn(miopenGetTensorDescriptorSize(
-        tensor_desc as _,
-        size,
-    ))
-}
-
-unsafe fn set_tensor_nd_decriptor_by_attribute(
-    tensor_desc: *mut cudnnTensorStruct,
-    attribute_name: cudnnBackendAttributeName_t,
-    count: i64,
-    elements: *const ::std::os::raw::c_void,
-) -> cudnnStatus_t {
-    let mut size = 0;
-    get_tensor_size(
-        tensor_desc,
-        &mut size,
-    );
-    let mut data_type = cudnnDataType_t::CUDNN_DATA_FLOAT;
-    let mut dim_a = [0; 5];
-    let mut stride_a = [0; 5];
-    get_tensor_nd_decriptor(
-        tensor_desc,
-        &mut data_type,
-        dim_a.as_mut_ptr(),
-        stride_a.as_mut_ptr(),
-    );
-    match attribute_name {
-        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_BYTE_ALIGNMENT => cudnnStatus_t::CUDNN_STATUS_SUCCESS,
-        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_DATA_TYPE => {
-            let mut nb_index: usize = 0;
-            while nb_index < 5 && dim_a[nb_index] != 0 {
-                nb_index += 1;
-            }
-            let parameters = elements as *const cudnnDataType_t;
-            data_type = *parameters;
-            if dim_a[0] == 0 { // This tensor is not initialized yet.
-                dim_a[0] = 1;
-            }
-            if stride_a[0] == 0 { // This tensor is not initialized yet.
-                stride_a[0] = 1;
-            }
-            set_tensor_nd_decriptor(
-                tensor_desc,
-                data_type,
-                (nb_index + 1) as _,
-                dim_a[0..=nb_index].as_ptr(),
-                stride_a[0..=nb_index].as_ptr(),
-            )
-        },
-        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_DIMENSIONS => {
-            let parameters = elements as *const i64;
-            let count_u = count as usize;
-            for i in 0..count_u {
-                dim_a[i] = *parameters.add(i) as i32;
-                if stride_a[i] == 0 {
-                    stride_a[i] = 1; // fill invalid value
-                }
-            }
-            set_tensor_nd_decriptor(
-                tensor_desc,
-                data_type,
-                count as _,
-                dim_a[0..count_u].as_ptr(),
-                stride_a[0..count_u].as_ptr(),
-            )
-        },
-        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_STRIDES => {
-            let parameters = elements as *const i64;
-            let count_u = count as usize;
-            for i in 0..count_u {
-                stride_a[i] = *parameters.add(i) as i32;
-                if dim_a[i] == 0 {
-                    dim_a[i] = 1; // fill invalid value
-                }
-            }
-            let mut dim_last_index: usize = 4;
-            while stride_a[dim_last_index] == 0 {
-                dim_last_index -= 1;
-            }
-            set_tensor_nd_decriptor(
-                tensor_desc,
-                data_type,
-                count as _,
-                dim_a[0..count_u].as_ptr(),
-                stride_a[0..count_u].as_ptr(),
-            )
-        },
-        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_UNIQUE_ID => cudnnStatus_t::CUDNN_STATUS_SUCCESS,
-        _ => {
-            println!("[ZLUDA] Unsupported tensor attribute: {}", attribute_name.0);
-            crate::unsupported()
-        },
-    }
-}
-
 unsafe fn set_tensor_nd_decriptor(
     tensor_desc: *mut cudnnTensorStruct,
     data_type: cudnnDataType_t,
@@ -234,23 +135,6 @@ unsafe fn set_tensor_nd_decriptor(
         dim_a as _,
         stride_a as _,
     ))
-}
-
-unsafe fn get_tensor_nd_decriptor(
-    tensor_desc: *mut cudnnTensorStruct,
-    data_type: *mut cudnnDataType_t,
-    dim_a: *mut i32,
-    stride_a: *mut i32,
-) -> cudnnStatus_t {
-    let mut miopen_data_type = from_data_type(*data_type);
-    let status = miopenGetTensorDescriptor(
-        tensor_desc as _,
-        &mut miopen_data_type,
-        dim_a as _,
-        stride_a as _,
-    );
-    *data_type = to_data_type(miopen_data_type);
-    to_cudnn(status)
 }
 
 fn to_data_type(type_: miopenDataType_t) -> cudnnDataType_t {
@@ -290,114 +174,6 @@ unsafe fn set_filter_nd_descriptor(
     ))
 }
 
-unsafe fn set_convolution_nd_descriptor_by_attribute(
-    conv_desc: cudnnConvolutionDescriptor_t,
-    attribute_name: cudnnBackendAttributeName_t,
-    count: i64,
-    elements: *const ::std::os::raw::c_void,
-) -> cudnnStatus_t {
-    let mut array_length = 2;
-    let mut pad_a = [0; 2];
-    let mut filter_stride_a = [0; 2];
-    let mut dilation_a = [0; 2];
-    let mut mode = cudnnConvolutionMode_t::CUDNN_CONVOLUTION;
-    get_convolution_nd_descriptor(
-        conv_desc,
-        &mut array_length, // TODO
-        pad_a.as_mut_ptr(),
-        filter_stride_a.as_mut_ptr(),
-        dilation_a.as_mut_ptr(),
-        &mut mode,
-        cudnnDataType_t::CUDNN_DATA_FLOAT, // will be unused
-    );
-    match attribute_name {
-        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_COMP_TYPE => cudnnStatus_t::CUDNN_STATUS_SUCCESS,
-        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_CONV_MODE => {
-            let parameters = elements as *const cudnnConvolutionMode_t;
-            set_convolution_nd_descriptor(
-                conv_desc,
-                array_length, // TODO
-                pad_a.as_ptr(),
-                filter_stride_a.as_ptr(),
-                dilation_a.as_ptr(),
-                *parameters,
-                cudnnDataType_t::CUDNN_DATA_FLOAT, // will be unused
-            )
-        },
-        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_DILATIONS => {
-            if count != 2 {
-                todo!()
-            }
-            let parameters = elements as *const i64;
-            for i in 0..(array_length as usize) {
-                dilation_a[i] = *parameters.add(i) as i32;
-            }
-            set_convolution_nd_descriptor(
-                conv_desc,
-                count as i32, // TODO
-                pad_a.as_ptr(),
-                filter_stride_a.as_ptr(),
-                dilation_a.as_ptr(),
-                mode,
-                cudnnDataType_t::CUDNN_DATA_FLOAT, // will be unused
-            )
-        },
-        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_FILTER_STRIDES => {
-            if count != 2 {
-                todo!()
-            }
-            let parameters = elements as *const i64;
-            for i in 0..(array_length as usize) {
-                filter_stride_a[i] = *parameters.add(i) as i32;
-            }
-            set_convolution_nd_descriptor(
-                conv_desc,
-                count as i32, // TODO
-                pad_a.as_ptr(),
-                filter_stride_a.as_ptr(),
-                dilation_a.as_ptr(),
-                mode,
-                cudnnDataType_t::CUDNN_DATA_FLOAT, // will be unused
-            )
-        },
-        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_POST_PADDINGS => cudnnStatus_t::CUDNN_STATUS_SUCCESS,
-        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_PRE_PADDINGS => {
-            if count != 2 {
-                todo!()
-            }
-            let parameters = elements as *const i64;
-            for i in 0..(array_length as usize) {
-                pad_a[i] = *parameters.add(i) as i32;
-            }
-            set_convolution_nd_descriptor(
-                conv_desc,
-                count as i32, // TODO
-                pad_a.as_ptr(),
-                filter_stride_a.as_ptr(),
-                dilation_a.as_ptr(),
-                mode,
-                cudnnDataType_t::CUDNN_DATA_FLOAT, // will be unused
-            )
-        },
-        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_SPATIAL_DIMS => {
-            let parameters = elements as *const i64;
-            set_convolution_nd_descriptor(
-                conv_desc,
-                (*parameters) as i32,
-                pad_a.as_ptr(),
-                filter_stride_a.as_ptr(),
-                dilation_a.as_ptr(),
-                mode,
-                cudnnDataType_t::CUDNN_DATA_FLOAT, // will be unused
-            )
-        },
-        _ => {
-            println!("[ZLUDA] Unsupported convolution attribute: {}", attribute_name.0);
-            crate::unsupported()
-        },
-    }
-}
-
 unsafe fn set_convolution_nd_descriptor(
     conv_desc: cudnnConvolutionDescriptor_t,
     array_length: i32,
@@ -427,31 +203,6 @@ unsafe fn set_convolution_nd_descriptor(
         d_h,
         d_w,
     ))
-}
-
-unsafe fn get_convolution_nd_descriptor(
-    conv_desc: cudnnConvolutionDescriptor_t,
-    array_length: *mut i32,
-    pad_a: *mut i32,
-    filter_stride_a: *mut i32,
-    dilation_a: *mut i32,
-    mode: *mut cudnnConvolutionMode_t,
-    _compute_type: cudnnDataType_t,
-) -> cudnnStatus_t {
-    *array_length = 2; // TODO
-    let mut miopen_conv_mode = conv_mode_to_cudnn(*mode);
-    let status = miopenGetConvolutionDescriptor(
-        conv_desc as _,
-        &mut miopen_conv_mode,
-        pad_a.add(0),
-        pad_a.add(1),
-        filter_stride_a.add(0),
-        filter_stride_a.add(1),
-        dilation_a.add(0),
-        dilation_a.add(1),
-    );
-    *mode = conv_mode_from_cudnn(miopen_conv_mode);
-    to_cudnn(status)
 }
 
 fn conv_mode_to_cudnn(mode: cudnnConvolutionMode_t) -> miopenConvolutionMode_t {
@@ -1574,10 +1325,12 @@ fn is_unsupported_attribute_name(name: cudnnBackendAttributeName_t) -> bool {
 
 fn to_backend_attribute_type(attribute_type: cudnnBackendAttributeType_t) -> miopenBackendAttributeType_t {
     match attribute_type {
+        cudnnBackendAttributeType_t::CUDNN_TYPE_HANDLE => miopenBackendAttributeType_t::MIOPEN_TYPE_HANDLE,
         cudnnBackendAttributeType_t::CUDNN_TYPE_DATA_TYPE => miopenBackendAttributeType_t::MIOPEN_TYPE_DATA_TYPE,
         cudnnBackendAttributeType_t::CUDNN_TYPE_INT64 => miopenBackendAttributeType_t::MIOPEN_TYPE_INT64,
         cudnnBackendAttributeType_t::CUDNN_TYPE_FLOAT => miopenBackendAttributeType_t::MIOPEN_TYPE_FLOAT,
         cudnnBackendAttributeType_t::CUDNN_TYPE_CONVOLUTION_MODE => miopenBackendAttributeType_t::MIOPEN_TYPE_CONVOLUTION_MODE,
+        cudnnBackendAttributeType_t::CUDNN_TYPE_HEUR_MODE => miopenBackendAttributeType_t::MIOPEN_TYPE_HEUR_MODE,
         cudnnBackendAttributeType_t::CUDNN_TYPE_BACKEND_DESCRIPTOR => miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR,
         _ => panic!("[ZLUDA] Unknown attribute type: {}", attribute_type.0),
     }
