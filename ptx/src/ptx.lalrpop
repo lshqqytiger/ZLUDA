@@ -224,6 +224,7 @@ match {
     "rem",
     "ret",
     "rsqrt",
+    "sad",
     "selp",
     "set",
     "setp",
@@ -305,6 +306,7 @@ ExtendedID : &'input str = {
     "rem",
     "ret",
     "rsqrt",
+    "sad",
     "selp",
     "set",
     "setp",
@@ -839,6 +841,7 @@ Instruction: ast::Instruction<ast::ParsedArgParams<'input>> = {
     InstMatch,
     InstRed,
     InstNanosleep,
+    InstSad
 };
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld
@@ -1516,7 +1519,12 @@ InstMad: ast::Instruction<ast::ParsedArgParams<'input>> = {
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-mad-cc
 InstMadCC: ast::Instruction<ast::ParsedArgParams<'input>> = {
-    "mad" ".lo" ".cc" <type_:IntType3264> <arg:Arg4> => ast::Instruction::MadCC{<>},
+    "mad" ".lo" ".cc" <type_:IntType3264> <arg:Arg4> => {
+        ast::Instruction::MadCC { type_, arg, is_hi: false }
+    },
+    "mad" ".hi" ".cc" <type_:IntType3264> <arg:Arg4> => {
+        ast::Instruction::MadCC { type_, arg, is_hi: true }
+    },
 };
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-madc
@@ -2369,6 +2377,13 @@ InstNanosleep: ast::Instruction<ast::ParsedArgParams<'input>> = {
     // Bare minimum for xgboost
     "nanosleep" ".u32" <a:Arg1> => {
         ast::Instruction::Nanosleep(a)
+    }
+}
+
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-sad
+InstSad: ast::Instruction<ast::ParsedArgParams<'input>> = {
+    "sad" <type_:IntType> <a:Arg4> => {
+        ast::Instruction::Sad(type_, a)
     }
 }
 

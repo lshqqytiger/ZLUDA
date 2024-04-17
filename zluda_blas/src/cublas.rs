@@ -772,7 +772,19 @@ pub unsafe extern "system" fn cublasDotEx(
     resultType: cudaDataType,
     executionType: cudaDataType,
 ) -> cublasStatus_t {
-    crate::unsupported()
+    crate::dot_ex(
+        handle,
+        n,
+        x,
+        xType,
+        incx,
+        y,
+        yType,
+        incy,
+        result,
+        resultType,
+        executionType,
+    )
 }
 
 #[no_mangle]

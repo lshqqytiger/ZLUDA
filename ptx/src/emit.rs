@@ -13,6 +13,7 @@ use zluda_llvm::prelude::*;
 use zluda_llvm::zluda::*;
 use zluda_llvm::*;
 
+use crate::ast::SetpData;
 use crate::translate::{
     self, Arg4CarryOut, ConstType, ConversionKind, DenormSummary, ExpandedArgParams, FPDenormMode,
     MadCCDetails, MadCDetails, TranslationModule, TypeKind, TypeParts,
@@ -621,8 +622,8 @@ fn emit_statement(
         crate::translate::Statement::MadC(MadCDetails { type_, is_hi, arg }) => {
             emit_inst_madc(ctx, type_, is_hi, &arg)?
         }
-        crate::translate::Statement::MadCC(MadCCDetails { type_, arg }) => {
-            emit_inst_madcc(ctx, type_, &arg)?
+        crate::translate::Statement::MadCC(MadCCDetails { type_, is_hi, arg }) => {
+            emit_inst_madcc(ctx, type_, is_hi, &arg)?
         }
         crate::translate::Statement::AddC(type_, arg) => emit_inst_add_c(ctx, type_, &arg)?,
         crate::translate::Statement::AddCC(type_, arg) => {
@@ -1137,6 +1138,7 @@ fn emit_instruction(
         ast::Instruction::Vshr(arg) => emit_inst_vshr(ctx, arg)?,
         ast::Instruction::Set(details, arg) => emit_inst_set(ctx, details, arg)?,
         ast::Instruction::Red(details, arg) => emit_inst_red(ctx, details, arg)?,
+        ast::Instruction::Sad(type_, arg) => emit_inst_sad(ctx, *type_, arg)?,
         // replaced by function calls or Statement variants
         ast::Instruction::Activemask { .. }
         | ast::Instruction::Bar(..)
@@ -1159,6 +1161,35 @@ fn emit_instruction(
         | ast::Instruction::Nanosleep(..)
         | ast::Instruction::MatchAny(..) => return Err(TranslateError::unreachable()),
     })
+}
+
+fn emit_inst_sad(
+    ctx: &mut EmitContext,
+    type_: ast::ScalarType,
+    arg: &ast::Arg4<ExpandedArgParams>,
+) -> Result<(), TranslateError> {
+    let builder = ctx.builder.get();
+    let less_than = emit_inst_setp_int(
+        ctx,
+        &SetpData {
+            typ: type_,
+            flush_to_zero: None,
+            cmp_op: ast::SetpCompareOp::Greater,
+        },
+        None,
+        arg.src1,
+        arg.src2,
+    )?;
+    let a = ctx.names.value(arg.src1)?;
+    let b = ctx.names.value(arg.src2)?;
+    let a_minus_b = unsafe { LLVMBuildSub(builder, a, b, LLVM_UNNAMED) };
+    let b_minus_a = unsafe { LLVMBuildSub(builder, b, a, LLVM_UNNAMED) };
+    let a_or_b = unsafe { LLVMBuildSelect(builder, less_than, a_minus_b, b_minus_a, LLVM_UNNAMED) };
+    let src3 = ctx.names.value(arg.src3)?;
+    ctx.names.register_result(arg.dst, |dst_name| unsafe {
+        LLVMBuildAdd(builder, src3, a_or_b, dst_name)
+    });
+    Ok(())
 }
 
 fn emit_inst_red(
@@ -2079,16 +2110,17 @@ fn emit_inst_mad_lo(
     )
 }
 
-// TODO: support mad.hi.cc
 fn emit_inst_madcc(
     ctx: &mut EmitContext,
     type_: ast::ScalarType,
+    is_hi: bool,
     arg: &Arg4CarryOut<ExpandedArgParams>,
 ) -> Result<(), TranslateError> {
-    let builder = ctx.builder.get();
-    let src1 = ctx.names.value(arg.src1)?;
-    let src2 = ctx.names.value(arg.src2)?;
-    let mul_result = unsafe { LLVMBuildMul(builder, src1, src2, LLVM_UNNAMED) };
+    let mul_result = if is_hi {
+        emit_inst_mul_hi_impl(ctx, type_, None, arg.src1, arg.src2)?
+    } else {
+        emit_inst_mul_low_impl(ctx, None, arg.src1, arg.src2, LLVMBuildMul)?
+    };
     emit_inst_addsub_cc_impl(
         ctx,
         "add",
@@ -2176,29 +2208,6 @@ fn emit_inst_madc(
         mul_result,
         args.src3,
     )
-    /*
-       let src3 = ctx.names.value(args.src3)?;
-       let add_no_carry = unsafe { LLVMBuildAdd(builder, mul_result, src3, LLVM_UNNAMED) };
-       let carry_flag = ctx.names.value(args.carry_in)?;
-       let llvm_type = get_llvm_type(ctx, &ast::Type::Scalar(type_))?;
-       let carry_flag = unsafe { LLVMBuildZExt(builder, carry_flag, llvm_type, LLVM_UNNAMED) };
-       if let Some(carry_out) = args.carry_out {
-           emit_inst_addsub_cc_impl(
-               ctx,
-               "add",
-               type_,
-               args.dst,
-               carry_out,
-               add_no_carry,
-               carry_flag,
-           )?;
-       } else {
-           ctx.names.register_result(args.dst, |dst| unsafe {
-               LLVMBuildAdd(builder, add_no_carry, carry_flag, dst)
-           });
-       }
-       Ok(())
-    */
 }
 
 fn emit_inst_add_c(
