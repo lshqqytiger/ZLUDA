@@ -3181,6 +3181,10 @@ impl miopenTensorArgumentId_t {
 impl miopenTensorArgumentId_t {
     pub const miopenTensorSoftmaxDY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(31);
 }
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorArgumentIsScalar: miopenTensorArgumentId_t =
+        miopenTensorArgumentId_t(-2147483648);
+}
 #[repr(transparent)]
 #[doc = " @enum miopenTensorArgumentId_t\n Identifiers for tensor arguments of problems and operations."]
 #[derive(Copy, Clone, Hash, PartialEq, Eq)]
@@ -3351,7 +3355,7 @@ extern "C" {
         maxSolutions: usize,
     ) -> miopenStatus_t;
 }
-#[doc = " @brief Values of a tensor argument for the miopenRunSolution function."]
+#[doc = " @brief Values of a tensor or scalar argument for the miopenRunSolution function."]
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct miopenTensorArgument_t {

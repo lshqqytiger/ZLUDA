@@ -105,22 +105,6 @@ unsafe fn cudnn_create_engineheur_descriptor(
     cudnnStatus_t::CUDNN_STATUS_SUCCESS
 }
 
-unsafe fn cudnn_create_operation_convolution_forward_descriptor(
-    operation_convolution_forward_desc: *mut cudnnOperationConvolutionForwardDescriptor_t,
-) -> cudnnStatus_t {
-    let layout = Layout::new::<cudnnOperationConvolutionForwardStruct>();
-    *operation_convolution_forward_desc = alloc::alloc(layout) as _;
-    cudnnStatus_t::CUDNN_STATUS_SUCCESS
-}
-
-unsafe fn cudnn_create_operationgraph_descriptor(
-    operationgraph_desc: *mut cudnnOperationGraphDescriptor_t,
-) -> cudnnStatus_t {
-    let layout = Layout::new::<cudnnOperationGraphStruct>();
-    *operationgraph_desc = alloc::alloc(layout) as _;
-    cudnnStatus_t::CUDNN_STATUS_SUCCESS
-}
-
 unsafe fn set_tensor_nd_decriptor(
     tensor_desc: *mut cudnnTensorStruct,
     data_type: cudnnDataType_t,
@@ -1189,54 +1173,6 @@ unsafe fn get_engineheur_results(
         returned_algo_count as _,
         perf_results.cast(),
     )
-}
-
-unsafe fn set_operation_convolution_forward_descriptor_by_attribute(
-    operation_convolution_forward_desc: *mut cudnnOperationConvolutionForwardStruct,
-    attribute_name: cudnnBackendAttributeName_t,
-    count: i64,
-    elements: *const cudnnBackendDescriptor_t, // *const ::std::os::raw::c_void
-) -> cudnnStatus_t {
-    match attribute_name {
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_ALPHA => cudnnStatus_t::CUDNN_STATUS_SUCCESS,
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_BETA => cudnnStatus_t::CUDNN_STATUS_SUCCESS,
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_CONV_DESC => {
-            (*operation_convolution_forward_desc).conv_desc = (*elements) as _;
-            cudnnStatus_t::CUDNN_STATUS_SUCCESS
-        },
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_W => {
-            (*operation_convolution_forward_desc).w_desc = (*elements) as _;
-            cudnnStatus_t::CUDNN_STATUS_SUCCESS
-        },
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_X => {
-            (*operation_convolution_forward_desc).x_desc = (*elements) as _;
-            cudnnStatus_t::CUDNN_STATUS_SUCCESS
-        },
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_Y => {
-            (*operation_convolution_forward_desc).y_desc = (*elements) as _;
-            cudnnStatus_t::CUDNN_STATUS_SUCCESS
-        },
-        _ => panic!(),
-    }
-}
-
-unsafe fn set_operationgraph_descriptor_by_attribute(
-    operationgraph_desc: *mut cudnnOperationGraphStruct,
-    attribute_name: cudnnBackendAttributeName_t,
-    count: i64,
-    elements: *const *mut ::std::os::raw::c_void, // *const ::std::os::raw::c_void
-) -> cudnnStatus_t {
-    match attribute_name {
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATIONGRAPH_HANDLE => {
-            (*operationgraph_desc).handle = (*elements) as _;
-            cudnnStatus_t::CUDNN_STATUS_SUCCESS
-        },
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATIONGRAPH_OPS => {
-            (*operationgraph_desc).ops = (*elements) as _;
-            cudnnStatus_t::CUDNN_STATUS_SUCCESS
-        },
-        _ => crate::unsupported(),
-    }
 }
 
 unsafe fn get_stream(
