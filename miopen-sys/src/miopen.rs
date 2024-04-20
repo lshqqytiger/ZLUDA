@@ -4656,6 +4656,30 @@ impl miopenBackendAttributeType_t {
 #[doc = " @brief Data type of an attribute of a backend descriptor\n\n Specifies the data type of an attribute of a backend descriptor.\n It is used to specify the type of data pointed to by the\n void *arrayOfElements argument of miopenBackendSetAttribute()\n and miopenBackendGetAttribute()"]
 #[derive(Copy, Clone, Hash, PartialEq, Eq)]
 pub struct miopenBackendAttributeType_t(pub ::std::os::raw::c_int);
+impl miopenBackendHeurMode_t {
+    #[doc = "< instant"]
+    pub const MIOPEN_HEUR_MODE_INSTANT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(0);
+}
+impl miopenBackendHeurMode_t {
+    #[doc = "< b"]
+    pub const MIOPEN_HEUR_MODE_B: miopenBackendHeurMode_t = miopenBackendHeurMode_t(1);
+}
+impl miopenBackendHeurMode_t {
+    #[doc = "< fallback"]
+    pub const MIOPEN_HEUR_MODE_FALLBACK: miopenBackendHeurMode_t = miopenBackendHeurMode_t(2);
+}
+impl miopenBackendHeurMode_t {
+    #[doc = "< a"]
+    pub const MIOPEN_HEUR_MODE_A: miopenBackendHeurMode_t = miopenBackendHeurMode_t(3);
+}
+impl miopenBackendHeurMode_t {
+    #[doc = "< count"]
+    pub const MIOPEN_HEUR_MODES_COUNT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(4);
+}
+#[repr(transparent)]
+#[doc = " @brief HeurMode\n"]
+#[derive(Copy, Clone, Hash, PartialEq, Eq)]
+pub struct miopenBackendHeurMode_t(pub ::std::os::raw::c_int);
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct miopenBackendDescriptor {

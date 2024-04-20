@@ -97,14 +97,6 @@ unsafe fn cudnn_create_pooling_descriptor(
     ))
 }
 
-unsafe fn cudnn_create_engineheur_descriptor(
-    engineheur_desc: *mut cudnnEngineHeurDescriptor_t,
-) -> cudnnStatus_t {
-    let layout = Layout::new::<cudnnEngineHeurStruct>();
-    *engineheur_desc = alloc::alloc(layout) as _;
-    cudnnStatus_t::CUDNN_STATUS_SUCCESS
-}
-
 unsafe fn set_tensor_nd_decriptor(
     tensor_desc: *mut cudnnTensorStruct,
     data_type: cudnnDataType_t,
@@ -112,26 +104,17 @@ unsafe fn set_tensor_nd_decriptor(
     dim_a: *const i32,
     stride_a: *const i32,
 ) -> cudnnStatus_t {
+    let data_type = to_data_type(data_type);
     to_cudnn(miopenSetTensorDescriptor(
         tensor_desc as _,
-        from_data_type(data_type),
+        data_type,
         nb_dims,
         dim_a as _,
         stride_a as _,
     ))
 }
 
-fn to_data_type(type_: miopenDataType_t) -> cudnnDataType_t {
-    match type_ {
-        miopenDataType_t::miopenFloat => cudnnDataType_t::CUDNN_DATA_FLOAT,
-        miopenDataType_t::miopenDouble => cudnnDataType_t::CUDNN_DATA_DOUBLE,
-        miopenDataType_t::miopenHalf => cudnnDataType_t::CUDNN_DATA_HALF,
-        miopenDataType_t::miopenBFloat16 => cudnnDataType_t::CUDNN_DATA_BFLOAT16,
-        _ => todo!(),
-    }
-}
-
-fn from_data_type(type_: cudnnDataType_t) -> miopenDataType_t {
+fn to_data_type(type_: cudnnDataType_t) -> miopenDataType_t {
     match type_ {
         cudnnDataType_t::CUDNN_DATA_FLOAT => miopenDataType_t::miopenFloat,
         cudnnDataType_t::CUDNN_DATA_DOUBLE => miopenDataType_t::miopenDouble,
@@ -148,7 +131,7 @@ unsafe fn set_filter_nd_descriptor(
     nb_dims: i32,
     filter_dim_a: *const i32,
 ) -> cudnnStatus_t {
-    let data_type = from_data_type(data_type);
+    let data_type = to_data_type(data_type);
     to_cudnn(miopenSetTensorDescriptor(
         filter_desc as _,
         data_type,
@@ -194,16 +177,6 @@ fn conv_mode_to_cudnn(mode: cudnnConvolutionMode_t) -> miopenConvolutionMode_t {
         cudnnConvolutionMode_t::CUDNN_CONVOLUTION => miopenConvolutionMode_t::miopenTranspose,
         cudnnConvolutionMode_t::CUDNN_CROSS_CORRELATION => {
             miopenConvolutionMode_t::miopenConvolution
-        }
-        _ => panic!(),
-    }
-}
-
-fn conv_mode_from_cudnn(mode: miopenConvolutionMode_t) -> cudnnConvolutionMode_t {
-    match mode {
-        miopenConvolutionMode_t::miopenTranspose => cudnnConvolutionMode_t::CUDNN_CONVOLUTION,
-        miopenConvolutionMode_t::miopenConvolution => {
-            cudnnConvolutionMode_t::CUDNN_CROSS_CORRELATION
         }
         _ => panic!(),
     }
@@ -852,7 +825,7 @@ unsafe fn set_tensor_4d_descriptor_ex(
     h_stride: i32,
     w_stride: i32,
 ) -> cudnnStatus_t {
-    let data_type = from_data_type(data_type);
+    let data_type = to_data_type(data_type);
     to_cudnn(miopenSet4dTensorDescriptorEx(
         tensor_desc as _,
         data_type,
@@ -1139,42 +1112,6 @@ unsafe fn convolution_backward_data(
     ))
 }
 
-unsafe fn set_engineheur_descriptor_by_attribute(
-    engineheur_desc: *mut cudnnEngineHeurStruct,
-    attribute_name: cudnnBackendAttributeName_t,
-    count: i64,
-    elements: *const ::std::os::raw::c_void,
-) -> cudnnStatus_t {
-    match attribute_name {
-        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINEHEUR_MODE => cudnnStatus_t::CUDNN_STATUS_SUCCESS,
-        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINEHEUR_OPERATION_GRAPH => {
-            (*engineheur_desc).operation_graph = *(elements as *const cudnnOperationGraphDescriptor_t);
-            cudnnStatus_t::CUDNN_STATUS_SUCCESS
-        },
-        _ => panic!(),
-    }
-}
-
-unsafe fn get_engineheur_results(
-    engineheur_desc: *mut cudnnEngineHeurStruct,
-    requested_algo_count: i64,
-    returned_algo_count: *mut i64,
-    perf_results: *mut std::ffi::c_void,
-) -> cudnnStatus_t {
-    let operation_graph = *(*engineheur_desc).operation_graph;
-    let ops = *(operation_graph.ops as cudnnOperationConvolutionForwardDescriptor_t);
-    find_convolution_forward_algorithm(
-        operation_graph.handle,
-        ops.x_desc,
-        ops.w_desc,
-        ops.conv_desc,
-        ops.y_desc,
-        requested_algo_count as _,
-        returned_algo_count as _,
-        perf_results.cast(),
-    )
-}
-
 unsafe fn get_stream(
     handle: *mut cudnnContext,
     stream_id: *mut cudaStream_t,
@@ -1265,10 +1202,42 @@ fn to_backend_attribute_type(attribute_type: cudnnBackendAttributeType_t) -> mio
         cudnnBackendAttributeType_t::CUDNN_TYPE_DATA_TYPE => miopenBackendAttributeType_t::MIOPEN_TYPE_DATA_TYPE,
         cudnnBackendAttributeType_t::CUDNN_TYPE_INT64 => miopenBackendAttributeType_t::MIOPEN_TYPE_INT64,
         cudnnBackendAttributeType_t::CUDNN_TYPE_FLOAT => miopenBackendAttributeType_t::MIOPEN_TYPE_FLOAT,
+        cudnnBackendAttributeType_t::CUDNN_TYPE_DOUBLE => miopenBackendAttributeType_t::MIOPEN_TYPE_DOUBLE,
         cudnnBackendAttributeType_t::CUDNN_TYPE_CONVOLUTION_MODE => miopenBackendAttributeType_t::MIOPEN_TYPE_CONVOLUTION_MODE,
         cudnnBackendAttributeType_t::CUDNN_TYPE_HEUR_MODE => miopenBackendAttributeType_t::MIOPEN_TYPE_HEUR_MODE,
         cudnnBackendAttributeType_t::CUDNN_TYPE_BACKEND_DESCRIPTOR => miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR,
         _ => panic!("[ZLUDA] Unknown attribute type: {}", attribute_type.0),
+    }
+}
+
+fn to_heur_mode(mode: cudnnBackendHeurMode_t) -> miopenBackendHeurMode_t {
+    match mode {
+        cudnnBackendHeurMode_t::CUDNN_HEUR_MODE_INSTANT => miopenBackendHeurMode_t::MIOPEN_HEUR_MODE_INSTANT,
+        _ => panic!("[ZLUDA] Unknown heur mode: {}", mode.0),
+    }
+}
+
+unsafe fn backend_patch_elements(
+    elements_type: miopenBackendAttributeType_t,
+    element_count: i64,
+    array_of_elements: *mut ::std::os::raw::c_void,
+) -> () {
+    match elements_type {
+        miopenBackendAttributeType_t::MIOPEN_TYPE_DATA_TYPE => {
+            if element_count != 1 {
+                panic!("[ZLUDA] Unexpected value: element_count={}", element_count)
+            }
+            let p_data_type: *mut miopenDataType_t = array_of_elements.cast();
+            *p_data_type = to_data_type(*(p_data_type as *mut cudnnDataType_t));
+        },
+        miopenBackendAttributeType_t::MIOPEN_TYPE_HEUR_MODE => {
+            if element_count != 1 {
+                panic!("[ZLUDA] Unexpected value: element_count={}", element_count)
+            }
+            let p_heur_mode: *mut miopenBackendHeurMode_t = array_of_elements.cast();
+            *p_heur_mode = to_heur_mode(*(p_heur_mode as *mut cudnnBackendHeurMode_t));
+        },
+        _ => (),
     }
 }
 
@@ -1284,12 +1253,14 @@ unsafe fn backend_set_attribute(
     }
     let attribute_name = to_backend_attribute_name(attribute_name);
     let attribute_type = to_backend_attribute_type(attribute_type);
+    let elements = array_of_elements.clone();
+    backend_patch_elements(attribute_type, element_count, elements.cast_mut());
     to_cudnn(miopenBackendSetAttribute(
         descriptor.cast(),
         attribute_name,
         attribute_type,
         element_count,
-        array_of_elements.cast_mut(),
+        elements.cast_mut(),
     ))
 }
 
