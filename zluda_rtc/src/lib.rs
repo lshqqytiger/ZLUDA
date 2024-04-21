@@ -13,6 +13,8 @@ fn unsupported() -> nvrtcResult {
     nvrtcResult::NVRTC_ERROR_INTERNAL_ERROR
 }
 
+const NVRTC_VERSION_MAJOR: i32 = 11;
+const NVRTC_VERSION_MINOR: i32 = 8;
 const SUPPORTED_OPTIONS: [&'static str; 1] = ["--std"];
 
 fn to_nvrtc(status: hiprtc_sys::hiprtcResult) -> nvrtcResult {
@@ -35,6 +37,15 @@ fn to_hiprtc(status: nvrtcResult) -> hiprtc_sys::hiprtcResult {
 
 unsafe fn get_error_string(result: nvrtcResult) -> *const ::std::os::raw::c_char {
     hiprtcGetErrorString(to_hiprtc(result))
+}
+
+unsafe fn version(
+    major: *mut i32,
+    minor: *mut i32,
+) -> nvrtcResult {
+    *major = NVRTC_VERSION_MAJOR;
+    *minor = NVRTC_VERSION_MINOR;
+    nvrtcResult::NVRTC_SUCCESS
 }
 
 unsafe fn create_program(
