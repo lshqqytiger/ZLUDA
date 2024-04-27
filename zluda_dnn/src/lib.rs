@@ -1128,6 +1128,7 @@ fn to_backend_descriptor_type(descriptor_type: cudnnBackendDescriptorType_t) -> 
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_ENGINEHEUR_DESCRIPTOR => miopenBackendDescriptorType_t::MIOPEN_BACKEND_ENGINEHEUR_DESCRIPTOR,
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR => miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR,
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATIONGRAPH_DESCRIPTOR => miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATIONGRAPH_DESCRIPTOR,
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_VARIANT_PACK_DESCRIPTOR => miopenBackendDescriptorType_t::MIOPEN_BACKEND_VARIANT_PACK_DESCRIPTOR,
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_TENSOR_DESCRIPTOR => miopenBackendDescriptorType_t::MIOPEN_BACKEND_TENSOR_DESCRIPTOR,
         _ => panic!("[ZLUDA] Unknown descriptor type: {}", descriptor_type.0),
     }
@@ -1185,6 +1186,9 @@ fn to_backend_attribute_name(name: cudnnBackendAttributeName_t) -> miopenBackend
         cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_DIMENSIONS => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_DIMENSIONS,
         cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_STRIDES => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_STRIDES,
         cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_UNIQUE_ID => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_UNIQUE_ID,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_VARIANT_PACK_UNIQUE_IDS => miopenBackendAttributeName_t::MIOPEN_ATTR_VARIANT_PACK_UNIQUE_IDS,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_VARIANT_PACK_DATA_POINTERS => miopenBackendAttributeName_t::MIOPEN_ATTR_VARIANT_PACK_DATA_POINTERS,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_VARIANT_PACK_WORKSPACE => miopenBackendAttributeName_t::MIOPEN_ATTR_VARIANT_PACK_WORKSPACE,
         _ => panic!("[ZLUDA] Unknown attribute name: {}", name.0),
     }
 }
@@ -1203,6 +1207,7 @@ fn to_backend_attribute_type(attribute_type: cudnnBackendAttributeType_t) -> mio
         cudnnBackendAttributeType_t::CUDNN_TYPE_INT64 => miopenBackendAttributeType_t::MIOPEN_TYPE_INT64,
         cudnnBackendAttributeType_t::CUDNN_TYPE_FLOAT => miopenBackendAttributeType_t::MIOPEN_TYPE_FLOAT,
         cudnnBackendAttributeType_t::CUDNN_TYPE_DOUBLE => miopenBackendAttributeType_t::MIOPEN_TYPE_DOUBLE,
+        cudnnBackendAttributeType_t::CUDNN_TYPE_VOID_PTR => miopenBackendAttributeType_t::MIOPEN_TYPE_VOID_PTR,
         cudnnBackendAttributeType_t::CUDNN_TYPE_CONVOLUTION_MODE => miopenBackendAttributeType_t::MIOPEN_TYPE_CONVOLUTION_MODE,
         cudnnBackendAttributeType_t::CUDNN_TYPE_HEUR_MODE => miopenBackendAttributeType_t::MIOPEN_TYPE_HEUR_MODE,
         cudnnBackendAttributeType_t::CUDNN_TYPE_BACKEND_DESCRIPTOR => miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR,
@@ -1216,6 +1221,7 @@ unsafe fn backend_cudnn_to_miopen(
     array_of_elements: *mut ::std::os::raw::c_void,
 ) -> () {
     match elements_type {
+        miopenBackendAttributeType_t::MIOPEN_TYPE_HANDLE => (),
         miopenBackendAttributeType_t::MIOPEN_TYPE_DATA_TYPE => {
             if element_count != 1 {
                 panic!("[ZLUDA] Unexpected value: element_count={}", element_count)
@@ -1223,6 +1229,9 @@ unsafe fn backend_cudnn_to_miopen(
             let p_data_type: *mut miopenDataType_t = array_of_elements.cast();
             *p_data_type = to_data_type(*(p_data_type as *mut cudnnDataType_t));
         },
+        miopenBackendAttributeType_t::MIOPEN_TYPE_INT64 => (),
+        miopenBackendAttributeType_t::MIOPEN_TYPE_DOUBLE => (),
+        miopenBackendAttributeType_t::MIOPEN_TYPE_VOID_PTR => (),
         miopenBackendAttributeType_t::MIOPEN_TYPE_CONVOLUTION_MODE => {
             if element_count != 1 {
                 panic!("[ZLUDA] Unexpected value: element_count={}", element_count)
@@ -1230,7 +1239,9 @@ unsafe fn backend_cudnn_to_miopen(
             let p_conv_mode: *mut miopenConvolutionMode_t = array_of_elements.cast();
             *p_conv_mode = conv_mode_to_cudnn(*(p_conv_mode as *mut cudnnConvolutionMode_t));
         },
-        _ => (),
+        miopenBackendAttributeType_t::MIOPEN_TYPE_HEUR_MODE => (),
+        miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR => (),
+        _ => println!("[ZLUDA] Warning: found unknown backend attribute type: {}", elements_type.0),
     }
 }
 
