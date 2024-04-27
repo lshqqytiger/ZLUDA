@@ -1210,14 +1210,7 @@ fn to_backend_attribute_type(attribute_type: cudnnBackendAttributeType_t) -> mio
     }
 }
 
-fn to_heur_mode(mode: cudnnBackendHeurMode_t) -> miopenBackendHeurMode_t {
-    match mode {
-        cudnnBackendHeurMode_t::CUDNN_HEUR_MODE_INSTANT => miopenBackendHeurMode_t::MIOPEN_HEUR_MODE_INSTANT,
-        _ => panic!("[ZLUDA] Unknown heur mode: {}", mode.0),
-    }
-}
-
-unsafe fn backend_patch_elements(
+unsafe fn backend_cudnn_to_miopen(
     elements_type: miopenBackendAttributeType_t,
     element_count: i64,
     array_of_elements: *mut ::std::os::raw::c_void,
@@ -1230,12 +1223,12 @@ unsafe fn backend_patch_elements(
             let p_data_type: *mut miopenDataType_t = array_of_elements.cast();
             *p_data_type = to_data_type(*(p_data_type as *mut cudnnDataType_t));
         },
-        miopenBackendAttributeType_t::MIOPEN_TYPE_HEUR_MODE => {
+        miopenBackendAttributeType_t::MIOPEN_TYPE_CONVOLUTION_MODE => {
             if element_count != 1 {
                 panic!("[ZLUDA] Unexpected value: element_count={}", element_count)
             }
-            let p_heur_mode: *mut miopenBackendHeurMode_t = array_of_elements.cast();
-            *p_heur_mode = to_heur_mode(*(p_heur_mode as *mut cudnnBackendHeurMode_t));
+            let p_conv_mode: *mut miopenConvolutionMode_t = array_of_elements.cast();
+            *p_conv_mode = conv_mode_to_cudnn(*(p_conv_mode as *mut cudnnConvolutionMode_t));
         },
         _ => (),
     }
@@ -1254,7 +1247,7 @@ unsafe fn backend_set_attribute(
     let attribute_name = to_backend_attribute_name(attribute_name);
     let attribute_type = to_backend_attribute_type(attribute_type);
     let elements = array_of_elements.clone();
-    backend_patch_elements(attribute_type, element_count, elements.cast_mut());
+    backend_cudnn_to_miopen(attribute_type, element_count, elements.cast_mut());
     to_cudnn(miopenBackendSetAttribute(
         descriptor.cast(),
         attribute_name,

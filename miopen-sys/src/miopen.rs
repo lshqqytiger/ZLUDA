@@ -652,6 +652,17 @@ extern "C" {
 }
 extern "C" {
     #[must_use]
+    #[doc = " @copydoc miopenSetTensorDescriptor()"]
+    pub fn miopenSetTensorDescriptorV2(
+        tensorDesc: miopenTensorDescriptor_t,
+        dataType: miopenDataType_t,
+        nbDims: ::std::os::raw::c_int,
+        dimsA: *const usize,
+        stridesA: *const usize,
+    ) -> miopenStatus_t;
+}
+extern "C" {
+    #[must_use]
     #[doc = " @brief Set the tensor cast type\n\n  For tensors where the cast_type attribute is set, the tensor elements would be converted to the\n target type before the target operation is applied. Currently, only supported for convolution\n operations targeting the FP8 datatype\n\n  @param tensorDesc Tensor descriptor type (input)\n  @param cast_type  MIOpen datatype (input)"]
     pub fn miopenSetTensorCastType(
         tensorDesc: miopenTensorDescriptor_t,
@@ -3149,37 +3160,82 @@ impl miopenTensorArgumentId_t {
     pub const miopenTensorMhaZInv: miopenTensorArgumentId_t = miopenTensorArgumentId_t(20);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorActivationX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(21);
+    pub const miopenTensorMhaDO: miopenTensorArgumentId_t = miopenTensorArgumentId_t(21);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorActivationY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(22);
+    pub const miopenTensorMhaDescaleO: miopenTensorArgumentId_t = miopenTensorArgumentId_t(22);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorActivationDX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(23);
+    pub const miopenTensorMhaDescaleDO: miopenTensorArgumentId_t = miopenTensorArgumentId_t(23);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorActivationDY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(24);
+    pub const miopenTensorMhaDescaleDS: miopenTensorArgumentId_t = miopenTensorArgumentId_t(24);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorBiasX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(25);
+    pub const miopenTensorMhaScaleDS: miopenTensorArgumentId_t = miopenTensorArgumentId_t(25);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorBiasY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(26);
+    pub const miopenTensorMhaScaleDQ: miopenTensorArgumentId_t = miopenTensorArgumentId_t(26);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorBias: miopenTensorArgumentId_t = miopenTensorArgumentId_t(27);
+    pub const miopenTensorMhaScaleDK: miopenTensorArgumentId_t = miopenTensorArgumentId_t(27);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorSoftmaxX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(28);
+    pub const miopenTensorMhaScaleDV: miopenTensorArgumentId_t = miopenTensorArgumentId_t(28);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorSoftmaxY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(29);
+    pub const miopenTensorMhaDQ: miopenTensorArgumentId_t = miopenTensorArgumentId_t(29);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorSoftmaxDX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(30);
+    pub const miopenTensorMhaDK: miopenTensorArgumentId_t = miopenTensorArgumentId_t(30);
 }
 impl miopenTensorArgumentId_t {
-    pub const miopenTensorSoftmaxDY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(31);
+    pub const miopenTensorMhaDV: miopenTensorArgumentId_t = miopenTensorArgumentId_t(31);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorMhaAmaxDQ: miopenTensorArgumentId_t = miopenTensorArgumentId_t(32);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorMhaAmaxDK: miopenTensorArgumentId_t = miopenTensorArgumentId_t(33);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorMhaAmaxDV: miopenTensorArgumentId_t = miopenTensorArgumentId_t(34);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorMhaAmaxDS: miopenTensorArgumentId_t = miopenTensorArgumentId_t(35);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorActivationX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(36);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorActivationY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(37);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorActivationDX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(38);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorActivationDY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(39);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBiasX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(40);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBiasY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(41);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBias: miopenTensorArgumentId_t = miopenTensorArgumentId_t(42);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorSoftmaxX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(43);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorSoftmaxY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(44);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorSoftmaxDX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(45);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorSoftmaxDY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(46);
 }
 impl miopenTensorArgumentId_t {
     pub const miopenTensorArgumentIsScalar: miopenTensorArgumentId_t =
@@ -3781,6 +3837,10 @@ impl miopenBackendAttributeName_t {
 impl miopenBackendAttributeName_t {
     pub const MIOPEN_ATTR_EXECUTION_PLAN_RUN_ONLY_INTERMEDIATE_UIDS: miopenBackendAttributeName_t =
         miopenBackendAttributeName_t(404);
+}
+impl miopenBackendAttributeName_t {
+    pub const MIOPEN_ATTR_EXECUTION_PLAN_JSON_REPRESENTATION: miopenBackendAttributeName_t =
+        miopenBackendAttributeName_t(405);
 }
 impl miopenBackendAttributeName_t {
     pub const MIOPEN_ATTR_INTERMEDIATE_INFO_UNIQUE_ID: miopenBackendAttributeName_t =
@@ -4656,30 +4716,6 @@ impl miopenBackendAttributeType_t {
 #[doc = " @brief Data type of an attribute of a backend descriptor\n\n Specifies the data type of an attribute of a backend descriptor.\n It is used to specify the type of data pointed to by the\n void *arrayOfElements argument of miopenBackendSetAttribute()\n and miopenBackendGetAttribute()"]
 #[derive(Copy, Clone, Hash, PartialEq, Eq)]
 pub struct miopenBackendAttributeType_t(pub ::std::os::raw::c_int);
-impl miopenBackendHeurMode_t {
-    #[doc = "< instant"]
-    pub const MIOPEN_HEUR_MODE_INSTANT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(0);
-}
-impl miopenBackendHeurMode_t {
-    #[doc = "< b"]
-    pub const MIOPEN_HEUR_MODE_B: miopenBackendHeurMode_t = miopenBackendHeurMode_t(1);
-}
-impl miopenBackendHeurMode_t {
-    #[doc = "< fallback"]
-    pub const MIOPEN_HEUR_MODE_FALLBACK: miopenBackendHeurMode_t = miopenBackendHeurMode_t(2);
-}
-impl miopenBackendHeurMode_t {
-    #[doc = "< a"]
-    pub const MIOPEN_HEUR_MODE_A: miopenBackendHeurMode_t = miopenBackendHeurMode_t(3);
-}
-impl miopenBackendHeurMode_t {
-    #[doc = "< count"]
-    pub const MIOPEN_HEUR_MODES_COUNT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(4);
-}
-#[repr(transparent)]
-#[doc = " @brief HeurMode\n"]
-#[derive(Copy, Clone, Hash, PartialEq, Eq)]
-pub struct miopenBackendHeurMode_t(pub ::std::os::raw::c_int);
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct miopenBackendDescriptor {
