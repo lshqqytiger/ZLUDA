@@ -39,7 +39,10 @@ pub unsafe extern "system" fn cudnnGetProperty(
     type_: libraryPropertyType,
     value: *mut ::std::os::raw::c_int,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::get_property(
+        type_,
+        value,
+    )
 }
 
 #[no_mangle]

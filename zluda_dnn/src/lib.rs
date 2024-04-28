@@ -53,6 +53,19 @@ fn to_cudnn(status: miopen_sys::miopenStatus_t) -> cudnnStatus_t {
     }
 }
 
+unsafe fn get_property(
+    prop: libraryPropertyType,
+    value: *mut i32,
+) -> cudnnStatus_t {
+    *value = match prop {
+        libraryPropertyType_t::MAJOR_VERSION => 8,
+        libraryPropertyType_t::MINOR_VERSION => 7,
+        libraryPropertyType_t::PATCH_LEVEL => 0,
+        _ => panic!(),
+    };
+    cudnnStatus_t::CUDNN_STATUS_SUCCESS
+}
+
 unsafe fn create(handle: *mut cudnnHandle_t) -> cudnnStatus_t {
     to_cudnn(miopenCreate(handle as _))
 }
