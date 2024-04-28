@@ -1,13 +1,13 @@
 name: Rust
-
 on:
   push:
-    branches: ["master"]
+    branches: [master]
   pull_request:
-    branches: ["master"]
+    branches: [master]
 
 env:
   CARGO_TERM_COLOR: always
+  ROCM_VERSION: "5.7.3"
 
 jobs:
   release:
@@ -33,67 +33,60 @@ jobs:
           draft: false
           prerelease: true
 
-  build-linux:
+  build_lin:
+    name: Build and publish (Linux)
+    runs-on: ubuntu-20.04
     needs: release
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-      pull-requests: write
-      repository-projects: write
-
     steps:
-      - name: Prepare for build
+      - uses: jlumbroso/free-disk-space@main
+      - name: Install ROCm
         run: |
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Initialize submodule
+          sudo mkdir --parents --mode=0755 /etc/apt/keyrings
+          sudo sh -c 'wget https://repo.radeon.com/rocm/rocm.gpg.key -O - |  gpg --dearmor | tee /etc/apt/keyrings/rocm.gpg > /dev/null'
+          sudo sh -c 'echo deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/${{ env.ROCM_VERSION }} focal main > /etc/apt/sources.list.d/rocm.list'
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends rocm-smi-lib hip-runtime-amd comgr hipblaslt-dev hipfft-dev rocblas-dev rocsolver-dev rocsparse-dev miopen-hip-dev rocm-device-libs
+          echo 'export PATH="$PATH:/opt/rocm/bin"' | sudo tee /etc/profile.d/rocm.sh  
+          echo '/opt/rocm/lib' | sudo tee /etc/ld.so.conf.d/rocm.conf
+          sudo ldconfig
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        # We use tar to unpack .tar.gz we've created because Github actions/upload-artifact
+        # is broken and will _always_ zip your artifact (even if it is a single file).
+        # See here: https://github.com/actions/upload-artifact/issues/39
+        # and here: https://github.com/actions/upload-artifact/issues/109
         run: |
-          git submodule init
-          git submodule update
-      - name: Prepare AMD HIP SDK
-        run: |
-          sudo apt update
-          wget https://repo.radeon.com/amdgpu-install/5.7.1/ubuntu/jammy/amdgpu-install_5.7.50701-1_all.deb
-          sudo apt install ./amdgpu-install_5.7.50701-1_all.deb
-          sudo apt update
-      - name: Install AMD HIP SDK
-        # can fail at dkms. ignore and continue
-        continue-on-error: true
-        run: sudo amdgpu-install --usecase=rocm,hip,hiplibsdk
-      - name: Build for Linux
-        run: |
-          cargo xtask --release
-      - name: Prepare for release
-        run: |
-          cd ./target/release
-          tar -czvf ZLUDA-linux-amd64.tar.gz *.so*
-      - name: Upload Linux artifact
+          cargo xtask zip -r
+          tar -xzf target/release/zluda.tar.gz -C target/release
+      # https://stackoverflow.com/a/64195658
+      - name: Set revision hash
+        run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Upload (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: zluda-linux-${{ env.SHORT_SHA }}
+          path: target/release/zluda
+      - name: Upload (release)
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ./target/release/ZLUDA-linux-amd64.tar.gz
+          asset_path: target/release/zluda.tar.gz
           asset_name: ZLUDA-linux-amd64.tar.gz
           asset_content_type: application/gzip
 
-  build-windows:
+  build_win:
+    name: Build and publish (Windows)
+    runs-on: windows-2019
     needs: release
-    runs-on: windows-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      repository-projects: write
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Initialize submodule
-        run: |
-          git submodule init
-          git submodule update
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Install AMD HIP SDK
         run: |
           C:\msys64\usr\bin\wget.exe https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-23.Q4-Win10-Win11-For-HIP.exe -O "amdgpu-install.exe"
@@ -101,24 +94,29 @@ jobs:
           Start-Sleep -Seconds 60
           $setupId = (Get-Process ATISetup).id
           Wait-Process -Id $setupId
-      - name: Build for Windows
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
         run: |
           $ROCm_PATH = "C:\Program Files\AMD\ROCm"
           $Env:HIP_PATH = "$ROCm_PATH\$(Get-ChildItem -Path $ROCm_PATH -Name)"
           $Env:PATH = "$Env:HIP_PATH\bin;$Env:PATH"
           $Env:HIP_PATH = "$Env:HIP_PATH\"
-          cargo xtask --release
-      - name: Prepare for release
-        run: |
-          cd .\target\release
-          7z a .\ZLUDA-windows-amd64.zip .\*.dll
-          7z a .\ZLUDA-windows-amd64.zip .\*.exe
-      - name: Upload Windows artifact
+          cargo xtask zip -r
+          Expand-Archive -Path target/release/zluda.zip -DestinationPath target/release
+      # https://stackoverflow.com/a/74033027
+      - name: Set revision hash
+        run: echo "SHORT_SHA=$("${{ github.sha }}".SubString(0, 7))" >> $env:GITHUB_ENV
+      - name: Upload (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: zluda-windows-${{ env.SHORT_SHA }}
+          path: target/release/zluda
+      - name: Upload (release)
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ./target/release/ZLUDA-windows-amd64.zip
+          asset_path: target/release/zluda.zip
           asset_name: ZLUDA-windows-amd64.zip
           asset_content_type: application/zip
