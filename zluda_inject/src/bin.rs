@@ -24,11 +24,13 @@ use winapi::um::winbase::{INFINITE, WAIT_FAILED};
 
 static REDIRECT_DLL: &'static str = "zluda_redirect.dll";
 static NCCL_DLL: &'static str = "nccl.dll";
-static NVRTC_DLL: &'static str = "nvrtc.dll";
+static NVRTC_DLL: &'static str = "nvrtc64.dll";
 static NVCUDA_DLL: &'static str = "nvcuda.dll";
 static NVML_DLL: &'static str = "nvml.dll";
 static NVAPI_DLL: &'static str = "nvapi64.dll";
 static NVOPTIX_DLL: &'static str = "optix.6.6.0.dll";
+static CUBLAS_DLL: &'static str = "cublas64.dll";
+static CUSPARSE_DLL: &'static str = "cusparse64.dll";
 
 include!("../../zluda_redirect/src/payload_guid.rs");
 
@@ -39,7 +41,7 @@ struct ProgramArguments {
     #[argh(option)]
     nccl: Option<PathBuf>,
 
-    /// DLL to be injected instead of system nvrtc.dll. If not provided {0}, will use nvrtc.dll from its own directory
+    /// DLL to be injected instead of system nvrtc64.dll. If not provided, no injection will take place
     #[argh(option)]
     nvrtc: Option<PathBuf>,
 
@@ -59,6 +61,14 @@ struct ProgramArguments {
     #[argh(option)]
     nvoptix: Option<PathBuf>,
 
+    /// DLL to be injected instead of system cublas64.dll. If not provided, no injection will take place
+    #[argh(option)]
+    cublas: Option<PathBuf>,
+
+    /// DLL to be injected instead of system cusparse64.dll. If not provided, no injection will take place
+    #[argh(option)]
+    cusparse: Option<PathBuf>,
+
     /// executable to be injected with custom CUDA libraries
     #[argh(positional)]
     exe: String,
@@ -76,16 +86,24 @@ pub fn main_impl() -> Result<(), Box<dyn Error>> {
     let mut proc_info = unsafe { mem::zeroed::<detours_sys::_PROCESS_INFORMATION>() };
     let mut dlls_to_inject = vec![
         environment.nccl_path_zero_terminated.as_ptr() as _,
-        environment.nvrtc_path_zero_terminated.as_ptr() as _,
         environment.nvcuda_path_zero_terminated.as_ptr() as _,
         environment.nvml_path_zero_terminated.as_ptr() as *const i8,
         environment.redirect_path_zero_terminated.as_ptr() as _,
     ];
+    if let Some(ref nvrtc) = environment.nvrtc_path_zero_terminated {
+        dlls_to_inject.push(nvrtc.as_ptr() as _);
+    }
     if let Some(ref nvapi) = environment.nvapi_path_zero_terminated {
         dlls_to_inject.push(nvapi.as_ptr() as _);
     }
     if let Some(ref nvoptix) = environment.nvoptix_path_zero_terminated {
         dlls_to_inject.push(nvoptix.as_ptr() as _);
+    }
+    if let Some(ref cublas) = environment.cublas_path_zero_terminated {
+        dlls_to_inject.push(cublas.as_ptr() as _);
+    }
+    if let Some(ref cusparse) = environment.cusparse_path_zero_terminated {
+        dlls_to_inject.push(cusparse.as_ptr() as _);
     }
     os_call!(
         detours_sys::DetourCreateProcessWithDllsW(
@@ -159,11 +177,13 @@ pub fn main_impl() -> Result<(), Box<dyn Error>> {
 
 struct NormalizedArguments {
     nccl_path: PathBuf,
-    nvrtc_path: PathBuf,
+    nvrtc_path: Option<PathBuf>,
     nvcuda_path: PathBuf,
     nvml_path: PathBuf,
     nvapi_path: Option<PathBuf>,
     nvoptix_path: Option<PathBuf>,
+    cublas_path: Option<PathBuf>,
+    cusparse_path: Option<PathBuf>,
     redirect_path: PathBuf,
     winapi_command_line_zero_terminated: Vec<u16>,
 }
@@ -173,13 +193,14 @@ impl NormalizedArguments {
         let current_exe = env::current_exe()?;
         let nccl_path =
             Self::get_absolute_path_or_default(&current_exe, prog_args.nccl, NCCL_DLL)?;
-        let nvrtc_path =
-            Self::get_absolute_path_or_default(&current_exe, prog_args.nvrtc, NVRTC_DLL)?;
+        let nvrtc_path = prog_args.nvrtc.map(Self::get_absolute_path).transpose()?;
         let nvcuda_path =
             Self::get_absolute_path_or_default(&current_exe, prog_args.nvcuda, NVCUDA_DLL)?;
         let nvml_path = Self::get_absolute_path_or_default(&current_exe, prog_args.nvml, NVML_DLL)?;
         let nvapi_path = prog_args.nvapi.map(Self::get_absolute_path).transpose()?;
         let nvoptix_path = prog_args.nvoptix.map(Self::get_absolute_path).transpose()?;
+        let cublas_path = prog_args.cublas.map(Self::get_absolute_path).transpose()?;
+        let cusparse_path = prog_args.cusparse.map(Self::get_absolute_path).transpose()?;
         let winapi_command_line_zero_terminated =
             construct_command_line(std::iter::once(prog_args.exe).chain(prog_args.args));
         let mut redirect_path = current_exe.parent().unwrap().to_path_buf();
@@ -191,6 +212,8 @@ impl NormalizedArguments {
             nvml_path,
             nvapi_path,
             nvoptix_path,
+            cublas_path,
+            cusparse_path,
             redirect_path,
             winapi_command_line_zero_terminated,
         })
@@ -245,11 +268,13 @@ impl NormalizedArguments {
 
 struct Environment {
     nccl_path_zero_terminated: String,
-    nvrtc_path_zero_terminated: String,
+    nvrtc_path_zero_terminated: Option<String>,
     nvcuda_path_zero_terminated: String,
     nvml_path_zero_terminated: String,
     nvapi_path_zero_terminated: Option<String>,
     nvoptix_path_zero_terminated: Option<String>,
+    cublas_path_zero_terminated: Option<String>,
+    cusparse_path_zero_terminated: Option<String>,
     redirect_path_zero_terminated: String,
     winapi_command_line_zero_terminated: Vec<u16>,
     _temp_dir: TempDir,
@@ -266,11 +291,14 @@ impl Environment {
             &_temp_dir,
             NCCL_DLL,
         )?);
-        let nvrtc_path_zero_terminated = Self::zero_terminate(Self::copy_to_correct_name(
-            args.nvrtc_path,
-            &_temp_dir,
-            NVRTC_DLL,
-        )?);
+        let nvrtc_path_zero_terminated = args
+            .nvrtc_path
+            .map(|nvrtc| {
+                Ok::<_, io::Error>(Self::zero_terminate(Self::copy_to_correct_name(
+                    nvrtc, &_temp_dir, NVRTC_DLL,
+                )?))
+            })
+            .transpose()?;
         let nvcuda_path_zero_terminated = Self::zero_terminate(Self::copy_to_correct_name(
             args.nvcuda_path,
             &_temp_dir,
@@ -299,6 +327,26 @@ impl Environment {
                 )?))
             })
             .transpose()?;
+        let cublas_path_zero_terminated = args
+            .cublas_path
+            .map(|cublas| {
+                Ok::<_, io::Error>(Self::zero_terminate(Self::copy_to_correct_name(
+                    cublas,
+                    &_temp_dir,
+                    CUBLAS_DLL,
+                )?))
+            })
+            .transpose()?;
+        let cusparse_path_zero_terminated = args
+            .cusparse_path
+            .map(|cusparse| {
+                Ok::<_, io::Error>(Self::zero_terminate(Self::copy_to_correct_name(
+                    cusparse,
+                    &_temp_dir,
+                    CUSPARSE_DLL,
+                )?))
+            })
+            .transpose()?;
         let redirect_path_zero_terminated = Self::zero_terminate(args.redirect_path);
         Ok(Self {
             nccl_path_zero_terminated,
@@ -307,6 +355,8 @@ impl Environment {
             nvml_path_zero_terminated,
             nvapi_path_zero_terminated,
             nvoptix_path_zero_terminated,
+            cublas_path_zero_terminated,
+            cusparse_path_zero_terminated,
             redirect_path_zero_terminated,
             winapi_command_line_zero_terminated: args.winapi_command_line_zero_terminated,
             _temp_dir,
