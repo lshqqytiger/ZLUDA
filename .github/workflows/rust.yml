@@ -36,6 +36,7 @@ jobs:
   build_lin:
     name: Build and publish (Linux)
     runs-on: ubuntu-20.04
+    needs: release
     steps:
       - uses: jlumbroso/free-disk-space@main
       - name: Install ROCm
@@ -81,6 +82,7 @@ jobs:
   build_win:
     name: Build and publish (Windows)
     runs-on: windows-2019
+    needs: release
     steps:
       - uses: actions/checkout@v4
         with:
