@@ -21,7 +21,7 @@ pub unsafe extern "system" fn cudnnGetCudartVersion() -> usize {
 pub unsafe extern "system" fn cudnnGetErrorString(
     status: cudnnStatus_t,
 ) -> *const ::std::os::raw::c_char {
-    unimplemented!()
+    crate::get_error_string(status)
 }
 
 #[no_mangle]

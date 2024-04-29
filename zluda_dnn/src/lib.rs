@@ -53,6 +53,22 @@ fn to_cudnn(status: miopen_sys::miopenStatus_t) -> cudnnStatus_t {
     }
 }
 
+fn to_miopen(status: cudnnStatus_t) -> miopen_sys::miopenStatus_t {
+    match status {
+        cudnnStatus_t::CUDNN_STATUS_SUCCESS => miopen_sys::miopenStatus_t::miopenStatusSuccess,
+        cudnnStatus_t::CUDNN_STATUS_INVALID_VALUE => miopen_sys::miopenStatus_t::miopenStatusInvalidValue,
+        cudnnStatus_t::CUDNN_STATUS_BAD_PARAM => miopen_sys::miopenStatus_t::miopenStatusBadParm,
+        cudnnStatus_t::CUDNN_STATUS_NOT_SUPPORTED => miopen_sys::miopenStatus_t::miopenStatusNotImplemented,
+        cudnnStatus_t::CUDNN_STATUS_INTERNAL_ERROR => miopen_sys::miopenStatus_t::miopenStatusUnknownError,
+        err => panic!("[ZLUDA] MIOpen failed: {}", err.0),
+    }
+}
+
+unsafe fn get_error_string(status: cudnnStatus_t) -> *const ::std::os::raw::c_char {
+    let status = to_miopen(status);
+    miopenGetErrorString(status)
+}
+
 unsafe fn get_property(
     prop: libraryPropertyType,
     value: *mut i32,
@@ -1243,6 +1259,7 @@ unsafe fn backend_cudnn_to_miopen(
             *p_data_type = to_data_type(*(p_data_type as *mut cudnnDataType_t));
         },
         miopenBackendAttributeType_t::MIOPEN_TYPE_INT64 => (),
+        miopenBackendAttributeType_t::MIOPEN_TYPE_FLOAT => (),
         miopenBackendAttributeType_t::MIOPEN_TYPE_DOUBLE => (),
         miopenBackendAttributeType_t::MIOPEN_TYPE_VOID_PTR => (),
         miopenBackendAttributeType_t::MIOPEN_TYPE_CONVOLUTION_MODE => {
