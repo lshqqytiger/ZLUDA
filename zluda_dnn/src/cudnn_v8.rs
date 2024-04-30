@@ -4,7 +4,7 @@ use crate::types::*;
 
 #[no_mangle]
 pub unsafe extern "system" fn cudnnGetVersion() -> usize {
-    8700 as usize
+    8906 as usize
 }
 
 #[no_mangle]

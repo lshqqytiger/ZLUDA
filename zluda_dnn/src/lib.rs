@@ -20,7 +20,7 @@ use types::*;
 
 use hip_runtime_sys::*;
 use miopen_sys::*;
-use std::{mem, ptr, alloc::{self, Layout}};
+use std::{mem, ptr};
 
 macro_rules! call {
     ($expr:expr) => {{
@@ -1215,6 +1215,8 @@ fn to_backend_attribute_name(name: cudnnBackendAttributeName_t) -> miopenBackend
         cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_DIMENSIONS => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_DIMENSIONS,
         cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_STRIDES => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_STRIDES,
         cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_UNIQUE_ID => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_UNIQUE_ID,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_IS_VIRTUAL => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_IS_VIRTUAL,
+        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_IS_BY_VALUE => miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_IS_BY_VALUE,
         cudnnBackendAttributeName_t::CUDNN_ATTR_VARIANT_PACK_UNIQUE_IDS => miopenBackendAttributeName_t::MIOPEN_ATTR_VARIANT_PACK_UNIQUE_IDS,
         cudnnBackendAttributeName_t::CUDNN_ATTR_VARIANT_PACK_DATA_POINTERS => miopenBackendAttributeName_t::MIOPEN_ATTR_VARIANT_PACK_DATA_POINTERS,
         cudnnBackendAttributeName_t::CUDNN_ATTR_VARIANT_PACK_WORKSPACE => miopenBackendAttributeName_t::MIOPEN_ATTR_VARIANT_PACK_WORKSPACE,
@@ -1233,6 +1235,7 @@ fn to_backend_attribute_type(attribute_type: cudnnBackendAttributeType_t) -> mio
     match attribute_type {
         cudnnBackendAttributeType_t::CUDNN_TYPE_HANDLE => miopenBackendAttributeType_t::MIOPEN_TYPE_HANDLE,
         cudnnBackendAttributeType_t::CUDNN_TYPE_DATA_TYPE => miopenBackendAttributeType_t::MIOPEN_TYPE_DATA_TYPE,
+        cudnnBackendAttributeType_t::CUDNN_TYPE_BOOLEAN => miopenBackendAttributeType_t::MIOPEN_TYPE_BOOLEAN,
         cudnnBackendAttributeType_t::CUDNN_TYPE_INT64 => miopenBackendAttributeType_t::MIOPEN_TYPE_INT64,
         cudnnBackendAttributeType_t::CUDNN_TYPE_FLOAT => miopenBackendAttributeType_t::MIOPEN_TYPE_FLOAT,
         cudnnBackendAttributeType_t::CUDNN_TYPE_DOUBLE => miopenBackendAttributeType_t::MIOPEN_TYPE_DOUBLE,
