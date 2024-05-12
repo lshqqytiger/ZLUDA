@@ -2868,7 +2868,7 @@ pub extern "C" fn nvmlDeviceGetCudaComputeCapability(
     major: *mut ::std::os::raw::c_int,
     minor: *mut ::std::os::raw::c_int,
 ) -> nvmlReturn_t {
-    crate::common::unimplemented()
+    unsafe { crate::common::device_get_cuda_compute_capability(device, major, minor) }
 }
 
 #[no_mangle]

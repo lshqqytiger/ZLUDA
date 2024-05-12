@@ -53,9 +53,7 @@ pub unsafe extern "system" fn nvrtcVersion(
     major: *mut ::std::os::raw::c_int,
     minor: *mut ::std::os::raw::c_int,
 ) -> nvrtcResult {
-    *major = 11;
-    *minor = 8;
-    nvrtcResult::NVRTC_SUCCESS
+    crate::version(major, minor)
 }
 
 #[doc = " \\ingroup query\n \\brief   nvrtcGetNumSupportedArchs sets the output parameter \\p numArchs\n          with the number of architectures supported by NVRTC. This can\n          then be used to pass an array to ::nvrtcGetSupportedArchs to\n          get the supported architectures.\n\n \\param   [out] numArchs number of supported architectures.\n \\return\n   - \\link #nvrtcResult NVRTC_SUCCESS \\endlink\n   - \\link #nvrtcResult NVRTC_ERROR_INVALID_INPUT \\endlink\n\n see    ::nvrtcGetSupportedArchs"]

@@ -67,6 +67,8 @@ pub(crate) fn error_string(result: nvmlReturn_t) -> *const ::std::os::raw::c_cha
 // https://docs.nvidia.com/deploy/cuda-compatibility/index.html#minor-version-compatibility
 const VERSION: &'static [u8] = b"511.09.01"; // minimum required by Arnold
 const NVML_VERSION: &'static [u8] = b"11.511.09.01"; // // minimum required by Arnold
+const NVML_COMPUTE_CAPABILITY_MAJOR: i32 = 8;
+const NVML_COMPUTE_CAPABILITY_MINOR: i32 = 8;
 
 impl From<Result<(), nvmlReturn_t>> for nvmlReturn_t {
     fn from(result: Result<(), nvmlReturn_t>) -> Self {
@@ -157,4 +159,14 @@ pub(crate)  unsafe fn parse_pci_address(address: *const i8) -> Result<(i32, i32,
     let bus =
         i32::from_str_radix(bus, 16).map_err(|_| nvmlReturn_t::NVML_ERROR_INVALID_ARGUMENT)?;
     Ok((bus, device, function))
+}
+
+pub(crate) unsafe fn device_get_cuda_compute_capability(
+    _device: *mut crate::nvml::nvmlDevice_st,
+    major: *mut i32,
+    minor: *mut i32,
+) -> nvmlReturn_t {
+    *major = NVML_COMPUTE_CAPABILITY_MAJOR;
+    *minor = NVML_COMPUTE_CAPABILITY_MINOR;
+    nvmlReturn_t::NVML_SUCCESS
 }

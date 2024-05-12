@@ -209,13 +209,13 @@ unsafe fn sgemm(
     c: *mut f32,
     ldc: i32,
 ) -> cublasStatus_t {
-    let transa = op_from_cuda(cublasOperation_t(transa as _));
-    let transb = op_from_cuda(cublasOperation_t(transb as _));
     let mut handle = mem::zeroed();
     let mut status = to_cuda(rocblas_create_handle(handle));
     if status != cublasStatus_t::CUBLAS_STATUS_SUCCESS {
         return status;
     }
+    let transa = op_from_cuda(cublasOperation_t(transa as _));
+    let transb = op_from_cuda(cublasOperation_t(transb as _));
     status = to_cuda(rocblas_sgemm(
         handle.cast(),
         transa,
@@ -279,6 +279,29 @@ unsafe fn init() -> cublasStatus_t {
     cublasStatus_t::CUBLAS_STATUS_SUCCESS
 }
 
+unsafe fn sdot(
+    n: i32,
+    x: *const f32,
+    incx: i32,
+    y: *const f32,
+    incy: i32,
+) -> f32 {
+    let mut handle = mem::zeroed();
+    let mut status = rocblas_create_handle(handle);
+    let mut result = 0.0;
+    status = rocblas_sdot(
+        handle.cast(),
+        n,
+        x,
+        incx,
+        y,
+        incy,
+        &mut result,
+    );
+    status = rocblas_destroy_handle(*handle);
+    result
+}
+
 unsafe fn dasum_v2(
     handle: *mut cublasContext,
     n: i32,
@@ -331,6 +354,58 @@ unsafe fn dnrm_v2(
     result: *mut f64,
 ) -> cublasStatus_t {
     to_cuda(rocblas_dnrm2(handle.cast(), n, x, incx, result))
+}
+
+unsafe fn dot_ex(
+    handle: *mut cublasContext,
+    n: i32,
+    x: *const ::std::os::raw::c_void,
+    x_type: cudaDataType,
+    incx: i32,
+    y: *const ::std::os::raw::c_void,
+    y_type: cudaDataType,
+    incy: i32,
+    result: *mut ::std::os::raw::c_void,
+    result_type: cudaDataType,
+    execution_type: cudaDataType,
+) -> cublasStatus_t {
+    let x_type = type_from_cuda(x_type);
+    let y_type = type_from_cuda(y_type);
+    let result_type = type_from_cuda(result_type);
+    let execution_type = type_from_cuda(execution_type);
+    to_cuda(rocblas_dot_ex(
+        handle.cast(),
+        n,
+        x,
+        x_type,
+        incx,
+        y,
+        y_type,
+        incy,
+        result,
+        result_type,
+        execution_type,
+    ))
+}
+
+unsafe fn sdot_v2(
+    handle: cublasHandle_t,
+    n: i32,
+    x: *const f32,
+    incx: i32,
+    y: *const f32,
+    incy: i32,
+    result: *mut f32,
+) -> cublasStatus_t {
+    to_cuda(rocblas_sdot(
+        handle.cast(),
+        n,
+        x,
+        incx,
+        y,
+        incy,
+        result,
+    ))
 }
 
 unsafe fn idamax_v2(
@@ -979,13 +1054,13 @@ unsafe fn dgemm(
     c: *mut f64,
     ldc: i32,
 ) -> cublasStatus_t {
-    let transa = op_from_cuda(cublasOperation_t(transa as _));
-    let transb = op_from_cuda(cublasOperation_t(transb as _));
     let mut handle = mem::zeroed();
     let mut status = to_cuda(rocblas_create_handle(handle));
     if status != cublasStatus_t::CUBLAS_STATUS_SUCCESS {
         return status;
     }
+    let transa = op_from_cuda(cublasOperation_t(transa as _));
+    let transb = op_from_cuda(cublasOperation_t(transb as _));
     status = to_cuda(rocblas_dgemm(
         handle.cast(),
         transa,
