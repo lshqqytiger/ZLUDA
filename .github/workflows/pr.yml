@@ -9,7 +9,7 @@ env:
 
 jobs:
   build_lin:
-    name: Build and publish (Linux)
+    name: Build (Linux)
     runs-on: ubuntu-20.04
     steps:
       - uses: jlumbroso/free-disk-space@main
@@ -32,7 +32,7 @@ jobs:
           cargo xtask -r
 
   build_win:
-    name: Build and publish (Windows)
+    name: Build (Windows)
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v4
