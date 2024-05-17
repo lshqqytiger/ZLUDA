@@ -392,7 +392,7 @@ impl<'a, 'input> LinkingResolver<'a, 'input> {
             linking,
             Cow::Borrowed(decl.name()),
             symbol,
-            decl.name.is_kernel(),
+            decl.name.is_kernel() && is_definition,
         )
     }
 
@@ -591,10 +591,21 @@ impl<'input> ResolvedLinking<'input> {
         explicit_initializer: bool,
     ) -> Result<VisibilityAdjustment, TranslateError> {
         if linking == ast::LinkingDirective::None {
-            if self.implicit_globals.get(&name).copied() == Some((module, directive)) {
-                Ok(VisibilityAdjustment::Global)
-            } else {
-                Ok(VisibilityAdjustment::Module)
+            match self.implicit_globals.get(&name).copied() {
+                Some((implicit_module, implicit_directive)) => {
+                    if implicit_module == module {
+                        if implicit_directive == directive {
+                            Ok(VisibilityAdjustment::Global)
+                        } else {
+                            // If it were something other than a declaration it would
+                            // fail module-level symbol resolution
+                            Ok(VisibilityAdjustment::GlobalDeclaration(None))
+                        }
+                    } else {
+                        Ok(VisibilityAdjustment::Module)
+                    }
+                }
+                None => Ok(VisibilityAdjustment::Module),
             }
         } else {
             if let Some((global_module, global_directive, type_)) = self.explicit_globals.get(&name)
@@ -1031,10 +1042,8 @@ fn normalize_method<'a, 'b, 'input>(
         normalize_method_params(&mut fn_scope, &*method.func_directive.return_arguments)?;
     let input_arguments =
         normalize_method_params(&mut fn_scope, &*method.func_directive.input_arguments)?;
-    if !is_kernel {
-        if let hash_map::Entry::Vacant(entry) = function_decls.entry(name) {
-            entry.insert((return_arguments.clone(), input_arguments.clone()));
-        }
+    if let hash_map::Entry::Vacant(entry) = function_decls.entry(name) {
+        entry.insert((return_arguments.clone(), input_arguments.clone()));
     }
     let source_name = if has_global_name {
         Some(Cow::Borrowed(method.func_directive.name()))
@@ -1188,11 +1197,9 @@ fn expand_initializer2<'a, 'b, 'input>(
 ) -> Result<ast::Initializer<Id>, TranslateError> {
     Ok(match init {
         ast::Initializer::Constant(c) => ast::Initializer::Constant(c),
-        ast::Initializer::Global(g, type_) => {
-            ast::Initializer::Global(scope.get_id_in_module_scope(g)?, type_)
-        }
-        ast::Initializer::GenericGlobal(g, type_) => {
-            ast::Initializer::GenericGlobal(scope.get_id_in_module_scope(g)?, type_)
+        ast::Initializer::Global(g) => ast::Initializer::Global(scope.get_id_in_module_scope(g)?),
+        ast::Initializer::GenericGlobal(g) => {
+            ast::Initializer::GenericGlobal(scope.get_id_in_module_scope(g)?)
         }
         ast::Initializer::Add(add) => {
             let (init1, init2) = *add;
@@ -1285,11 +1292,7 @@ fn resolve_instruction_types<'input>(
         .map(|directive| {
             Ok(match directive {
                 TranslationDirective::Variable(linking, compiled_name, var) => {
-                    TranslationDirective::Variable(
-                        linking,
-                        compiled_name,
-                        resolve_initializers(id_defs, var)?,
-                    )
+                    TranslationDirective::Variable(linking, compiled_name, var)
                 }
                 TranslationDirective::Method(method) => {
                     let body = match method.body {
@@ -1461,47 +1464,12 @@ fn resolve_instruction_types_method<'input>(
                 }
             },
             Statement::Label(i) => result.push(Statement::Label(i)),
-            Statement::Variable(v) => {
-                result.push(Statement::Variable(resolve_initializers(id_defs, v)?))
-            }
+            Statement::Variable(v) => result.push(Statement::Variable(v)),
             Statement::Conditional(c) => result.push(Statement::Conditional(c)),
             _ => return Err(TranslateError::unreachable()),
         }
     }
     Ok(result)
-}
-
-fn resolve_initializers<'input>(
-    id_defs: &mut IdNameMapBuilder<'input>,
-    mut v: Variable,
-) -> Result<Variable, TranslateError> {
-    fn resolve_initializer_impl<'input>(
-        id_defs: &mut IdNameMapBuilder<'input>,
-        init: &mut ast::Initializer<Id>,
-    ) -> Result<(), TranslateError> {
-        match init {
-            ast::Initializer::Constant(_) => {}
-            ast::Initializer::Global(name, type_)
-            | ast::Initializer::GenericGlobal(name, type_) => {
-                let (src_type, _, _, _) = id_defs.get_typed(*name)?;
-                *type_ = src_type;
-            }
-            ast::Initializer::Add(subinit) => {
-                resolve_initializer_impl(id_defs, &mut (*subinit).0)?;
-                resolve_initializer_impl(id_defs, &mut (*subinit).1)?;
-            }
-            ast::Initializer::Array(inits) => {
-                for init in inits.iter_mut() {
-                    resolve_initializer_impl(id_defs, init)?;
-                }
-            }
-        }
-        Ok(())
-    }
-    if let Some(ref mut init) = v.initializer {
-        resolve_initializer_impl(id_defs, init)?;
-    }
-    Ok(v)
 }
 
 // TODO: All this garbage should be replaced with proper constant propagation or
@@ -2526,58 +2494,6 @@ fn insert_implicit_conversions2_impl<'input>(
     Ok(result)
 }
 
-fn normalize_labels<'input>(
-    module: TranslationModule<'input, ExpandedArgParams>,
-) -> Result<TranslationModule<'input, ExpandedArgParams>, TranslateError> {
-    convert_methods_simple(module, normalize_labels2_impl)
-}
-
-fn normalize_labels2_impl<'input>(
-    id_defs: &mut IdNameMapBuilder<'input>,
-    fn_body: Vec<ExpandedStatement>,
-) -> Result<Vec<ExpandedStatement>, TranslateError> {
-    let mut labels_in_use = FxHashSet::default();
-    for statement in fn_body.iter() {
-        match statement {
-            Statement::Instruction(i) => {
-                if let Some(target) = i.jump_target() {
-                    labels_in_use.insert(target);
-                }
-            }
-            Statement::Conditional(cond) => {
-                labels_in_use.insert(cond.if_true);
-                labels_in_use.insert(cond.if_false);
-            }
-            Statement::Call(..)
-            | Statement::Variable(..)
-            | Statement::LoadVar(..)
-            | Statement::StoreVar(..)
-            | Statement::RetValue(..)
-            | Statement::Conversion(..)
-            | Statement::Constant(..)
-            | Statement::Label(..)
-            | Statement::PtrAccess { .. }
-            | Statement::RepackVector(..)
-            | Statement::MadC(..)
-            | Statement::MadCC(..)
-            | Statement::AddC(..)
-            | Statement::AddCC(..)
-            | Statement::SubC(..)
-            | Statement::SubCC(..)
-            | Statement::AsmVolatile { .. }
-            | Statement::FunctionPointer(..) => {}
-        }
-    }
-    Ok(
-        iter::once(Statement::Label(id_defs.register_intermediate(None)))
-            .chain(fn_body.into_iter().filter(|s| match s {
-                Statement::Label(i) => labels_in_use.contains(i),
-                _ => true,
-            }))
-            .collect::<Vec<_>>(),
-    )
-}
-
 fn hoist_globals<'input, P: ast::ArgParams<Id = Id>>(
     module: TranslationModule<'input, P>,
 ) -> TranslationModule<'input, P> {
@@ -2822,9 +2738,14 @@ fn replace_instructions_with_builtins_impl<'input>(
             }
             Statement::Instruction(ast::Instruction::Tex(tex, arg)) => {
                 let geometry = tex.geometry.as_ptx();
+                let op_name = if arg.lod.is_none() {
+                    "tex"
+                } else {
+                    "tex_level"
+                };
                 let fn_name = [
                     ZLUDA_PTX_PREFIX,
-                    "tex",
+                    op_name,
                     tex.suffix(),
                     "_",
                     geometry,
@@ -3392,6 +3313,7 @@ fn to_llvm_module_impl2<'a, 'input>(
     if let Some(ref mut raytracing_state) = raytracing {
         translation_module = raytracing::run_on_normalized(translation_module, raytracing_state)?;
     }
+    let translation_module = return_from_noreturn(translation_module);
     let translation_module = extract_builtin_functions(translation_module);
     let translation_module = resolve_instruction_types(translation_module, functions)?;
     let mut translation_module = restructure_function_return_types(translation_module)?;
@@ -3410,9 +3332,7 @@ fn to_llvm_module_impl2<'a, 'input>(
     }
     let translation_module = insert_implicit_conversions(translation_module)?;
     let translation_module = insert_compilation_mode_prologue(translation_module);
-    let translation_module = normalize_labels(translation_module)?;
     let translation_module = hoist_globals(translation_module);
-    let translation_module = move_variables_to_start(translation_module)?;
     let mut translation_module = replace_instructions_with_builtins(translation_module)?;
     if raytracing.is_some() {
         translation_module = raytracing::replace_tex_builtins_hack(translation_module)?;
@@ -3439,47 +3359,30 @@ fn to_llvm_module_impl2<'a, 'input>(
     })
 }
 
-// From "Performance Tips for Frontend Authors" (https://llvm.org/docs/Frontend/PerformanceTips.html):
-// "The SROA (Scalar Replacement Of Aggregates) and Mem2Reg passes only attempt to eliminate alloca
-// instructions that are in the entry basic block. Given SSA is the canonical form expected by much
-// of the optimizer; if allocas can not be eliminated by Mem2Reg or SROA, the optimizer is likely to
-// be less effective than it could be."
-// Empirically, this is true. Moving allocas to the start gives us less spill-happy assembly
-fn move_variables_to_start<'input, P: ast::ArgParams<Id = Id>>(
-    module: TranslationModule<'input, P>,
-) -> Result<TranslationModule<'input, P>, TranslateError> {
-    convert_methods_simple(module, move_variables_to_start_impl)
-}
-
-fn move_variables_to_start_impl<'input, P: ast::ArgParams>(
-    _: &mut IdNameMapBuilder<'input>,
-    fn_body: Vec<Statement<ast::Instruction<P>, P>>,
-) -> Result<Vec<Statement<ast::Instruction<P>, P>>, TranslateError> {
-    if fn_body.is_empty() {
-        return Ok(fn_body);
+// In PTX it's legal to have a function like this:
+//      .func noreturn(.param .b64 noreturn_0)
+//      .noreturn
+//      {
+//      }
+// Which trips up LLVM. We normalize this by inserting `ret;`
+fn return_from_noreturn(
+    mut translation_module: TranslationModule<NormalizedArgParams>,
+) -> TranslationModule<NormalizedArgParams> {
+    for directive in translation_module.directives.iter_mut() {
+        match directive {
+            TranslationDirective::Method(method) => {
+                if let Some(ref mut body) = method.body {
+                    if body.is_empty() && method.tuning.contains(&ast::TuningDirective::Noreturn) {
+                        body.push(Statement::Instruction(ast::Instruction::Ret(
+                            ast::RetData { uniform: false },
+                        )));
+                    }
+                }
+            }
+            TranslationDirective::Variable(..) => {}
+        }
     }
-    let mut result = (0..fn_body.len())
-        .into_iter()
-        .map(|_| mem::MaybeUninit::<_>::uninit())
-        .collect::<Vec<_>>();
-    let variables_count = fn_body.iter().fold(0, |acc, statement| {
-        acc + matches!(statement, Statement::Variable(..)) as usize
-    });
-    let mut variable = 1usize;
-    let mut non_variable = variables_count + 1;
-    // methods always start with an entry label
-    let mut statements = fn_body.into_iter();
-    let start_label = statements.next().ok_or_else(TranslateError::unreachable)?;
-    unsafe { result.get_unchecked_mut(0).write(start_label) };
-    for statement in statements {
-        let index = match statement {
-            Statement::Variable(_) => &mut variable,
-            _ => &mut non_variable,
-        };
-        unsafe { result.get_unchecked_mut(*index).write(statement) };
-        *index += 1;
-    }
-    Ok(unsafe { mem::transmute(result) })
+    translation_module
 }
 
 // PTX definition of param state space does not translate cleanly into AMDGPU notion of an address space:
@@ -3633,7 +3536,8 @@ fn create_metadata<'input>(
                     match tuning {
                         // TODO: measure
                         ast::TuningDirective::MaxNReg(_)
-                        | ast::TuningDirective::MinNCtaPerSm(_) => {}
+                        | ast::TuningDirective::MinNCtaPerSm(_)
+                        | ast::TuningDirective::Noreturn => {}
                         ast::TuningDirective::MaxNtid(x, y, z) => {
                             let size = x as u64 * y as u64 * z as u64;
                             kernel_metadata.push((
@@ -3679,7 +3583,8 @@ fn insert_compilation_mode_prologue<'input>(
                 for t in tuning.iter_mut() {
                     match t {
                         ast::TuningDirective::MaxNReg(_)
-                        | ast::TuningDirective::MinNCtaPerSm(_) => {}
+                        | ast::TuningDirective::MinNCtaPerSm(_)
+                        | ast::TuningDirective::Noreturn => {}
                         ast::TuningDirective::MaxNtid(_, _, z) => {
                             *z *= 2;
                         }
@@ -6559,9 +6464,17 @@ impl<T: ArgParamsEx> ast::Instruction<T> {
                 ast::Instruction::Tex(details, arg)
             }
             ast::Instruction::Suld(details, arg) => {
+                let image_type_space = if details.direct {
+                    (ast::Type::Texref, ast::StateSpace::Global)
+                } else {
+                    (
+                        ast::Type::Scalar(ast::ScalarType::B64),
+                        ast::StateSpace::Reg,
+                    )
+                };
                 let arg = arg.map(
                     visitor,
-                    (ast::Type::Surfref, ast::StateSpace::Global),
+                    image_type_space,
                     details.geometry,
                     details.value_type(),
                     ast::ScalarType::B32,
@@ -6647,6 +6560,15 @@ impl<T: ArgParamsEx> ast::Instruction<T> {
             ast::Instruction::Sad(type_, a) => {
                 ast::Instruction::Sad(type_, a.map(visitor, &ast::Type::Scalar(type_), false)?)
             }
+            ast::Instruction::Isspacep(space, arg) => ast::Instruction::Isspacep(
+                space,
+                arg.map_different_types(
+                    visitor,
+                    &ast::Type::Scalar(ast::ScalarType::Pred),
+                    &ast::Type::Scalar(ast::ScalarType::U64),
+                )?,
+            ),
+
         })
     }
 }
@@ -6901,15 +6823,6 @@ pub(crate) enum TypeKind {
     Struct,
 }
 
-impl<T: ast::ArgParams<Id = Id>> ast::Instruction<T> {
-    fn jump_target(&self) -> Option<Id> {
-        match self {
-            ast::Instruction::Bra(_, a) => Some(a.src),
-            _ => None,
-        }
-    }
-}
-
 impl<T: ast::ArgParams> ast::Instruction<T> {
     // .wide instructions don't support ftz, so it's enough to just look at the
     // type declared by the instruction
@@ -6968,6 +6881,7 @@ impl<T: ast::ArgParams> ast::Instruction<T> {
             ast::Instruction::Vshr { .. } => None,
             ast::Instruction::Dp4a { .. } => None,
             ast::Instruction::MatchAny { .. } => None,
+            ast::Instruction::Isspacep { .. } => None,
             ast::Instruction::Sub(ast::ArithDetails::Signed(_), _) => None,
             ast::Instruction::Sub(ast::ArithDetails::Unsigned(_), _) => None,
             ast::Instruction::Add(ast::ArithDetails::Signed(_), _) => None,
@@ -8105,7 +8019,7 @@ fn texture_geometry_to_vec_length(geometry: ast::TextureGeometry) -> u8 {
     }
 }
 
-impl<T: ArgParamsEx> ast::Arg4Tex<T> {
+impl<T: ArgParamsEx> ast::Arg5Tex<T> {
     fn map<U: ArgParamsEx, V: ArgumentMapVisitor<T, U>>(
         self,
         visitor: &mut V,
@@ -8113,7 +8027,7 @@ impl<T: ArgParamsEx> ast::Arg4Tex<T> {
         geometry: ast::TextureGeometry,
         value_type: ast::Type,
         coordinate_type: ast::ScalarType,
-    ) -> Result<ast::Arg4Tex<U>, TranslateError> {
+    ) -> Result<ast::Arg5Tex<U>, TranslateError> {
         let dst = visitor.operand(
             ArgumentDescriptor {
                 op: self.dst,
@@ -8160,11 +8074,27 @@ impl<T: ArgParamsEx> ast::Arg4Tex<T> {
             &ast::Type::Vector(coordinate_type, coord_length),
             ast::StateSpace::Reg,
         )?;
-        Ok(ast::Arg4Tex {
+        let lod = self
+            .lod
+            .map(|lod| {
+                visitor.operand(
+                    ArgumentDescriptor {
+                        op: lod,
+                        is_dst: false,
+                        is_memory_access: false,
+                        non_default_implicit_conversion: None,
+                    },
+                    &ast::Type::Scalar(coordinate_type),
+                    ast::StateSpace::Reg,
+                )
+            })
+            .transpose()?;
+        Ok(ast::Arg5Tex {
             dst,
             image,
             layer,
             coordinates,
+            lod,
         })
     }
 }
@@ -8175,6 +8105,14 @@ impl<T: ArgParamsEx> ast::Arg4Sust<T> {
         visitor: &mut V,
         details: &ast::SurfaceDetails,
     ) -> Result<ast::Arg4Sust<U>, TranslateError> {
+        let (type_, space) = if details.direct {
+            (ast::Type::Surfref, ast::StateSpace::Global)
+        } else {
+            (
+                ast::Type::Scalar(ast::ScalarType::B64),
+                ast::StateSpace::Reg,
+            )
+        };
         let image = visitor.operand(
             ArgumentDescriptor {
                 op: self.image,
@@ -8182,8 +8120,8 @@ impl<T: ArgParamsEx> ast::Arg4Sust<T> {
                 is_memory_access: false,
                 non_default_implicit_conversion: None,
             },
-            &ast::Type::Surfref,
-            ast::StateSpace::Global,
+            &type_,
+            space,
         )?;
         let layer = self
             .layer

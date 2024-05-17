@@ -7,7 +7,7 @@ use std::ffi::CStr;
 use std::fmt::Display;
 use std::io::Write;
 use std::ptr::null_mut;
-use std::{convert, iter, mem, ptr};
+use std::{iter, mem, ptr};
 use zluda_llvm::core::*;
 use zluda_llvm::prelude::*;
 use zluda_llvm::zluda::*;
@@ -157,7 +157,7 @@ impl NamedIdGenerator {
         if let Some(id) = id {
             self.register_result(id, func)
         } else {
-            func(b"\0".as_ptr() as _)
+            func(LLVM_UNNAMED)
         }
     }
 
@@ -403,27 +403,20 @@ unsafe fn get_llvm_const(
             let const2 = get_llvm_const(ctx, type_, Some(init2))?;
             LLVMConstAdd(const1, const2)
         }
-        (_, Some(ast::Initializer::Global(id, type_))) => {
+        (_, Some(ast::Initializer::Global(id))) => {
             let name = ctx.names.value(id)?;
             let b64 = get_llvm_type(ctx, &ast::Type::Scalar(ast::ScalarType::B64))?;
-            let mut zero = LLVMConstInt(b64, 0, 0);
-            let src_type = get_llvm_type(ctx, &type_)?;
-            let global_ptr = LLVMConstInBoundsGEP2(src_type, name, &mut zero, 1);
-            LLVMConstPtrToInt(global_ptr, b64)
+            LLVMConstPtrToInt(name, b64)
         }
-        (_, Some(ast::Initializer::GenericGlobal(id, type_))) => {
+        (_, Some(ast::Initializer::GenericGlobal(id))) => {
             let name = ctx.names.value(id)?;
-            let b64 = get_llvm_type(ctx, &ast::Type::Scalar(ast::ScalarType::B64))?;
-            let mut zero = LLVMConstInt(b64, 0, 0);
-            let src_type = get_llvm_type(ctx, &type_)?;
-            let global_ptr = LLVMConstInBoundsGEP2(src_type, name, &mut zero, 1);
-            // void pointers are illegal in LLVM IR
             let b8 = get_llvm_type(ctx, &ast::Type::Scalar(ast::ScalarType::B8))?;
             let b8_generic_ptr = LLVMPointerType(
                 b8,
                 get_llvm_address_space(&ctx.constants, ast::StateSpace::Generic)?,
             );
-            let generic_ptr = LLVMConstAddrSpaceCast(global_ptr, b8_generic_ptr);
+            let generic_ptr = LLVMConstAddrSpaceCast(name, b8_generic_ptr);
+            let b64 = get_llvm_type(ctx, &ast::Type::Scalar(ast::ScalarType::B64))?;
             LLVMConstPtrToInt(generic_ptr, b64)
         }
         _ => return Err(TranslateError::todo()),
@@ -505,10 +498,12 @@ fn emit_function_variable(
 ) -> Result<(), TranslateError> {
     let builder = ctx.builder.get();
     let llvm_type = get_llvm_type(ctx, &variable.type_)?;
-    let addr_space = get_llvm_address_space(&ctx.constants, variable.state_space)?;
-    let value = ctx.names.register_result(variable.name, |name| unsafe {
-        LLVMZludaBuildAlloca(builder, llvm_type, addr_space, name)
-    });
+    let value = emit_alloca(
+        ctx,
+        llvm_type,
+        get_llvm_address_space(&ctx.constants, variable.state_space)?,
+        Some(variable.name),
+    );
     match variable.initializer {
         None => {}
         Some(init) => {
@@ -531,12 +526,27 @@ fn emit_method<'a, 'input>(
     let llvm_method = emit_method_declaration(ctx, &method)?;
     emit_linkage_for_method(&method, is_kernel, llvm_method);
     emit_tuning(ctx, llvm_method, &method.tuning);
-    for statement in method.body.iter().flat_map(convert::identity) {
+    let statements = match method.body {
+        Some(statements) => statements,
+        None => return Ok(()),
+    };
+    // Initial BB that holds all the variable declarations
+    let bb_with_variables =
+        unsafe { LLVMAppendBasicBlockInContext(ctx.context.get(), llvm_method, LLVM_UNNAMED) };
+    // Rest of the code
+    let starting_bb =
+        unsafe { LLVMAppendBasicBlockInContext(ctx.context.get(), llvm_method, LLVM_UNNAMED) };
+    unsafe { LLVMPositionBuilderAtEnd(ctx.builder.get(), starting_bb) };
+    for statement in statements.iter() {
         register_basic_blocks(ctx, llvm_method, statement);
     }
-    for statement in method.body.into_iter().flatten() {
+    for statement in statements.into_iter() {
         emit_statement(ctx, is_kernel, statement)?;
     }
+    // happens if there is a post-ret trailing label
+    terminate_current_block_if_not_terminated(ctx, None);
+    unsafe { LLVMPositionBuilderAtEnd(ctx.builder.get(), bb_with_variables) };
+    unsafe { LLVMBuildBr(ctx.builder.get(), starting_bb) };
     Ok(())
 }
 
@@ -576,6 +586,17 @@ fn emit_tuning_single<'a>(
                 format!("{0},{0}", size).as_bytes(),
             );
         }
+        ast::TuningDirective::Noreturn => {
+            let noreturn = b"noreturn";
+            let attr_kind = unsafe {
+                LLVMGetEnumAttributeKindForName(noreturn.as_ptr().cast(), noreturn.len())
+            };
+            if attr_kind == 0 {
+                panic!();
+            }
+            let noreturn = unsafe { LLVMCreateEnumAttribute(ctx.context.get(), attr_kind, 0) };
+            unsafe { LLVMAddAttributeAtIndex(llvm_method, LLVMAttributeFunctionIndex, noreturn) };
+        }
     }
 }
 
@@ -604,7 +625,9 @@ fn emit_statement(
     is_kernel: bool,
     statement: crate::translate::ExpandedStatement,
 ) -> Result<(), TranslateError> {
-    start_synthetic_basic_block_if_needed(ctx, &statement);
+    if !matches!(statement, crate::translate::Statement::Label(..)) {
+        start_next_block_if_terminated(ctx);
+    }
     Ok(match statement {
         crate::translate::Statement::Label(label) => emit_label(ctx, label)?,
         crate::translate::Statement::Variable(var) => emit_function_variable(ctx, var)?,
@@ -747,27 +770,6 @@ fn emit_ret_value(
     }
     unsafe { LLVMBuildRet(builder, ret_value) };
     Ok(())
-}
-
-fn start_synthetic_basic_block_if_needed(
-    ctx: &mut EmitContext,
-    statement: &crate::translate::ExpandedStatement,
-) {
-    let current_block = unsafe { LLVMGetInsertBlock(ctx.builder.get()) };
-    if current_block == ptr::null_mut() {
-        return;
-    }
-    let terminator = unsafe { LLVMGetBasicBlockTerminator(current_block) };
-    if terminator == ptr::null_mut() {
-        return;
-    }
-    if let crate::translate::Statement::Label(..) = statement {
-        return;
-    }
-    let new_block =
-        unsafe { LLVMCreateBasicBlockInContext(ctx.context.get(), b"\0".as_ptr() as _) };
-    unsafe { LLVMInsertExistingBasicBlockAfterInsertBlock(ctx.builder.get(), new_block) };
-    unsafe { LLVMPositionBuilderAtEnd(ctx.builder.get(), new_block) };
 }
 
 fn emit_ptr_access(
@@ -1073,12 +1075,34 @@ fn emit_value_copy(
 ) -> Result<(), TranslateError> {
     let builder = ctx.builder.get();
     let type_ = get_llvm_type(ctx, type_)?;
-    let temp_value = unsafe { LLVMBuildAlloca(builder, type_, LLVM_UNNAMED) };
+    let temp_value = emit_alloca(ctx, type_, ctx.constants.private_space, None);
     unsafe { LLVMBuildStore(builder, src, temp_value) };
     ctx.names.register_result(dst, |dst| unsafe {
         LLVMBuildLoad2(builder, type_, temp_value, dst)
     });
     Ok(())
+}
+
+// From "Performance Tips for Frontend Authors" (https://llvm.org/docs/Frontend/PerformanceTips.html):
+// "The SROA (Scalar Replacement Of Aggregates) and Mem2Reg passes only attempt to eliminate alloca
+// instructions that are in the entry basic block. Given SSA is the canonical form expected by much
+// of the optimizer; if allocas can not be eliminated by Mem2Reg or SROA, the optimizer is likely to
+// be less effective than it could be."
+fn emit_alloca(
+    ctx: &mut EmitContext,
+    type_: LLVMTypeRef,
+    addr_space: u32,
+    name: Option<Id>,
+) -> LLVMValueRef {
+    let builder = ctx.builder.get();
+    let current_bb = unsafe { LLVMGetInsertBlock(builder) };
+    let variables_bb = unsafe { LLVMGetFirstBasicBlock(LLVMGetBasicBlockParent(current_bb)) };
+    unsafe { LLVMPositionBuilderAtEnd(builder, variables_bb) };
+    let result = ctx.names.register_result_option(name, |name| unsafe {
+        LLVMZludaBuildAlloca(builder, type_, addr_space, name)
+    });
+    unsafe { LLVMPositionBuilderAtEnd(builder, current_bb) };
+    result
 }
 
 fn emit_instruction(
@@ -1138,6 +1162,7 @@ fn emit_instruction(
         ast::Instruction::Vshr(arg) => emit_inst_vshr(ctx, arg)?,
         ast::Instruction::Set(details, arg) => emit_inst_set(ctx, details, arg)?,
         ast::Instruction::Red(details, arg) => emit_inst_red(ctx, details, arg)?,
+        ast::Instruction::Isspacep(space, arg) => emit_inst_isspacep(ctx, *space, arg)?,
         ast::Instruction::Sad(type_, arg) => emit_inst_sad(ctx, *type_, arg)?,
         // replaced by function calls or Statement variants
         ast::Instruction::Activemask { .. }
@@ -1161,6 +1186,70 @@ fn emit_instruction(
         | ast::Instruction::Nanosleep(..)
         | ast::Instruction::MatchAny(..) => return Err(TranslateError::unreachable()),
     })
+}
+
+fn emit_inst_isspacep(
+    ctx: &mut EmitContext,
+    space: ast::StateSpace,
+    arg: &ast::Arg2<ExpandedArgParams>,
+) -> Result<(), TranslateError> {
+    match space {
+        ast::StateSpace::Local => {
+            emit_inst_isspacep_impl(ctx, Some(arg.dst), arg.src, b"llvm.amdgcn.is.private\0")?;
+            Ok(())
+        }
+        ast::StateSpace::Shared => {
+            emit_inst_isspacep_impl(ctx, Some(arg.dst), arg.src, b"llvm.amdgcn.is.shared\0")?;
+            Ok(())
+        }
+        ast::StateSpace::Global => {
+            let builder = ctx.builder.get();
+            let is_private =
+                emit_inst_isspacep_impl(ctx, None, arg.src, b"llvm.amdgcn.is.private\0")?;
+            let is_shared =
+                emit_inst_isspacep_impl(ctx, None, arg.src, b"llvm.amdgcn.is.shared\0")?;
+            let private_or_shared =
+                unsafe { LLVMBuildOr(builder, is_private, is_shared, LLVM_UNNAMED) };
+            let i1_true = unsafe {
+                LLVMConstInt(
+                    get_llvm_type(ctx, &ast::Type::Scalar(ast::ScalarType::Pred))?,
+                    1,
+                    0,
+                )
+            };
+            ctx.names.register_result(arg.dst, |dst| unsafe {
+                // I'd rathr user LLVMBuildNeg(...), but when using LLVMBuildNeg(...) in LLVM 15,
+                // LLVM emits this broken IR:
+                //      %"14" = sub i1 false, %4
+                LLVMBuildSub(builder, i1_true, private_or_shared, dst)
+            });
+            Ok(())
+        }
+        _ => Err(TranslateError::unreachable()),
+    }
+}
+
+fn emit_inst_isspacep_impl(
+    ctx: &mut EmitContext,
+    dst: Option<Id>,
+    src: Id,
+    intrinsic: &[u8],
+) -> Result<LLVMValueRef, TranslateError> {
+    let src = ctx.names.value(src)?;
+    let b8 = get_llvm_type(ctx, &ast::Type::Scalar(ast::ScalarType::B8))?;
+    let b8_generic_ptr = unsafe {
+        LLVMPointerType(
+            b8,
+            get_llvm_address_space(&ctx.constants, ast::StateSpace::Generic)?,
+        )
+    };
+    let src = unsafe { LLVMBuildIntToPtr(ctx.builder.get(), src, b8_generic_ptr, LLVM_UNNAMED) };
+    emit_intrinsic_arg2(
+        ctx,
+        (ast::ScalarType::Pred, dst),
+        (ast::ScalarType::B8, ast::StateSpace::Generic, src),
+        intrinsic,
+    )
 }
 
 fn emit_inst_sad(
@@ -1238,7 +1327,8 @@ fn emit_inst_bfind(
     let builder = ctx.builder.get();
     let src = arg.src.get_llvm_value(&mut ctx.names)?;
     let llvm_dst_type = get_llvm_type(ctx, &ast::Type::Scalar(ast::ScalarType::U32))?;
-    let const_0 = unsafe { LLVMConstInt(llvm_dst_type, 0, 0) };
+    let llvm_src_type = get_llvm_type(ctx, &ast::Type::Scalar(details.type_))?;
+    let const_0 = unsafe { LLVMConstInt(llvm_src_type, 0, 0) };
     let const_int_max = unsafe { LLVMConstInt(llvm_dst_type, u64::MAX, 0) };
     let is_zero = unsafe {
         LLVMBuildICmp(
@@ -1249,7 +1339,7 @@ fn emit_inst_bfind(
             LLVM_UNNAMED,
         )
     };
-    let mut clz_result = emit_inst_clz_impl(ctx, ast::ScalarType::U32, None, arg.src, true)?;
+    let mut clz_result = emit_inst_clz_impl(ctx, details.type_, None, arg.src, true)?;
     if !details.shift {
         let bits = unsafe {
             LLVMConstInt(
@@ -1320,9 +1410,6 @@ fn emit_int_trap(ctx: &mut EmitContext) -> Result<(), TranslateError> {
             0,
             LLVM_UNNAMED,
         );
-        // llvm.trap is not a terminator,
-        // LLVM might fail with an unterminated basic block if we don't insert unreachable
-        LLVMBuildUnreachable(builder);
     }
     Ok(())
 }
@@ -1428,7 +1515,7 @@ fn emit_inst_abs(
         emit_intrinsic_arg2(
             ctx,
             (details.typ, Some(args.dst)),
-            (details.typ, args.src),
+            (details.typ, ast::StateSpace::Reg, args.src),
             intrinsic_name.as_bytes(),
         )?;
     } else {
@@ -1596,7 +1683,7 @@ fn emit_inst_rsqrt(
     let sqrt_result = emit_intrinsic_arg2(
         ctx,
         (details.typ, None),
-        (details.typ, args.src),
+        (details.typ, ast::StateSpace::Reg, args.src),
         intrinsic_fn,
     )?;
     unsafe { LLVMZludaSetFastMathFlags(sqrt_result, FastMathFlags::ApproxFunc) };
@@ -1654,7 +1741,7 @@ fn emit_inst_sqrt(
     let sqrt_result = emit_intrinsic_arg2(
         ctx,
         (details.type_, Some(args.dst)),
-        (details.type_, args.src),
+        (details.type_, ast::StateSpace::Reg, args.src),
         intrinsic_fn,
     )?;
     unsafe { LLVMZludaSetFastMathFlags(sqrt_result, fast_math) };
@@ -2477,7 +2564,7 @@ fn emit_inst_cvt(
                         emit_intrinsic_arg2(
                             ctx,
                             (type_, Some(args.dst)),
-                            (type_, args.src),
+                            (type_, ast::StateSpace::Reg, args.src),
                             intrinsic_fn,
                         )?;
                     }
@@ -2491,7 +2578,7 @@ fn emit_inst_cvt(
                         emit_intrinsic_arg2(
                             ctx,
                             (type_, Some(args.dst)),
-                            (type_, args.src),
+                            (type_, ast::StateSpace::Reg, args.src),
                             intrinsic_fn,
                         )?;
                     }
@@ -2505,7 +2592,7 @@ fn emit_inst_cvt(
                         emit_intrinsic_arg2(
                             ctx,
                             (type_, Some(args.dst)),
-                            (type_, args.src),
+                            (type_, ast::StateSpace::Reg, args.src),
                             intrinsic_fn,
                         )?;
                     }
@@ -2519,7 +2606,7 @@ fn emit_inst_cvt(
                         emit_intrinsic_arg2(
                             ctx,
                             (type_, Some(args.dst)),
-                            (type_, args.src),
+                            (type_, ast::StateSpace::Reg, args.src),
                             intrinsic_fn,
                         )?;
                     }
@@ -2685,7 +2772,7 @@ fn emit_inst_cos(
     let cos_value = emit_intrinsic_arg2(
         ctx,
         (ast::ScalarType::F32, Some(args.dst)),
-        (ast::ScalarType::F32, args.src),
+        (ast::ScalarType::F32, ast::StateSpace::Reg, args.src),
         function_name,
     )?;
     unsafe { LLVMZludaSetFastMathFlags(cos_value, FastMathFlags::ApproxFunc) };
@@ -2700,7 +2787,7 @@ fn emit_inst_sin(
     let cos_value = emit_intrinsic_arg2(
         ctx,
         (ast::ScalarType::F32, Some(args.dst)),
-        (ast::ScalarType::F32, args.src),
+        (ast::ScalarType::F32, ast::StateSpace::Reg, args.src),
         function_name,
     )?;
     unsafe { LLVMZludaSetFastMathFlags(cos_value, FastMathFlags::ApproxFunc) };
@@ -2904,7 +2991,7 @@ fn emit_inst_brev(
     emit_intrinsic_arg2(
         ctx,
         (type_, Some(args.dst)),
-        (type_, args.src),
+        (type_, ast::StateSpace::Reg, args.src),
         function_name,
     )?;
     Ok(())
@@ -2922,8 +3009,12 @@ fn emit_inst_popc(
         _ => return Err(TranslateError::unreachable()),
     };
     let popc_dst = if shorten { None } else { Some(args.dst) };
-    let popc_result =
-        emit_intrinsic_arg2(ctx, (type_, popc_dst), (type_, args.src), function_name)?;
+    let popc_result = emit_intrinsic_arg2(
+        ctx,
+        (type_, popc_dst),
+        (type_, ast::StateSpace::Reg, args.src),
+        function_name,
+    )?;
     if shorten {
         let llvm_i32 = get_llvm_type(ctx, &ast::Type::Scalar(ast::ScalarType::U32))?;
         ctx.names.register_result(args.dst, |dst_name| unsafe {
@@ -2941,7 +3032,7 @@ fn emit_inst_ex2(
     let llvm_value = emit_intrinsic_arg2(
         ctx,
         (ast::ScalarType::F32, Some(args.dst)),
-        (ast::ScalarType::F32, args.src),
+        (ast::ScalarType::F32, ast::StateSpace::Reg, args.src),
         function_name,
     )?;
     unsafe { LLVMZludaSetFastMathFlags(llvm_value, FastMathFlags::ApproxFunc) };
@@ -2956,7 +3047,7 @@ fn emit_inst_lg2(
     let llvm_value = emit_intrinsic_arg2(
         ctx,
         (ast::ScalarType::F32, Some(args.dst)),
-        (ast::ScalarType::F32, args.src),
+        (ast::ScalarType::F32, ast::StateSpace::Reg, args.src),
         function_name,
     )?;
     unsafe { LLVMZludaSetFastMathFlags(llvm_value, FastMathFlags::ApproxFunc) };
@@ -2995,16 +3086,16 @@ fn emit_intrinsic_arg0(
 fn emit_intrinsic_arg2(
     ctx: &mut EmitContext,
     (dst_type, dst): (ast::ScalarType, Option<Id>),
-    (src_type, src): (ast::ScalarType, Id),
+    (src_type, src_space, src): (ast::ScalarType, ast::StateSpace, impl GetLLVMValue),
     intrinsic_name: &[u8],
 ) -> Result<LLVMValueRef, TranslateError> {
     let builder = ctx.builder.get();
-    let mut llvm_src = ctx.names.value(src)?;
+    let mut llvm_src = src.get_llvm_value(&mut ctx.names)?;
     let dst_type = get_llvm_type(ctx, &ast::Type::Scalar(dst_type))?;
     let function_type = get_llvm_function_type(
         ctx,
         dst_type,
-        iter::once((&ast::Type::Scalar(src_type), ast::StateSpace::Reg)),
+        iter::once((&ast::Type::Scalar(src_type), src_space)),
     )?;
     let mut function_value =
         unsafe { LLVMGetNamedFunction(ctx.module.get(), intrinsic_name.as_ptr() as _) };
@@ -3494,12 +3585,15 @@ fn emit_store_var(
 
 fn emit_label(ctx: &mut EmitContext, label: Id) -> Result<(), TranslateError> {
     let new_block = unsafe { LLVMValueAsBasicBlock(ctx.names.value(label)?) };
-    terminate_current_block_if_needed(ctx, new_block);
+    terminate_current_block_if_not_terminated(ctx, Some(new_block));
     unsafe { LLVMPositionBuilderAtEnd(ctx.builder.get(), new_block) };
     Ok(())
 }
 
-fn terminate_current_block_if_needed(ctx: &mut EmitContext, new_block: LLVMBasicBlockRef) {
+fn terminate_current_block_if_not_terminated(
+    ctx: &mut EmitContext,
+    new_block: Option<LLVMBasicBlockRef>,
+) {
     let current_block = unsafe { LLVMGetInsertBlock(ctx.builder.get()) };
     if current_block == ptr::null_mut() {
         return;
@@ -3508,7 +3602,24 @@ fn terminate_current_block_if_needed(ctx: &mut EmitContext, new_block: LLVMBasic
     if terminator != ptr::null_mut() {
         return;
     }
-    unsafe { LLVMBuildBr(ctx.builder.get(), new_block) };
+    match new_block {
+        Some(new_block) => unsafe { LLVMBuildBr(ctx.builder.get(), new_block) },
+        None => unsafe { LLVMBuildUnreachable(ctx.builder.get()) },
+    };
+}
+
+// Some PTX instructions (exit) that are LLVM terminators
+// can be emitted in the middle of a basic block
+// Happens in e.g. Meshroom
+fn start_next_block_if_terminated(ctx: &mut EmitContext) {
+    let current_block = unsafe { LLVMGetInsertBlock(ctx.builder.get()) };
+    let terminator = unsafe { LLVMGetBasicBlockTerminator(current_block) };
+    if terminator == ptr::null_mut() {
+        return;
+    }
+    let next_block = unsafe { LLVMCreateBasicBlockInContext(ctx.context.get(), LLVM_UNNAMED) };
+    unsafe { LLVMInsertExistingBasicBlockAfterInsertBlock(ctx.builder.get(), next_block) };
+    unsafe { LLVMPositionBuilderAtEnd(ctx.builder.get(), next_block) };
 }
 
 fn emit_method_declaration<'input>(
