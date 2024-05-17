@@ -1,0 +1,55 @@
+name: CI for Pull Request
+on:
+  pull_request:
+    branches: [master]
+
+env:
+  CARGO_TERM_COLOR: always
+  ROCM_VERSION: "5.7.3"
+
+jobs:
+  build_lin:
+    name: Build and publish (Linux)
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: jlumbroso/free-disk-space@main
+      - name: Install ROCm
+        run: |
+          sudo mkdir --parents --mode=0755 /etc/apt/keyrings
+          sudo sh -c 'wget https://repo.radeon.com/rocm/rocm.gpg.key -O - |  gpg --dearmor | tee /etc/apt/keyrings/rocm.gpg > /dev/null'
+          sudo sh -c 'echo deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/${{ env.ROCM_VERSION }} focal main > /etc/apt/sources.list.d/rocm.list'
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends rocm-smi-lib hip-runtime-amd comgr hipblaslt-dev hipfft-dev rocblas-dev rocsolver-dev rocsparse-dev miopen-hip-dev rocm-device-libs
+          echo 'export PATH="$PATH:/opt/rocm/bin"' | sudo tee /etc/profile.d/rocm.sh  
+          echo '/opt/rocm/lib' | sudo tee /etc/ld.so.conf.d/rocm.conf
+          sudo ldconfig
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: |
+          cargo xtask -r
+
+  build_win:
+    name: Build and publish (Windows)
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install AMD HIP SDK
+        run: |
+          C:\msys64\usr\bin\wget.exe https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-23.Q4-Win10-Win11-For-HIP.exe -O "amdgpu-install.exe"
+          .\amdgpu-install.exe -Install -View:1
+          Start-Sleep -Seconds 60
+          $setupId = (Get-Process ATISetup).id
+          Wait-Process -Id $setupId
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: |
+          $ROCm_PATH = "C:\Program Files\AMD\ROCm"
+          $Env:HIP_PATH = "$ROCm_PATH\$(Get-ChildItem -Path $ROCm_PATH -Name)"
+          $Env:PATH = "$Env:HIP_PATH\bin;$Env:PATH"
+          $Env:HIP_PATH = "$Env:HIP_PATH\"
+          cargo xtask -r
