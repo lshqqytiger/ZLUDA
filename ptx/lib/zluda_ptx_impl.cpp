@@ -1,5 +1,5 @@
 // Compile and disassemble:
-//   python3 ./cvt.py > cvt.h && /opt/rocm/llvm/bin/clang -std=c++17 -Xclang -no-opaque-pointers -Wall -Wextra -Wsign-compare -Wconversion -x hip zluda_ptx_impl.cpp -S -emit-llvm --cuda-device-only -nogpulib -O3 -Xclang -fallow-half-arguments-and-returns -o - | sed -e 's/define/define linkonce_odr/g' | sed -e '/@llvm.used/d' | sed -e 's/\"target-cpu\"=\"[^\"]*\"//g' | sed -e 's/\"target-features\"=\"[^\"]*\"//g' | sed -e 's/\"denormal-fp-math-f32\"=\"[^\"]*\"//g' | sed -e 's/!llvm.module.flags = !{!0, !1, !2, !3, !4}/!llvm.module.flags = !{ }/g' | sed -e 's/memory(none)/readnone/g' | sed -e 's/memory(argmem: readwrite, inaccessiblemem: readwrite)/inaccessiblemem_or_argmemonly/g' | sed -e 's/memory(read)/readonly/g' | sed -e 's/memory(argmem: readwrite)/argmemonly/g'  | llvm-as-13 -o zluda_ptx_impl.bc && /opt/rocm/llvm/bin/llvm-dis zluda_ptx_impl.bc
+//   python3 ./cvt.py > cvt.h && /opt/rocm/llvm/bin/clang -std=c++20 -Xclang -no-opaque-pointers -Wall -Wextra -Wsign-compare -Wconversion -x hip zluda_ptx_impl.cpp -S -emit-llvm --cuda-device-only -nogpulib -O3 -Xclang -fallow-half-arguments-and-returns -o - | sed -e 's/define/define linkonce_odr/g' | sed -e '/@llvm.used/d' | sed -e 's/\"target-cpu\"=\"[^\"]*\"//g' | sed -e 's/\"target-features\"=\"[^\"]*\"//g' | sed -e 's/\"denormal-fp-math-f32\"=\"[^\"]*\"//g' | sed -e 's/!llvm.module.flags = !{!0, !1, !2, !3, !4}/!llvm.module.flags = !{ }/g' | sed -e 's/memory(none)/readnone/g' | sed -e 's/memory(argmem: readwrite, inaccessiblemem: readwrite)/inaccessiblemem_or_argmemonly/g' | sed -e 's/memory(read)/readonly/g' | sed -e 's/memory(argmem: readwrite)/argmemonly/g'  | llvm-as-13 -o zluda_ptx_impl.bc && /opt/rocm/llvm/bin/llvm-dis zluda_ptx_impl.bc
 // Compile to binary:
 //   /opt/rocm/llvm/bin/clang -x ir -target amdgcn-amd-amdhsa -Xlinker --no-undefined zluda_ptx_impl.bc -mno-wavefrontsize64 -mcpu=gfx1030
 // Decompile:
@@ -232,23 +232,23 @@ static __device__ void image_store_pck(T value, typename Coordinates<geo>::type 
         uint value_dword = transmute<uint>(value);
         if constexpr (geo == ImageGeometry::_1D)
         {
-            asm volatile("image_store_pck %0, %1, %2 dmask:0x1 dim:1D unorm" : : "v"(value_dword), "v"(coord.x), "s"(*surface) : "memory");
+            asm("image_store_pck %0, %1, %2 dmask:0x1 dim:1D unorm" : : "v"(value_dword), "v"(coord.x), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::_2D)
         {
-            asm volatile("image_store_pck %0, %1, %2 dmask:0x1 dim:2D unorm" : : "v"(value_dword), "v"(coord), "s"(*surface) : "memory");
+            asm("image_store_pck %0, %1, %2 dmask:0x1 dim:2D unorm" : : "v"(value_dword), "v"(coord), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::_3D)
         {
-            asm volatile("image_store_pck %0, %1, %2 dmask:0x1 dim:3D unorm" : : "v"(value_dword), "v"(transmute<zluda_uint3>(coord)), "s"(*surface) : "memory");
+            asm("image_store_pck %0, %1, %2 dmask:0x1 dim:3D unorm" : : "v"(value_dword), "v"(transmute<zluda_uint3>(coord)), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::A1D)
         {
-            asm volatile("image_store_pck %0, %1, %2 dmask:0x1 dim:1D_ARRAY unorm" : : "v"(value_dword), "v"(coord), "s"(*surface) : "memory");
+            asm("image_store_pck %0, %1, %2 dmask:0x1 dim:1D_ARRAY unorm" : : "v"(value_dword), "v"(coord), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::A2D)
         {
-            asm volatile("image_store_pck %0, %1, %2 dmask:0x1 dim:2D_ARRAY unorm" : : "v"(value_dword), "v"(coord), "s"(*surface) : "memory");
+            asm("image_store_pck %0, %1, %2 dmask:0x1 dim:2D_ARRAY unorm" : : "v"(value_dword), "v"(coord), "s"(*surface) : "memory");
         }
         else
         {
@@ -260,23 +260,23 @@ static __device__ void image_store_pck(T value, typename Coordinates<geo>::type 
         uint2::Native_vec_ value_dword2 = transmute<uint2::Native_vec_>(value);
         if constexpr (geo == ImageGeometry::_1D)
         {
-            asm volatile("image_store_pck %0, %1, %2 dmask:0x3 dim:1D unorm" : : "v"(value_dword2), "v"(coord.x), "s"(*surface) : "memory");
+            asm("image_store_pck %0, %1, %2 dmask:0x3 dim:1D unorm" : : "v"(value_dword2), "v"(coord.x), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::_2D)
         {
-            asm volatile("image_store_pck %0, %1, %2 dmask:0x3 dim:2D unorm" : : "v"(value_dword2), "v"(coord), "s"(*surface) : "memory");
+            asm("image_store_pck %0, %1, %2 dmask:0x3 dim:2D unorm" : : "v"(value_dword2), "v"(coord), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::_3D)
         {
-            asm volatile("image_store_pck %0, %1, %2 dmask:0x3 dim:3D unorm" : : "v"(value_dword2), "v"(transmute<zluda_uint3>(coord)), "s"(*surface) : "memory");
+            asm("image_store_pck %0, %1, %2 dmask:0x3 dim:3D unorm" : : "v"(value_dword2), "v"(transmute<zluda_uint3>(coord)), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::A1D)
         {
-            asm volatile("image_store_pck %0, %1, %2 dmask:0x3 dim:1D_ARRAY unorm" : : "v"(value_dword2), "v"(coord), "s"(*surface) : "memory");
+            asm("image_store_pck %0, %1, %2 dmask:0x3 dim:1D_ARRAY unorm" : : "v"(value_dword2), "v"(coord), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::A2D)
         {
-            asm volatile("image_store_pck %0, %1, %2 dmask:0x3 dim:2D_ARRAY unorm" : : "v"(value_dword2), "v"(coord), "s"(*surface) : "memory");
+            asm("image_store_pck %0, %1, %2 dmask:0x3 dim:2D_ARRAY unorm" : : "v"(value_dword2), "v"(coord), "s"(*surface) : "memory");
         }
         else
         {
@@ -288,23 +288,23 @@ static __device__ void image_store_pck(T value, typename Coordinates<geo>::type 
         uint4::Native_vec_ value_dword4 = transmute<uint4::Native_vec_>(value);
         if constexpr (geo == ImageGeometry::_1D)
         {
-            asm volatile("image_store_pck %0, %1, %2 dmask:0xf dim:1D unorm" : : "v"(value_dword4), "v"(coord.x), "s"(*surface) : "memory");
+            asm("image_store_pck %0, %1, %2 dmask:0xf dim:1D unorm" : : "v"(value_dword4), "v"(coord.x), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::_2D)
         {
-            asm volatile("image_store_pck %0, %1, %2 dmask:0xf dim:2D unorm" : : "v"(value_dword4), "v"(coord), "s"(*surface) : "memory");
+            asm("image_store_pck %0, %1, %2 dmask:0xf dim:2D unorm" : : "v"(value_dword4), "v"(coord), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::_3D)
         {
-            asm volatile("image_store_pck %0, %1, %2 dmask:0xf dim:3D unorm" : : "v"(value_dword4), "v"(transmute<zluda_uint3>(coord)), "s"(*surface) : "memory");
+            asm("image_store_pck %0, %1, %2 dmask:0xf dim:3D unorm" : : "v"(value_dword4), "v"(transmute<zluda_uint3>(coord)), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::A1D)
         {
-            asm volatile("image_store_pck %0, %1, %2 dmask:0xf dim:1D_ARRAY unorm" : : "v"(value_dword4), "v"(coord), "s"(*surface) : "memory");
+            asm("image_store_pck %0, %1, %2 dmask:0xf dim:1D_ARRAY unorm" : : "v"(value_dword4), "v"(coord), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::A2D)
         {
-            asm volatile("image_store_pck %0, %1, %2 dmask:0xf dim:2D_ARRAY unorm" : : "v"(value_dword4), "v"(coord), "s"(*surface) : "memory");
+            asm("image_store_pck %0, %1, %2 dmask:0xf dim:2D_ARRAY unorm" : : "v"(value_dword4), "v"(coord), "s"(*surface) : "memory");
         }
         else
         {
@@ -325,23 +325,23 @@ static __device__ T image_load_pck(typename Coordinates<geo>::type coord, surfac
         uint data;
         if constexpr (geo == ImageGeometry::_1D)
         {
-            asm volatile("image_load_pck %0, %1, %2 dmask:0x1 dim:1D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord.x), "s"(*surface) : "memory");
+            asm("image_load_pck %0, %1, %2 dmask:0x1 dim:1D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord.x), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::_2D)
         {
-            asm volatile("image_load_pck %0, %1, %2 dmask:0x1 dim:2D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
+            asm("image_load_pck %0, %1, %2 dmask:0x1 dim:2D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::_3D)
         {
-            asm volatile("image_load_pck %0, %1, %2 dmask:0x1 dim:3D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(transmute<zluda_uint3>(coord)), "s"(*surface) : "memory");
+            asm("image_load_pck %0, %1, %2 dmask:0x1 dim:3D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(transmute<zluda_uint3>(coord)), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::A1D)
         {
-            asm volatile("image_load_pck %0, %1, %2 dmask:0x1 dim:1D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
+            asm("image_load_pck %0, %1, %2 dmask:0x1 dim:1D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::A2D)
         {
-            asm volatile("image_load_pck %0, %1, %2 dmask:0x1 dim:2D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
+            asm("image_load_pck %0, %1, %2 dmask:0x1 dim:2D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
         }
         else
         {
@@ -354,23 +354,23 @@ static __device__ T image_load_pck(typename Coordinates<geo>::type coord, surfac
         uint2::Native_vec_ data;
         if constexpr (geo == ImageGeometry::_1D)
         {
-            asm volatile("image_load_pck %0, %1, %2 dmask:0x3 dim:1D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord.x), "s"(*surface) : "memory");
+            asm("image_load_pck %0, %1, %2 dmask:0x3 dim:1D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord.x), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::_2D)
         {
-            asm volatile("image_load_pck %0, %1, %2 dmask:0x3 dim:2D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
+            asm("image_load_pck %0, %1, %2 dmask:0x3 dim:2D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::_3D)
         {
-            asm volatile("image_load_pck %0, %1, %2 dmask:0x3 dim:3D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(transmute<zluda_uint3>(coord)), "s"(*surface) : "memory");
+            asm("image_load_pck %0, %1, %2 dmask:0x3 dim:3D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(transmute<zluda_uint3>(coord)), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::A1D)
         {
-            asm volatile("image_load_pck %0, %1, %2 dmask:0x3 dim:1D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
+            asm("image_load_pck %0, %1, %2 dmask:0x3 dim:1D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::A2D)
         {
-            asm volatile("image_load_pck %0, %1, %2 dmask:0x3 dim:2D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
+            asm("image_load_pck %0, %1, %2 dmask:0x3 dim:2D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
         }
         else
         {
@@ -383,23 +383,23 @@ static __device__ T image_load_pck(typename Coordinates<geo>::type coord, surfac
         uint4::Native_vec_ data;
         if constexpr (geo == ImageGeometry::_1D)
         {
-            asm volatile("image_load_pck %0, %1, %2 dmask:0xf dim:1D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord.x), "s"(*surface) : "memory");
+            asm("image_load_pck %0, %1, %2 dmask:0xf dim:1D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord.x), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::_2D)
         {
-            asm volatile("image_load_pck %0, %1, %2 dmask:0xf dim:2D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
+            asm("image_load_pck %0, %1, %2 dmask:0xf dim:2D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::_3D)
         {
-            asm volatile("image_load_pck %0, %1, %2 dmask:0xf dim:3D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(transmute<zluda_uint3>(coord)), "s"(*surface) : "memory");
+            asm("image_load_pck %0, %1, %2 dmask:0xf dim:3D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(transmute<zluda_uint3>(coord)), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::A1D)
         {
-            asm volatile("image_load_pck %0, %1, %2 dmask:0xf dim:1D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
+            asm("image_load_pck %0, %1, %2 dmask:0xf dim:1D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
         }
         else if constexpr (geo == ImageGeometry::A2D)
         {
-            asm volatile("image_load_pck %0, %1, %2 dmask:0xf dim:2D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
+            asm("image_load_pck %0, %1, %2 dmask:0xf dim:2D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
         }
         else
         {
@@ -419,23 +419,23 @@ static __device__ uint4::Native_vec_ image_load_pck_full(typename Coordinates<ge
     uint4::Native_vec_ data;
     if constexpr (geo == ImageGeometry::_1D)
     {
-        asm volatile("image_load_pck %0, %1, %2 dmask:0xf dim:1D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord.x), "s"(*surface) : "memory");
+        asm("image_load_pck %0, %1, %2 dmask:0xf dim:1D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord.x), "s"(*surface) : "memory");
     }
     else if constexpr (geo == ImageGeometry::_2D)
     {
-        asm volatile("image_load_pck %0, %1, %2 dmask:0xf dim:2D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
+        asm("image_load_pck %0, %1, %2 dmask:0xf dim:2D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
     }
     else if constexpr (geo == ImageGeometry::_3D)
     {
-        asm volatile("image_load_pck %0, %1, %2 dmask:0xf dim:3D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(transmute<zluda_uint3>(coord)), "s"(*surface) : "memory");
+        asm("image_load_pck %0, %1, %2 dmask:0xf dim:3D unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(transmute<zluda_uint3>(coord)), "s"(*surface) : "memory");
     }
     else if constexpr (geo == ImageGeometry::A1D)
     {
-        asm volatile("image_load_pck %0, %1, %2 dmask:0xf dim:1D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
+        asm("image_load_pck %0, %1, %2 dmask:0xf dim:1D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
     }
     else if constexpr (geo == ImageGeometry::A2D)
     {
-        asm volatile("image_load_pck %0, %1, %2 dmask:0xf dim:2D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
+        asm("image_load_pck %0, %1, %2 dmask:0xf dim:2D_ARRAY unorm\ns_waitcnt vmcnt(0)" : "=v"(data) : "v"(coord), "s"(*surface) : "memory");
     }
     else
     {
@@ -715,16 +715,26 @@ extern "C"
     tex_1d_f16(s32, int, tex1Dfetch_f16);
     tex_1d_f16(f32, float, tex1D_f16);
 
-#define tex_2d(CHANNEL_TYPE, HIP_CHANNEL_TYPE, COORD_TYPE, HIP_COORD_TYPE)                                                                                             \
-    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_2d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(struct textureReference GLOBAL_SPACE * ptr, HIP_COORD_TYPE##2 ::Native_vec_ coord) \
-    {                                                                                                                                                                  \
-        hipTextureObject_t textureObject = ptr->textureObject;                                                                                                         \
-        return tex2D<HIP_CHANNEL_TYPE##4>(textureObject, float(coord.x), float(coord.y)).data;                                                                         \
-    }                                                                                                                                                                  \
-    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_indirect_2d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(uint64_t texobj, HIP_COORD_TYPE##2 ::Native_vec_ coord)                   \
-    {                                                                                                                                                                  \
-        hipTextureObject_t textureObject = (hipTextureObject_t)texobj;                                                                                                 \
-        return tex2D<HIP_CHANNEL_TYPE##4>(textureObject, float(coord.x), float(coord.y)).data;                                                                         \
+#define tex_2d(CHANNEL_TYPE, HIP_CHANNEL_TYPE, COORD_TYPE, HIP_COORD_TYPE)                                                                                                                       \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_2d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(struct textureReference GLOBAL_SPACE * ptr, HIP_COORD_TYPE##2 ::Native_vec_ coord)                           \
+    {                                                                                                                                                                                            \
+        hipTextureObject_t textureObject = ptr->textureObject;                                                                                                                                   \
+        return tex2D<HIP_CHANNEL_TYPE##4>(textureObject, float(coord.x), float(coord.y)).data;                                                                                                   \
+    }                                                                                                                                                                                            \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_level_2d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(struct textureReference GLOBAL_SPACE * ptr, HIP_COORD_TYPE##2 ::Native_vec_ coord, HIP_COORD_TYPE lod) \
+    {                                                                                                                                                                                            \
+        hipTextureObject_t textureObject = ptr->textureObject;                                                                                                                                   \
+        return tex2DLod<HIP_CHANNEL_TYPE##4>(textureObject, float(coord.x), float(coord.y), float(lod)).data;                                                                                    \
+    }                                                                                                                                                                                            \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_indirect_2d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(uint64_t texobj, HIP_COORD_TYPE##2 ::Native_vec_ coord)                                             \
+    {                                                                                                                                                                                            \
+        hipTextureObject_t textureObject = (hipTextureObject_t)texobj;                                                                                                                           \
+        return tex2D<HIP_CHANNEL_TYPE##4>(textureObject, float(coord.x), float(coord.y)).data;                                                                                                   \
+    }                                                                                                                                                                                            \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_level_indirect_2d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(uint64_t texobj, HIP_COORD_TYPE##2 ::Native_vec_ coord, HIP_COORD_TYPE lod)                   \
+    {                                                                                                                                                                                            \
+        hipTextureObject_t textureObject = (hipTextureObject_t)texobj;                                                                                                                           \
+        return tex2DLod<HIP_CHANNEL_TYPE##4>(textureObject, float(coord.x), float(coord.y), float(lod)).data;                                                                                    \
     }
 
     __device__ half4 __ockl_image_sampleh_2D(unsigned int CONSTANT_SPACE *i, unsigned int ADDRESS_SPACE_CONSTANT *s, float2::Native_vec_ c);
@@ -751,16 +761,26 @@ extern "C"
     tex_2d_f16(s32, int);
     tex_2d_f16(f32, float);
 
-#define tex_3d(CHANNEL_TYPE, HIP_CHANNEL_TYPE, COORD_TYPE, HIP_COORD_TYPE)                                                                                             \
-    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_3d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(struct textureReference GLOBAL_SPACE * ptr, HIP_COORD_TYPE##4 ::Native_vec_ coord) \
-    {                                                                                                                                                                  \
-        hipTextureObject_t textureObject = ptr->textureObject;                                                                                                         \
-        return tex3D<HIP_CHANNEL_TYPE##4>(textureObject, float(coord.x), float(coord.y), float(coord.z)).data;                                                         \
-    }                                                                                                                                                                  \
-    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_indirect_3d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(uint64_t texobj, HIP_COORD_TYPE##4 ::Native_vec_ coord)                   \
-    {                                                                                                                                                                  \
-        hipTextureObject_t textureObject = (hipTextureObject_t)texobj;                                                                                                 \
-        return tex3D<HIP_CHANNEL_TYPE##4>(textureObject, float(coord.x), float(coord.y), float(coord.z)).data;                                                         \
+#define tex_3d(CHANNEL_TYPE, HIP_CHANNEL_TYPE, COORD_TYPE, HIP_COORD_TYPE)                                                                                                                       \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_3d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(struct textureReference GLOBAL_SPACE * ptr, HIP_COORD_TYPE##4 ::Native_vec_ coord)                           \
+    {                                                                                                                                                                                            \
+        hipTextureObject_t textureObject = ptr->textureObject;                                                                                                                                   \
+        return tex3D<HIP_CHANNEL_TYPE##4>(textureObject, float(coord.x), float(coord.y), float(coord.z)).data;                                                                                   \
+    }                                                                                                                                                                                            \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_level_3d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(struct textureReference GLOBAL_SPACE * ptr, HIP_COORD_TYPE##4 ::Native_vec_ coord, HIP_COORD_TYPE lod) \
+    {                                                                                                                                                                                            \
+        hipTextureObject_t textureObject = ptr->textureObject;                                                                                                                                   \
+        return tex3DLod<HIP_CHANNEL_TYPE##4>(textureObject, float(coord.x), float(coord.y), float(coord.z), float(lod)).data;                                                                    \
+    }                                                                                                                                                                                            \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_indirect_3d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(uint64_t texobj, HIP_COORD_TYPE##4 ::Native_vec_ coord)                                             \
+    {                                                                                                                                                                                            \
+        hipTextureObject_t textureObject = (hipTextureObject_t)texobj;                                                                                                                           \
+        return tex3D<HIP_CHANNEL_TYPE##4>(textureObject, float(coord.x), float(coord.y), float(coord.z)).data;                                                                                   \
+    }                                                                                                                                                                                            \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_level_indirect_3d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(uint64_t texobj, HIP_COORD_TYPE##4 ::Native_vec_ coord, HIP_COORD_TYPE lod)                   \
+    {                                                                                                                                                                                            \
+        hipTextureObject_t textureObject = (hipTextureObject_t)texobj;                                                                                                                           \
+        return tex3DLod<HIP_CHANNEL_TYPE##4>(textureObject, float(coord.x), float(coord.y), float(coord.z), float(lod)).data;                                                                    \
     }
 
     __device__ half4 __ockl_image_sampleh_3D(unsigned int CONSTANT_SPACE *i, unsigned int ADDRESS_SPACE_CONSTANT *s, float4::Native_vec_ c);
@@ -787,16 +807,26 @@ extern "C"
     tex_3d_f16(s32, int);
     tex_3d_f16(f32, float);
 
-#define tex_a1d(CHANNEL_TYPE, HIP_CHANNEL_TYPE, COORD_TYPE, HIP_COORD_TYPE)                                                                                        \
-    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_a1d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(struct textureReference GLOBAL_SPACE * ptr, uint32_t layer, HIP_COORD_TYPE x) \
-    {                                                                                                                                                              \
-        hipTextureObject_t textureObject = ptr->textureObject;                                                                                                     \
-        return tex1DLayered<HIP_CHANNEL_TYPE##4>(textureObject, float(x), int(layer)).data;                                                                        \
-    }                                                                                                                                                              \
-    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_indirect_a1d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(uint64_t texobj, uint32_t layer, HIP_COORD_TYPE x)                   \
-    {                                                                                                                                                              \
-        hipTextureObject_t textureObject = (hipTextureObject_t)texobj;                                                                                             \
-        return tex1DLayered<HIP_CHANNEL_TYPE##4>(textureObject, float(x), int(layer)).data;                                                                        \
+#define tex_a1d(CHANNEL_TYPE, HIP_CHANNEL_TYPE, COORD_TYPE, HIP_COORD_TYPE)                                                                                                                  \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_a1d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(struct textureReference GLOBAL_SPACE * ptr, uint32_t layer, HIP_COORD_TYPE x)                           \
+    {                                                                                                                                                                                        \
+        hipTextureObject_t textureObject = ptr->textureObject;                                                                                                                               \
+        return tex1DLayered<HIP_CHANNEL_TYPE##4>(textureObject, float(x), int(layer)).data;                                                                                                  \
+    }                                                                                                                                                                                        \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_level_a1d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(struct textureReference GLOBAL_SPACE * ptr, uint32_t layer, HIP_COORD_TYPE x, HIP_COORD_TYPE lod) \
+    {                                                                                                                                                                                        \
+        hipTextureObject_t textureObject = ptr->textureObject;                                                                                                                               \
+        return tex1DLayeredLod<HIP_CHANNEL_TYPE##4>(textureObject, float(x), int(layer), float(lod)).data;                                                                                   \
+    }                                                                                                                                                                                        \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_indirect_a1d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(uint64_t texobj, uint32_t layer, HIP_COORD_TYPE x)                                             \
+    {                                                                                                                                                                                        \
+        hipTextureObject_t textureObject = (hipTextureObject_t)texobj;                                                                                                                       \
+        return tex1DLayered<HIP_CHANNEL_TYPE##4>(textureObject, float(x), int(layer)).data;                                                                                                  \
+    }                                                                                                                                                                                        \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_level_indirect_a1d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(uint64_t texobj, uint32_t layer, HIP_COORD_TYPE x, HIP_COORD_TYPE lod)                   \
+    {                                                                                                                                                                                        \
+        hipTextureObject_t textureObject = (hipTextureObject_t)texobj;                                                                                                                       \
+        return tex1DLayeredLod<HIP_CHANNEL_TYPE##4>(textureObject, float(x), int(layer), float(lod)).data;                                                                                   \
     }
 
     __device__ half4 __ockl_image_sampleh_1Da(unsigned int CONSTANT_SPACE *i, unsigned int ADDRESS_SPACE_CONSTANT *s, float2::Native_vec_ c);
@@ -823,16 +853,26 @@ extern "C"
     tex_a1d_f16(s32, int);
     tex_a1d_f16(f32, float);
 
-#define tex_a2d(CHANNEL_TYPE, HIP_CHANNEL_TYPE, COORD_TYPE, HIP_COORD_TYPE)                                                                                                          \
-    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_a2d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(struct textureReference GLOBAL_SPACE * ptr, uint32_t layer, HIP_COORD_TYPE x, HIP_COORD_TYPE y) \
-    {                                                                                                                                                                                \
-        hipTextureObject_t textureObject = ptr->textureObject;                                                                                                                       \
-        return tex2DLayered<HIP_CHANNEL_TYPE##4>(textureObject, float(x), float(y), int(layer)).data;                                                                                \
-    }                                                                                                                                                                                \
-    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_indirect_a2d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(uint64_t texobj, uint32_t layer, HIP_COORD_TYPE x, HIP_COORD_TYPE y)                   \
-    {                                                                                                                                                                                \
-        hipTextureObject_t textureObject = (hipTextureObject_t)texobj;                                                                                                               \
-        return tex2DLayered<HIP_CHANNEL_TYPE##4>(textureObject, float(x), float(y), int(layer)).data;                                                                                \
+#define tex_a2d(CHANNEL_TYPE, HIP_CHANNEL_TYPE, COORD_TYPE, HIP_COORD_TYPE)                                                                                                                                    \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_a2d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(struct textureReference GLOBAL_SPACE * ptr, uint32_t layer, HIP_COORD_TYPE x, HIP_COORD_TYPE y)                           \
+    {                                                                                                                                                                                                          \
+        hipTextureObject_t textureObject = ptr->textureObject;                                                                                                                                                 \
+        return tex2DLayered<HIP_CHANNEL_TYPE##4>(textureObject, float(x), float(y), int(layer)).data;                                                                                                          \
+    }                                                                                                                                                                                                          \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_level_a2d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(struct textureReference GLOBAL_SPACE * ptr, uint32_t layer, HIP_COORD_TYPE x, HIP_COORD_TYPE y, HIP_COORD_TYPE lod) \
+    {                                                                                                                                                                                                          \
+        hipTextureObject_t textureObject = ptr->textureObject;                                                                                                                                                 \
+        return tex2DLayeredLod<HIP_CHANNEL_TYPE##4>(textureObject, float(x), float(y), int(layer), float(lod)).data;                                                                                           \
+    }                                                                                                                                                                                                          \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_indirect_a2d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(uint64_t texobj, uint32_t layer, HIP_COORD_TYPE x, HIP_COORD_TYPE y)                                             \
+    {                                                                                                                                                                                                          \
+        hipTextureObject_t textureObject = (hipTextureObject_t)texobj;                                                                                                                                         \
+        return tex2DLayered<HIP_CHANNEL_TYPE##4>(textureObject, float(x), float(y), int(layer)).data;                                                                                                          \
+    }                                                                                                                                                                                                          \
+    HIP_CHANNEL_TYPE##4 ::Native_vec_ FUNC(tex_level_indirect_a2d_v4_##CHANNEL_TYPE##_##COORD_TYPE)(uint64_t texobj, uint32_t layer, HIP_COORD_TYPE x, HIP_COORD_TYPE y, HIP_COORD_TYPE lod)                   \
+    {                                                                                                                                                                                                          \
+        hipTextureObject_t textureObject = (hipTextureObject_t)texobj;                                                                                                                                         \
+        return tex2DLayeredLod<HIP_CHANNEL_TYPE##4>(textureObject, float(x), float(y), int(layer), float(lod)).data;                                                                                           \
     }
 
     __device__ half4 __ockl_image_sampleh_2Da(unsigned int CONSTANT_SPACE *i, unsigned int ADDRESS_SPACE_CONSTANT *s, float4::Native_vec_ c);
@@ -1260,6 +1300,7 @@ extern "C"
             default:
                 return 0;
             }
+            return 2;
         case 'l':
             switch (s[1])
             {
@@ -1289,17 +1330,18 @@ extern "C"
                 case 'X':
                 case 'n':
                     len = 8;
-                    return 2;
+                    break;
                 default:
                     return 0;
                 }
+                return 3;
             default:
                 return 0;
             }
+            return 2;
         default:
             return 0;
         }
-        return 1;
     }
 
     __device__ static bool parse_printf_specifier(const char *s, uint8_t &len)
@@ -1393,8 +1435,36 @@ extern "C"
             char c = *(s++);
             if (c == 0)
                 break;
-            if (c == '%')
+            if (c != '%')
+                continue;
+
+            // %% requires no additional handling
+            if (*s == '%')
             {
+                s++;
+                continue;
+            }
+
+            // %s uses __ockl_printf_append_string_n
+            // https://github.com/ROCm/ROCm-Device-Libs/blob/rocm-5.7.x/ockl/src/services.cl#L343
+            if (*s == 's')
+            {
+                s++;
+                const char *value = (const char *)read_valist(valist_ptr, valist_offset, 8);
+                handle = __ockl_printf_append_string_n(handle, value, strlen_plus_one(value), 0);
+                continue;
+            }
+
+            // Keep scanning until we figure out the length of this specifier or if we reach the end of the string
+            while (*s != 0) {
+                // "The width is not specified in the format string, but as an additional integer value argument preceding the argument that has to be formatted."
+                if (*s == '*') {
+                    s++;
+                    uint64_t value = read_valist(valist_ptr, valist_offset, 4);
+                    handle = __ockl_printf_append_args(handle, 1, value, 0, 0, 0, 0, 0, 0, 0);
+                    continue;
+                }
+
                 uint8_t len = 0;
                 if (parse_printf_specifier(s, len))
                 {
@@ -1406,16 +1476,22 @@ extern "C"
                     if (specifier_with_length)
                     {
                         s += specifier_with_length;
-                    }
-                    if (len > 0)
-                    {
-                        uint64_t value = read_valist(valist_ptr, valist_offset, len);
-                        handle = __ockl_printf_append_args(handle, 1, value, 0, 0, 0, 0, 0, 0, 0);
+                    } else {
+                        // Assume the unknown character is a sub-specifier and move on
+                        s++;
+                        continue;
                     }
                 }
+
+                if (len > 0)
+                {
+                    uint64_t value = read_valist(valist_ptr, valist_offset, len);
+                    handle = __ockl_printf_append_args(handle, 1, value, 0, 0, 0, 0, 0, 0, 0);
+                }
+                break;
             }
         }
-        return (uint32_t)__ockl_printf_append_args(handle, 0, 0, 0, 0, 0, 0, 0, 0, 1);
+        __ockl_printf_append_args(handle, 0, 0, 0, 0, 0, 0, 0, 0, 1);
         return 1;
     }
 
