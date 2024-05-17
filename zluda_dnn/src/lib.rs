@@ -22,6 +22,25 @@ use hip_runtime_sys::*;
 use miopen_sys::*;
 use std::{mem, ptr};
 
+impl miopenBackendHeurMode_t {
+    pub const CUDNN_HEUR_MODE_INSTANT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(0);
+}
+impl miopenBackendHeurMode_t {
+    pub const CUDNN_HEUR_MODE_B: miopenBackendHeurMode_t = miopenBackendHeurMode_t(1);
+}
+impl miopenBackendHeurMode_t {
+    pub const CUDNN_HEUR_MODE_FALLBACK: miopenBackendHeurMode_t = miopenBackendHeurMode_t(2);
+}
+impl miopenBackendHeurMode_t {
+    pub const CUDNN_HEUR_MODE_A: miopenBackendHeurMode_t = miopenBackendHeurMode_t(3);
+}
+impl miopenBackendHeurMode_t {
+    pub const CUDNN_HEUR_MODES_COUNT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(4);
+}
+#[repr(transparent)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq)]
+pub struct miopenBackendHeurMode_t(pub ::std::os::raw::c_uint);
+
 macro_rules! call {
     ($expr:expr) => {{
         let result = $expr;
@@ -188,7 +207,7 @@ unsafe fn set_convolution_nd_descriptor(
     let v = *filter_stride_a.add(1);
     let d_h = *dilation_a.add(0);
     let d_w = *dilation_a.add(1);
-    let mode = conv_mode_to_cudnn(mode);
+    let mode = to_conv_mode(mode);
     to_cudnn(miopenInitConvolutionDescriptor(
         conv_desc as _,
         mode,
@@ -201,13 +220,19 @@ unsafe fn set_convolution_nd_descriptor(
     ))
 }
 
-fn conv_mode_to_cudnn(mode: cudnnConvolutionMode_t) -> miopenConvolutionMode_t {
+fn to_conv_mode(mode: cudnnConvolutionMode_t) -> miopenConvolutionMode_t {
     match mode {
         cudnnConvolutionMode_t::CUDNN_CONVOLUTION => miopenConvolutionMode_t::miopenTranspose,
         cudnnConvolutionMode_t::CUDNN_CROSS_CORRELATION => {
             miopenConvolutionMode_t::miopenConvolution
         }
         _ => panic!(),
+    }
+}
+
+fn to_heur_mode(mode: cudnnBackendHeurMode_t) -> miopenBackendHeurMode_t {
+    match mode {
+        _ => panic!("[ZLUDA] Unknown heuristic mode: {}", mode.0),
     }
 }
 
@@ -1270,9 +1295,15 @@ unsafe fn backend_cudnn_to_miopen(
                 panic!("[ZLUDA] Unexpected value: element_count={}", element_count)
             }
             let p_conv_mode: *mut miopenConvolutionMode_t = array_of_elements.cast();
-            *p_conv_mode = conv_mode_to_cudnn(*(p_conv_mode as *mut cudnnConvolutionMode_t));
+            *p_conv_mode = to_conv_mode(*(p_conv_mode as *mut cudnnConvolutionMode_t));
         },
-        miopenBackendAttributeType_t::MIOPEN_TYPE_HEUR_MODE => (),
+        miopenBackendAttributeType_t::MIOPEN_TYPE_HEUR_MODE => {
+            if element_count != 1 {
+                panic!("[ZLUDA] Unexpected value: element_count={}", element_count)
+            }
+            let p_heur_mode: *mut miopenBackendHeurMode_t = array_of_elements.cast();
+            *p_heur_mode = to_heur_mode(*(p_heur_mode as *mut cudnnBackendHeurMode_t));
+        },
         miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR => (),
         _ => println!("[ZLUDA] Warning: found unknown backend attribute type: {}", elements_type.0),
     }

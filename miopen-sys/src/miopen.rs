@@ -401,6 +401,20 @@ impl miopenNormMode_t {
 impl miopenNormMode_t {
     pub const MIOPEN_WEIGHT_BIAS: miopenNormMode_t = miopenNormMode_t(1);
 }
+impl miopenNormMode_t {
+    pub const MIOPEN_ELEMENTWISE_AFFINE_FUSED_ADD: miopenNormMode_t = miopenNormMode_t(2);
+}
+impl miopenNormMode_t {
+    #[doc = "< learnable weights and biases of the module of shape\nnormalized_shape in addlayernorm"]
+    pub const MIOPEN_WEIGHT_BIAS_FUSED_ADD: miopenNormMode_t = miopenNormMode_t(3);
+}
+impl miopenNormMode_t {
+    pub const MIOPEN_ELEMENTWISE_AFFINE_T5: miopenNormMode_t = miopenNormMode_t(4);
+}
+impl miopenNormMode_t {
+    #[doc = "< learnable weights and biases of the module of shape\nnormalized_shape in t5layernorm"]
+    pub const MIOPEN_WEIGHT_BIAS_T5: miopenNormMode_t = miopenNormMode_t(5);
+}
 #[repr(transparent)]
 #[doc = " @ingroup layernorm\n @enum miopenNormMode_t\n LayerNorm mode"]
 #[derive(Copy, Clone, Hash, PartialEq, Eq)]
@@ -1262,7 +1276,7 @@ extern "C" {
 }
 extern "C" {
     #[must_use]
-    #[doc = " @brief Query the workspace size required for a forward convolution layer\n\n This call is required and must be executed once before running\n miopenFindConvolutionForwardAlgorithm()\n in order to determine the largest required allocation for the algorithm search; i.e., the maximum\n size\n of the memory needed from the set of potential forward convolution algorithm is returned.\n\n If using Group/Depthwise convolution mode, call miopenSetConvolutionGroupCount() before running\n this.\n\n @param handle         MIOpen handle (input)\n @param wDesc          Tensor descriptor for weight tensor w (input)\n @param xDesc          Tensor descriptor for input data tensor x (input)\n @param convDesc       Convolution layer descriptor (input)\n @param yDesc          Tensor descriptor for output data tensor y (input)\n @param workSpaceSize  Pointer to memory to return size in bytes (output)\n @return               miopenStatus_t"]
+    #[doc = " @brief Query the workspace size required for a forward convolution algorithm.\n\n For given tensor and convolution descriptors, this function calculates and returns the minimum\n size of the workspace that must be provided to miopenFindConvolutionForwardAlgorithm() in order\n for the latter to find the best candidate from the available forward data convolution algorithms.\n\n WARNING: Providing smaller workspace may result in the selection of a slow convolution\n algorithm, and therefore affect library performance.\n\n It should be assumed that the required workspace size is different for each convolution\n configuration. Therefore, typically this function should be called at least once for each\n convolution configuration used.\n\n Since the convolution configuration is determined by tensor and convolution descriptors, the user\n should ensure that all descriptors contain complete information. For example, if Group/Depthwise\n convolution mode is used, then miopenSetConvolutionGroupCount() should be called before running\n this, and so on.\n\n @param handle         MIOpen handle (input)\n @param wDesc          Tensor descriptor for weight tensor w (input)\n @param xDesc          Tensor descriptor for input data tensor x (input)\n @param convDesc       Convolution layer descriptor (input)\n @param yDesc          Tensor descriptor for output data tensor y (input)\n @param workSpaceSize  Pointer to memory to return size in bytes (output)\n @return               miopenStatus_t"]
     pub fn miopenConvolutionForwardGetWorkSpaceSize(
         handle: miopenHandle_t,
         wDesc: miopenTensorDescriptor_t,
@@ -1274,7 +1288,7 @@ extern "C" {
 }
 extern "C" {
     #[must_use]
-    #[doc = " @brief Search and run the forward convolutional algorithms and return a list of kernel times.\n\n This function attempts all MIOpen forward convolution algorithms based on\n the input configuration, and outputs performance metrics to a\n user-allocated array of type miopenConvAlgoPerf_t. These metrics are written\n in a sorted fashion where the first element has the lowest compute time.\n Users can chose the top-most algorithm if they only care about the fastest\n algorithm.\n\n This function is mandatory before using miopenConvolutionForward(). In order\n to execute this function, miopenConvolutionForwardGetWorkSpaceSize() must be\n run to determine the required memory for this search.\n\n * If exhaustiveSearch == 0, MIOpen will look for the first kernel with a configuration match. If\n a configuration match is not found, a default configuration will be returned.\n\n * If exhaustiveSearch == 1, MIOpen will look for the best kernel for the provided configuration.\n If a match is not found, an exhaustive search is performed by running individual algorithms.\n\n If using Group/Depthwise convolution mode, call miopenSetConvolutionGroupCount() before running\n this.\n\n @param handle             MIOpen handle (input)\n @param xDesc              Tensor descriptor for data input tensor x (input)\n @param x                  Data tensor x (input)\n @param wDesc              Tensor descriptor for weight tensor w (input)\n @param w                  Weights tensor w (input)\n @param convDesc           Convolution layer descriptor (input)\n @param yDesc              Tensor descriptor for output data tensor y (input)\n @param y                  Data tensor y (output)\n @param requestAlgoCount   Number of algorithms to return kernel times (input)\n @param returnedAlgoCount  Pointer to number of algorithms returned (output)\n @param perfResults        Pointer to union of best algorithm for forward and backwards (input)\n @param workSpace          Pointer to workspace required for the search (output)\n @param workSpaceSize      Size in bytes of the memory needed for find (output)\n @param exhaustiveSearch   A boolean to toggle a full search of all algorithms and configurations\n (input)\n @return                   miopenStatus_t"]
+    #[doc = " @brief Search and run the forward convolutional algorithms and return a list of kernel times.\n\n This function attempts all MIOpen forward convolution algorithms based on\n the input configuration, and outputs performance metrics to a\n user-allocated array of type miopenConvAlgoPerf_t. These metrics are written\n in a sorted fashion where the first element has the lowest compute time.\n Users can chose the top-most algorithm if they only care about the fastest\n algorithm.\n\n This function is mandatory before using miopenConvolutionForward(). In order\n to execute this function, miopenConvolutionForwardGetWorkSpaceSize() must be\n run to determine the required memory for this search.\n\n * If exhaustiveSearch == 0, MIOpen will look for the first kernel with a configuration match. If\n a configuration match is not found, a default configuration will be returned.\n\n * If exhaustiveSearch == 1, MIOpen will look for the best kernel for the provided configuration.\n If a match is not found, an exhaustive search is performed by running individual algorithms.\n\n If using Group/Depthwise convolution mode, call miopenSetConvolutionGroupCount() before running\n this.\n\n @param handle             MIOpen handle (input)\n @param xDesc              Tensor descriptor for data input tensor x (input)\n @param x                  Data tensor x (input)\n @param wDesc              Tensor descriptor for weight tensor w (input)\n @param w                  Weights tensor w (input)\n @param convDesc           Convolution layer descriptor (input)\n @param yDesc              Tensor descriptor for output data tensor y (input)\n @param y                  Data tensor y (output)\n @param requestAlgoCount   Number of algorithms to return kernel times (input)\n @param returnedAlgoCount  Pointer to number of algorithms returned (output)\n @param perfResults        Pointer to union of best algorithm for forward and backwards (input)\n @param workSpace          Pointer to workspace buffer (input).\n @param workSpaceSize      Size in bytes of the workspace buffer (input).\n                           The buffer must be allocated on the device by the caller.\n                           The size of the buffer should be determined by calling\n                           miopenConvolutionForwardGetWorkSpaceSize(), see its\n                           documentation for details.\n @param exhaustiveSearch   A boolean to toggle a full search of all algorithms\n                           and configurations (input)\n @return                   miopenStatus_t"]
     pub fn miopenFindConvolutionForwardAlgorithm(
         handle: miopenHandle_t,
         xDesc: miopenTensorDescriptor_t,
@@ -1294,7 +1308,7 @@ extern "C" {
 }
 extern "C" {
     #[must_use]
-    #[doc = " @brief Execute a forward convolution layer\n\n Runs the forward convolution layer based on the selected algorithm. The function\n miopenFindConvolutionForwardAlgorithm() must have been executed previously to\n determine the required memory needed for the workspace and the best convolutional algorithm.\n The scaling parameter alpha (float) and shift parameter beta (float) are only supported for\n alpha = 1 and beta = 0.\n\n The forward convolution is designed to accommodate both packed and non-packed tensor strides for\n multiple data types and dimensions across various platforms. This flexibility ensures optimal\n performance in handling diverse computational scenarios. To configure tensor parameters,\n including strides, users can utilize the APIs miopenSetTensorDescriptor() and\n miopenGetTensorDescriptor(). These APIs empower developers to seamlessly set and retrieve tensor\n information, facilitating a more intuitive and efficient workflow. The tensor strides are\n non-packed by default.\n\n If using Group/Depthwise convolution mode, call miopenSetConvolutionGroupCount() before running\n this.\n\n @param handle         MIOpen handle (input)\n @param alpha          Floating point scaling factor, allocated on the host (input)\n @param xDesc          Tensor descriptor for data input tensor x (input)\n @param x              Data tensor x (input)\n @param wDesc          Tensor descriptor for weight tensor w (input)\n @param w              Weights tensor w (inputs)\n @param convDesc       Convolution layer descriptor (inputs)\n @param algo           Algorithm selected (inputs)\n @param beta           Floating point shift factor, allocated on the host (input)\n @param yDesc          Tensor descriptor for output data tensor y (input)\n @param y              Data tensor y (output)\n @param workSpace      Pointer to workspace required (input)\n @param workSpaceSize  Size in bytes of the memory determined by the find step (input)\n @return               miopenStatus_t"]
+    #[doc = " @brief Execute a forward convolution layer\n\n Runs the forward convolution layer based on the selected algorithm. The function\n miopenFindConvolutionForwardAlgorithm() must have been executed previously to\n determine the required memory needed for the workspace and the best convolutional algorithm.\n The scaling parameter alpha (float) and shift parameter beta (float) are only supported for\n alpha = 1 and beta = 0 in 2D. In 3D, these parameters can take other values.\n\n The forward convolution is designed to accommodate both packed and non-packed tensor strides for\n multiple data types and dimensions across various platforms. This flexibility ensures optimal\n performance in handling diverse computational scenarios. To configure tensor parameters,\n including strides, users can utilize the APIs miopenSetTensorDescriptor() and\n miopenGetTensorDescriptor(). These APIs empower developers to seamlessly set and retrieve tensor\n information, facilitating a more intuitive and efficient workflow. The tensor strides are\n non-packed by default.\n\n If using Group/Depthwise convolution mode, call miopenSetConvolutionGroupCount() before running\n this.\n\n @param handle         MIOpen handle (input)\n @param alpha          Floating point scaling factor, allocated on the host (input)\n @param xDesc          Tensor descriptor for data input tensor x (input)\n @param x              Data tensor x (input)\n @param wDesc          Tensor descriptor for weight tensor w (input)\n @param w              Weights tensor w (inputs)\n @param convDesc       Convolution layer descriptor (inputs)\n @param algo           Algorithm selected (inputs)\n @param beta           Floating point shift factor, allocated on the host (input)\n @param yDesc          Tensor descriptor for output data tensor y (input)\n @param y              Data tensor y (output)\n @param workSpace      Pointer to workspace required (input)\n @param workSpaceSize  Size in bytes of the memory determined by the find step (input)\n @return               miopenStatus_t"]
     pub fn miopenConvolutionForward(
         handle: miopenHandle_t,
         alpha: *const ::std::os::raw::c_void,
@@ -1326,7 +1340,7 @@ extern "C" {
 }
 extern "C" {
     #[must_use]
-    #[doc = " @brief Get the GPU memory required for the backward data convolution algorithm.\n\n For a provided tensor descriptors and algorithm selection, this function calculates and returns\n the workspace size required for back propagation on data. This call is required and must be\n executed once before running miopenFindConvolutionBackwardDataAlgorithm() in order to determine\n the largest required allocation for the algorithm search; i.e., the maximum size of the memory\n needed from the set of potential backward convolution algorithm is returned.\n\n If using Group/Depthwise convolution mode, call miopenSetConvolutionGroupCount() before running\n this.\n\n @param handle         MIOpen handle (input)\n @param dyDesc         Tensor descriptor for data input tensor dy (input)\n @param wDesc          Tensor descriptor for weight tensor w (input)\n @param convDesc       Convolution layer descriptor (input)\n @param dxDesc         Tensor descriptor for output data tensor dx (input)\n @param workSpaceSize  Size in bytes of the memory required (output)\n @return               miopenStatus_t"]
+    #[doc = " @brief Query the workspace size required for a backward data convolution algorithm.\n\n For given tensor and convolution descriptors, this function calculates and returns the minimum\n size of the workspace that must be provided to miopenFindConvolutionBackwardDataAlgorithm() in\n order for the latter to find the best candidate from the available backward data convolution\n algorithms.\n\n WARNING: Providing smaller workspace may result in the selection of a slow convolution\n algorithm, and therefore affect library performance.\n\n It should be assumed that the required workspace size is different for each convolution\n configuration. Therefore, typically this function should be called at least once for each\n convolution configuration used.\n\n Since the convolution configuration is determined by tensor and convolution descriptors, the user\n should ensure that all descriptors contain complete information. For example, if Group/Depthwise\n convolution mode is used, then miopenSetConvolutionGroupCount() should be called before running\n this, and so on.\n\n @param handle         MIOpen handle (input)\n @param dyDesc         Tensor descriptor for data input tensor dy (input)\n @param wDesc          Tensor descriptor for weight tensor w (input)\n @param convDesc       Convolution layer descriptor (input)\n @param dxDesc         Tensor descriptor for output data tensor dx (input)\n @param workSpaceSize  Size in bytes of the memory required (output)\n @return               miopenStatus_t"]
     pub fn miopenConvolutionBackwardDataGetWorkSpaceSize(
         handle: miopenHandle_t,
         dyDesc: miopenTensorDescriptor_t,
@@ -1338,7 +1352,7 @@ extern "C" {
 }
 extern "C" {
     #[must_use]
-    #[doc = " @brief Search and run the backwards data convolution algorithms and return a list of kernel\n times.\n\n This function attempts all MIOpen backward data convolution algorithms, and outputs the\n performance metrics to a user-allocated array of type miopenConvAlgoPerf_t.\n These metrics are written in sorted fashion where the first element has the lowest compute time.\n This function is mandatory before using backwards convolutions. Users can chose the top-most\n algorithm if they only care about the fastest algorithm.\n\n This function is mandatory before using miopenConvolutionBackwardData(). In order to\n execute this function, miopenConvolutionBackwardsDataGetWorkSpaceSize() must be run to determine\n the required memory for this search.\n\n * If exhaustiveSearch == 0, MIOpen will look for the first kernel with a configuration match. If\n a configuration match is not found, a default configuration will be returned.\n\n * If exhaustiveSearch == 1, MIOpen will look for the best kernel for the provided configuration.\n If a match is not found, an exhaustive search is performed by running individual algorithms.\n\n If using Group/Depthwise convolution mode, call miopenSetConvolutionGroupCount() before running\n this.\n\n @param handle             MIOpen handle (input)\n @param dyDesc             Tensor descriptor for data input tensor dy (input)\n @param dy                 Data delta tensor dy (input)\n @param wDesc              Tensor descriptor for weight tensor w (input)\n @param w                  Weights tensor w (input)\n @param convDesc           Convolution layer descriptor (input)\n @param dxDesc             Tensor descriptor for output data tensor dx (input)\n @param dx                 Data delta tensor dx (input)\n @param requestAlgoCount   Number of algorithms to return kernel times (input)\n @param returnedAlgoCount  Pointer to number of algorithms returned (output)\n @param perfResults        Pointer to union of best algorithm for forward and backwards (output)\n @param workSpace          Pointer to workspace required for the search (output)\n @param workSpaceSize      Size in bytes of the memory needed for find (output)\n @param exhaustiveSearch   A boolean to toggle a full search of all algorithms and configurations\n (input)\n @return                   miopenStatus_t"]
+    #[doc = " @brief Search and run the backwards data convolution algorithms and return a list of kernel\n times.\n\n This function attempts all MIOpen backward data convolution algorithms, and outputs the\n performance metrics to a user-allocated array of type miopenConvAlgoPerf_t.\n These metrics are written in sorted fashion where the first element has the lowest compute time.\n This function is mandatory before using backwards convolutions. Users can chose the top-most\n algorithm if they only care about the fastest algorithm.\n\n This function is mandatory before using miopenConvolutionBackwardData(). In order to\n execute this function, miopenConvolutionBackwardsDataGetWorkSpaceSize() must be run to determine\n the required memory for this search.\n\n * If exhaustiveSearch == 0, MIOpen will look for the first kernel with a configuration match. If\n a configuration match is not found, a default configuration will be returned.\n\n * If exhaustiveSearch == 1, MIOpen will look for the best kernel for the provided configuration.\n If a match is not found, an exhaustive search is performed by running individual algorithms.\n\n If using Group/Depthwise convolution mode, call miopenSetConvolutionGroupCount() before running\n this.\n\n @param handle             MIOpen handle (input)\n @param dyDesc             Tensor descriptor for data input tensor dy (input)\n @param dy                 Data delta tensor dy (input)\n @param wDesc              Tensor descriptor for weight tensor w (input)\n @param w                  Weights tensor w (input)\n @param convDesc           Convolution layer descriptor (input)\n @param dxDesc             Tensor descriptor for output data tensor dx (input)\n @param dx                 Data delta tensor dx (input)\n @param requestAlgoCount   Number of algorithms to return kernel times (input)\n @param returnedAlgoCount  Pointer to number of algorithms returned (output)\n @param perfResults        Pointer to union of best algorithm for forward and backwards (output)\n @param workSpace          Pointer to workspace buffer (input).\n @param workSpaceSize      Size in bytes of the workspace buffer (input).\n                           The buffer must be allocated on the device by the caller.\n                           The size of the buffer should be determined by calling\n                           miopenConvolutionBackwardDataGetWorkSpaceSize(), see its\n                           documentation for details.\n @param exhaustiveSearch   A boolean to toggle a full search of all algorithms\n                           and configurations (input)\n @return                   miopenStatus_t"]
     pub fn miopenFindConvolutionBackwardDataAlgorithm(
         handle: miopenHandle_t,
         dyDesc: miopenTensorDescriptor_t,
@@ -1377,7 +1391,7 @@ extern "C" {
 }
 extern "C" {
     #[must_use]
-    #[doc = " @brief Get the GPU memory required for the backward weights convolution algorithm.\n\n\n For a provided tensor descriptors and algorithm selection, this function calculates and returns\n the workspace size required for back propagation on data. This call is required and must be\n executed once before running miopenFindConvolutionBackwardWeightsAlgorithm() in order to\n determine\n the largest required allocation for the algorithm search; i.e., the maximum size of the memory\n needed from the set of potential backward weights convolution algorithm is returned.\n\n If using Group/Depthwise convolution mode, call miopenSetConvolutionGroupCount() before running\n this.\n\n @param handle         MIOpen handle (input)\n @param dyDesc         Tensor descriptor for data input tensor dy (input)\n @param xDesc          Tensor descriptor for data tensor x (input)\n @param convDesc       Convolution layer descriptor (input)\n @param dwDesc         Tensor descriptor for output weights tensor dw (input)\n @param workSpaceSize  Size in bytes of the memory required (output)\n @return               miopenStatus_t"]
+    #[doc = " @brief Get the GPU memory required for the backward weights convolution algorithm.\n\n For given tensor and convolution descriptors, this function calculates and returns the minimum\n size of the workspace that must be provided to miopenFindConvolutionBackwardWeightsAlgorithm() in\n order for the latter to find the best candidate from the available backward weights convolution\n algorithms.\n\n WARNING: Providing smaller workspace may result in the selection of a slow convolution\n algorithm, and therefore affect library performance.\n\n It should be assumed that the required workspace size is different for each convolution\n configuration. Therefore, typically this function should be called at least once for each\n convolution configuration used.\n\n Since the convolution configuration is determined by tensor and convolution descriptors, the user\n should ensure that all descriptors contain complete information. For example, if Group/Depthwise\n convolution mode is used, then miopenSetConvolutionGroupCount() should be called before running\n this, and so on.\n\n @param handle         MIOpen handle (input)\n @param dyDesc         Tensor descriptor for data input tensor dy (input)\n @param xDesc          Tensor descriptor for data tensor x (input)\n @param convDesc       Convolution layer descriptor (input)\n @param dwDesc         Tensor descriptor for output weights tensor dw (input)\n @param workSpaceSize  Size in bytes of the memory required (output)\n @return               miopenStatus_t"]
     pub fn miopenConvolutionBackwardWeightsGetWorkSpaceSize(
         handle: miopenHandle_t,
         dyDesc: miopenTensorDescriptor_t,
@@ -1389,7 +1403,7 @@ extern "C" {
 }
 extern "C" {
     #[must_use]
-    #[doc = " @brief Search and run the backwards weights convolutional algorithms and return a list of kernel\n times.\n\n This function attempts all MIOpen backward weights convolution algorithms, and outputs\n the performance metrics to a user-allocated array of type miopenConvAlgoPerf_t. These metrics are\n written in sorted fashion where the first element has the lowest compute time.\n This function is mandatory before using backwards weight convolutions. Users can chose the\n top-most algorithm if they only care about the fastest algorithm.\n\n This function is mandatory before using miopenConvolutionBackwardWeights(). In order to\n execute this function, miopenConvolutionBackwardsWeightsGetWorkSpaceSize() must be run to\n determine the required memory for this search.\n\n * If exhaustiveSearch == 0, MIOpen will look for the first kernel with a configuration match. If\n a configuration match is not found, a default configuration will be returned.\n\n * If exhaustiveSearch == 1, MIOpen will look for the best kernel for the provided configuration.\n If a match is not found, an exhaustive search is performed by running individual algorithms.\n\n If using Group/Depthwise convolution mode, call miopenSetConvolutionGroupCount() before running\n this.\n\n @param handle             MIOpen handle (input)\n @param dyDesc             Tensor descriptor for data input tensor dy (input)\n @param dy                 Data delta tensor dy (input)\n @param xDesc              Tensor descriptor for output data tensor x (input)\n @param x                  Data delta tensor dx (input)\n @param convDesc           Convolution layer descriptor (input)\n @param dwDesc             Tensor descriptor for weight tensor dw (input)\n @param dw                 Weights delta tensor dw (input)\n @param requestAlgoCount   Number of algorithms to return kernel times (input)\n @param returnedAlgoCount  Pointer to number of algorithms returned (output)\n @param perfResults        Pointer to union of best algorithm for forward and backwards (output)\n @param workSpace          Pointer to workspace required for the search (output)\n @param workSpaceSize      Size in bytes of the memory needed for find (output)\n @param exhaustiveSearch   A boolean to toggle a full search of all algorithms and configurations\n (input)\n @return                   miopenStatus_t"]
+    #[doc = " @brief Search and run the backwards weights convolutional algorithms and return a list of kernel\n times.\n\n This function attempts all MIOpen backward weights convolution algorithms, and outputs\n the performance metrics to a user-allocated array of type miopenConvAlgoPerf_t. These metrics are\n written in sorted fashion where the first element has the lowest compute time.\n This function is mandatory before using backwards weight convolutions. Users can chose the\n top-most algorithm if they only care about the fastest algorithm.\n\n This function is mandatory before using miopenConvolutionBackwardWeights(). In order to\n execute this function, miopenConvolutionBackwardsWeightsGetWorkSpaceSize() must be run to\n determine the required memory for this search.\n\n * If exhaustiveSearch == 0, MIOpen will look for the first kernel with a configuration match. If\n a configuration match is not found, a default configuration will be returned.\n\n * If exhaustiveSearch == 1, MIOpen will look for the best kernel for the provided configuration.\n If a match is not found, an exhaustive search is performed by running individual algorithms.\n\n If using Group/Depthwise convolution mode, call miopenSetConvolutionGroupCount() before running\n this.\n\n @param handle             MIOpen handle (input)\n @param dyDesc             Tensor descriptor for data input tensor dy (input)\n @param dy                 Data delta tensor dy (input)\n @param xDesc              Tensor descriptor for output data tensor x (input)\n @param x                  Data delta tensor dx (input)\n @param convDesc           Convolution layer descriptor (input)\n @param dwDesc             Tensor descriptor for weight tensor dw (input)\n @param dw                 Weights delta tensor dw (input)\n @param requestAlgoCount   Number of algorithms to return kernel times (input)\n @param returnedAlgoCount  Pointer to number of algorithms returned (output)\n @param perfResults        Pointer to union of best algorithm for forward and backwards (output)\n @param workSpace          Pointer to workspace buffer (input).\n @param workSpaceSize      Size in bytes of the workspace buffer (input).\n                           The buffer must be allocated on the device by the caller.\n                           The size of the buffer should be determined by calling\n                           miopenConvolutionBackwardWeightsGetWorkSpaceSize(), see its\n                           documentation for details.\n @param exhaustiveSearch   A boolean to toggle a full search of all algorithms\n                           and configurations (input)\n @return                   miopenStatus_t"]
     pub fn miopenFindConvolutionBackwardWeightsAlgorithm(
         handle: miopenHandle_t,
         dyDesc: miopenTensorDescriptor_t,
@@ -3091,6 +3105,10 @@ impl miopenProblemDirection_t {
     pub const miopenProblemDirectionBackwardWeights: miopenProblemDirection_t =
         miopenProblemDirection_t(2);
 }
+impl miopenProblemDirection_t {
+    pub const miopenProblemDirectionInference: miopenProblemDirection_t =
+        miopenProblemDirection_t(4);
+}
 #[repr(transparent)]
 #[doc = " @enum miopenProblemDirection_t\n Directions of miopen operation."]
 #[derive(Copy, Clone, Hash, PartialEq, Eq)]
@@ -3238,8 +3256,66 @@ impl miopenTensorArgumentId_t {
     pub const miopenTensorSoftmaxDY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(46);
 }
 impl miopenTensorArgumentId_t {
+    pub const miopenTensorBatchnormX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(47);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBatchnormY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(48);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBatchnormRunningMean: miopenTensorArgumentId_t =
+        miopenTensorArgumentId_t(49);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBatchnormRunningVariance: miopenTensorArgumentId_t =
+        miopenTensorArgumentId_t(50);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBatchnormSavedMean: miopenTensorArgumentId_t =
+        miopenTensorArgumentId_t(51);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBatchnormSavedVariance: miopenTensorArgumentId_t =
+        miopenTensorArgumentId_t(52);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBatchnormScale: miopenTensorArgumentId_t = miopenTensorArgumentId_t(53);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBatchnormScaleDiff: miopenTensorArgumentId_t =
+        miopenTensorArgumentId_t(54);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBatchnormEstimatedMean: miopenTensorArgumentId_t =
+        miopenTensorArgumentId_t(55);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBatchnormEstimatedVariance: miopenTensorArgumentId_t =
+        miopenTensorArgumentId_t(56);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBatchnormBias: miopenTensorArgumentId_t = miopenTensorArgumentId_t(57);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBatchnormBiasDiff: miopenTensorArgumentId_t =
+        miopenTensorArgumentId_t(58);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBatchnormDX: miopenTensorArgumentId_t = miopenTensorArgumentId_t(59);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenTensorBatchnormDY: miopenTensorArgumentId_t = miopenTensorArgumentId_t(60);
+}
+impl miopenTensorArgumentId_t {
     pub const miopenTensorArgumentIsScalar: miopenTensorArgumentId_t =
         miopenTensorArgumentId_t(-2147483648);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenScalarBatchnormExpAvgFactor: miopenTensorArgumentId_t =
+        miopenTensorArgumentId_t(-2147483647);
+}
+impl miopenTensorArgumentId_t {
+    pub const miopenScalarBatchnormEpsilon: miopenTensorArgumentId_t =
+        miopenTensorArgumentId_t(-2147483646);
 }
 #[repr(transparent)]
 #[doc = " @enum miopenTensorArgumentId_t\n Identifiers for tensor arguments of problems and operations."]
@@ -3498,6 +3574,16 @@ extern "C" {
 }
 extern "C" {
     #[must_use]
+    #[doc = " @brief Initializes a problem object describing an activation operation.\n @note As of now there is no way to actually get any solution for this kind of problems.\n\n @param problem   Pointer to the problem to initialize\n @param mode      Batchnorm mode\n @param direction Direction of the operation\n @return          miopenStatus_t"]
+    pub fn miopenCreateBatchnormProblem(
+        problem: *mut miopenProblem_t,
+        mode: miopenBatchNormMode_t,
+        runningMeanVariance: bool,
+        direction: miopenProblemDirection_t,
+    ) -> miopenStatus_t;
+}
+extern "C" {
+    #[must_use]
     #[doc = " @brief Fuse two problems into a single one. Problems can be either regular, or fused. No\n problems are disposed in the process, so the problem2 should be destroyed manually if it is not\n needed anymore.\n @example\n miopenProblem_t problem = makeSomeProblem1();\n miopenProblem_t problem2 = makeSomeProblem2();\n miopenProblem_t problem3 = makeSomeProblem3();\n miopenFuseProblems(problem, problem2);\n // Now problem contains {problem1, problem2}\n miopenFuseProblems(problem, problem3);\n // Now problem contains {problem1, problem2, problem3}\n miopenDestroyProblem(problem2);\n miopenDestroyProblem(problem3);\n @note As of now there is no way to actually get any solution for this kind of problems.\n\n @param problem1     The first problem to fuse. The result would be stored here.\n @param problem2     The second problem to fuse.\n @return             miopenStatus_t"]
     pub fn miopenFuseProblems(
         problem1: miopenProblem_t,
@@ -3536,7 +3622,7 @@ impl miopenSumNanPropagation_t {
 pub struct miopenSumNanPropagation_t(pub ::std::os::raw::c_int);
 extern "C" {
     #[must_use]
-    #[doc = " @brief Helper function to query the minimum workspace size required by the ReduceTensor call\n\n @param handle                   MIOpen Handle (input)\n @param xDesc                    Tensor descriptor for data input tensor x (input)\n @param dim                      Dimensions to sum. (input)\n @param yDesc                    Tensor descriptor for output data tensor y (input)\n @param sizeInBytes              Pointer to data to return the minimum workspace size\n @return                         miopenStatus_t"]
+    #[doc = " @brief Helper function to query the minimum workspace size required by the ReduceTensor call\n\n @param handle                   MIOpen Handle (input)\n @param xDesc                    Tensor descriptor for data input tensor x (input)\n @param dim                      Dimension to sum. (input)\n @param yDesc                    Tensor descriptor for output data tensor y (input)\n @param sizeInBytes              Pointer to data to return the minimum workspace size\n @return                         miopenStatus_t"]
     pub fn miopenGetSumWorkspaceSize(
         handle: miopenHandle_t,
         xDesc: miopenTensorDescriptor_t,
@@ -3547,7 +3633,7 @@ extern "C" {
 }
 extern "C" {
     #[must_use]
-    #[doc = " @brief Execute a sum forward layer\n\n @param handle                   MIOpen handle (input)\n @param nanPropagation           Nan number propagation mode (input)\n @param workspace                Address of the allocated workspace data (input)\n @param workspaceSizeInBytes     Size in bytes of the allocated workspace data (input)\n @param xDesc                    Tensor descriptor for data input tensor x (input)\n @param x                        Data tensor x (input)\n @param dim                      Dimensions to sum. (input)\n @param yDesc                    Tensor descriptor for output data tensor y (input)\n @param y                        Data tensor y (output)\n @return                         miopenStatus_t"]
+    #[doc = " @brief Execute a sum forward layer\n\n @param handle                   MIOpen handle (input)\n @param nanPropagation           Nan number propagation mode (input)\n @param workspace                Address of the allocated workspace data (input)\n @param workspaceSizeInBytes     Size in bytes of the allocated workspace data (input)\n @param xDesc                    Tensor descriptor for data input tensor x (input)\n @param x                        Data tensor x (input)\n @param dim                      Dimension to sum. (input)\n @param yDesc                    Tensor descriptor for output data tensor y (input)\n @param y                        Data tensor y (output)\n @return                         miopenStatus_t"]
     pub fn miopenSumForward(
         handle: miopenHandle_t,
         nanPropagation: miopenSumNanPropagation_t,
@@ -3560,16 +3646,35 @@ extern "C" {
         y: *mut ::std::os::raw::c_void,
     ) -> miopenStatus_t;
 }
+impl miopenReduceExtremeOp_t {
+    pub const MIOPEN_REDUCE_EXTREME_ARGMIN: miopenReduceExtremeOp_t = miopenReduceExtremeOp_t(1);
+}
+impl miopenReduceExtremeOp_t {
+    pub const MIOPEN_REDUCE_EXTREME_ARGMAX: miopenReduceExtremeOp_t = miopenReduceExtremeOp_t(2);
+}
+impl miopenReduceExtremeOp_t {
+    pub const MIOPEN_REDUCE_EXTREME_MIN: miopenReduceExtremeOp_t = miopenReduceExtremeOp_t(3);
+}
+impl miopenReduceExtremeOp_t {
+    pub const MIOPEN_REDUCE_EXTREME_MAX: miopenReduceExtremeOp_t = miopenReduceExtremeOp_t(4);
+}
+#[repr(transparent)]
+#[doc = " @ingroup ReduceExtreme\n @enum miopenReduceExtremeOp_t\n Reduction Extreme operation types"]
+#[derive(Copy, Clone, Hash, PartialEq, Eq)]
+pub struct miopenReduceExtremeOp_t(pub ::std::os::raw::c_int);
 extern "C" {
     #[must_use]
-    #[doc = " @ingroup argmax\n @brief Find the index of the maximum value of a tensor across dimensions.\n\n @param handle                   MIOpen handle (input)\n @param xDesc                    Tensor descriptor for data input tensor x (input)\n @param x                        Data tensor x (input)\n @param dim                      Dimensions to reduce argmax. (input)\n @param yDesc                    Tensor descriptor for output indice data tensor y (input)\n @param y                        Data tensor y (output)\n @return                         miopenStatus_t"]
-    pub fn miopenArgmaxForward(
+    #[doc = " @brief Find the the extreme (minimum, maximum) value and index of a tensor across Dimension.\n\n @param handle                   MIOpen handle (input)\n @param xDesc                    Tensor descriptor for data input tensor x (input)\n @param x                        Data tensor x (input)\n @param dim                      Dimension to reduce argmax. (input)\n @param reduceExtremeOp          Enumerant specifying the operation used by ReduceExtreme (input)\n @param yDesc                    Tensor descriptor for reduce data tensor y (input)\n @param y                        Data tensor y (output)\n @param indiceDesc               Tensor descriptor for reduce data tensor indice only int32_t\n (input)\n @param indice                   Data tensor indice (output)\n @return                         miopenStatus_t"]
+    pub fn miopenReduceExtremeForward(
         handle: miopenHandle_t,
         xDesc: miopenTensorDescriptor_t,
         x: *const ::std::os::raw::c_void,
         dim: i32,
+        reduceExtremeOp: miopenReduceExtremeOp_t,
         yDesc: miopenTensorDescriptor_t,
         y: *mut ::std::os::raw::c_void,
+        indiceDesc: miopenTensorDescriptor_t,
+        indice: *mut ::std::os::raw::c_void,
     ) -> miopenStatus_t;
 }
 extern "C" {
@@ -3592,6 +3697,84 @@ extern "C" {
         mean: *mut ::std::os::raw::c_void,
         rstdDesc: miopenTensorDescriptor_t,
         rstd: *mut ::std::os::raw::c_void,
+    ) -> miopenStatus_t;
+}
+extern "C" {
+    #[must_use]
+    #[doc = " @addtogroup layernorm\n\n  @{\n/\n/*! @brief Execute a add and layernorm forward layer\n\n @param handle         MIOpen handle (input)\n @param mode           LayerNorm mode (input)\n @param xDesc          Tensor descriptor for data input tensor x (input)\n @param x              Data tensor x (input)\n @param x2Desc         Tensor descriptor for data input tensor x2 (input)\n @param x2             Data tensor x2 (input)\n @param weightDesc     Tensor descriptor for data input tensor weight (input)\n @param weight         Data tensor weight (input)\n @param biasDesc       Tensor descriptor for data input tensor bias (input)\n @param bias           Data tensor bias (input)\n @param epsilon        Value to stablize inverse variance calculation (input)\n @param normalized_dim Nomalized dimensions in the input array (input)\n @param yDesc          Tensor descriptor for output data tensor y (input)\n @param y              Data tensor y (output)\n @param meanDesc       Tensor descriptor for output data tensor mean (input)\n @param mean           Data tensor mean (output)\n @param rstdDesc       Tensor descriptor for output data tensor rstd (input)\n @param rstd           Data tensor rstd (output)\n @return               miopenStatus_t"]
+    pub fn miopenAddLayerNormForward(
+        handle: miopenHandle_t,
+        mode: miopenNormMode_t,
+        xDesc: miopenTensorDescriptor_t,
+        x: *const ::std::os::raw::c_void,
+        x2Desc: miopenTensorDescriptor_t,
+        x2: *const ::std::os::raw::c_void,
+        weightDesc: miopenTensorDescriptor_t,
+        weight: *const ::std::os::raw::c_void,
+        biasDesc: miopenTensorDescriptor_t,
+        bias: *const ::std::os::raw::c_void,
+        epsilon: f32,
+        normalized_dim: i32,
+        yDesc: miopenTensorDescriptor_t,
+        y: *mut ::std::os::raw::c_void,
+        meanDesc: miopenTensorDescriptor_t,
+        mean: *mut ::std::os::raw::c_void,
+        rstdDesc: miopenTensorDescriptor_t,
+        rstd: *mut ::std::os::raw::c_void,
+    ) -> miopenStatus_t;
+}
+extern "C" {
+    #[must_use]
+    #[doc = " @addtogroup layernorm\n\n  @{\n/\n/*! @brief Execute a T5layernorm forward layer\n\n @param handle         MIOpen handle (input)\n @param mode           LayerNorm mode (input)\n @param xDesc          Tensor descriptor for data input tensor x (input)\n @param x              Data tensor x (input)\n @param weightDesc     Tensor descriptor for data input tensor weight (input)\n @param weight         Data tensor weight (input)\n @param epsilon        Value to stablize inverse variance calculation (input)\n @param yDesc          Tensor descriptor for output data tensor y (input)\n @param y              Data tensor y (output)\n @param rstdDesc       Tensor descriptor for output data tensor rstd (input)\n @param rstd           Data tensor rstd (output)\n @return               miopenStatus_t"]
+    pub fn miopenT5LayerNormForward(
+        handle: miopenHandle_t,
+        mode: miopenNormMode_t,
+        xDesc: miopenTensorDescriptor_t,
+        x: *const ::std::os::raw::c_void,
+        weightDesc: miopenTensorDescriptor_t,
+        weight: *const ::std::os::raw::c_void,
+        epsilon: f32,
+        yDesc: miopenTensorDescriptor_t,
+        y: *mut ::std::os::raw::c_void,
+        rstdDesc: miopenTensorDescriptor_t,
+        rstd: *mut ::std::os::raw::c_void,
+    ) -> miopenStatus_t;
+}
+extern "C" {
+    #[must_use]
+    #[doc = " @brief Helper function to query the minimum workspace size required by the T5layernorm backward\n call\n\n @param handle                   MIOpen Handle (input)\n @param mode                     LayerNorm mode (input)\n @param dyDesc                   Tensor descriptor for data input tensor dy (input)\n @param xDesc                    Tensor descriptor for data input tensor x (input)\n @param weightDesc               Tensor descriptor for data input tensor weight (input)\n @param rstdDesc                 Tensor descriptor for data input tensor rstd (input)\n @param dxDesc                   Tensor descriptor for output data tensor dx (input)\n @param dwDesc                   Tensor descriptor for output data tensor dw (input)\n @param sizeInBytes              Pointer to data to return the minimum workspace size\n @return                         miopenStatus_t"]
+    pub fn miopenGetT5LayerNormBackwardWorkspaceSize(
+        handle: miopenHandle_t,
+        mode: miopenNormMode_t,
+        dyDesc: miopenTensorDescriptor_t,
+        xDesc: miopenTensorDescriptor_t,
+        weightDesc: miopenTensorDescriptor_t,
+        rstdDesc: miopenTensorDescriptor_t,
+        dxDesc: miopenTensorDescriptor_t,
+        dwDesc: miopenTensorDescriptor_t,
+        sizeInBytes: *mut usize,
+    ) -> miopenStatus_t;
+}
+extern "C" {
+    #[must_use]
+    #[doc = " @brief Execute a T5layernorm backward layer\n\n @param handle                   MIOpen handle (input)\n @param mode                     LayerNorm mode (input)\n @param workspace                Address of the allocated workspace data (input)\n @param workspaceSizeInBytes     Size in bytes of the allocated workspace data (input)\n @param dyDesc                   Tensor descriptor for data input tensor dy (input)\n @param dy                       Data tensor dy (input)\n @param xDesc                    Tensor descriptor for output data tensor x (input)\n @param x                        Data tensor x (input)\n @param weightDesc               Tensor descriptor for data input tensor weight (input)\n @param weight                   Data tensor weight (input)\n @param rstdDesc                 Tensor descriptor for output data tensor rstd (input)\n @param rstd                     Data tensor rstd (output)\n @param dxDesc                   Tensor descriptor for output data tensor dx (input)\n @param dx                       Data tensor dx (output)\n @param dwDesc                   Tensor descriptor for output data tensor dw (input)\n @param dw                       Data tensor dw (output)\n @return                         miopenStatus_t"]
+    pub fn miopenT5LayerNormBackward(
+        handle: miopenHandle_t,
+        mode: miopenNormMode_t,
+        workspace: *mut ::std::os::raw::c_void,
+        workspaceSizeInBytes: usize,
+        dyDesc: miopenTensorDescriptor_t,
+        dy: *const ::std::os::raw::c_void,
+        xDesc: miopenTensorDescriptor_t,
+        x: *const ::std::os::raw::c_void,
+        weightDesc: miopenTensorDescriptor_t,
+        weight: *const ::std::os::raw::c_void,
+        rstdDesc: miopenTensorDescriptor_t,
+        rstd: *const ::std::os::raw::c_void,
+        dxDesc: miopenTensorDescriptor_t,
+        dx: *mut ::std::os::raw::c_void,
+        dwDesc: miopenTensorDescriptor_t,
+        dw: *mut ::std::os::raw::c_void,
     ) -> miopenStatus_t;
 }
 impl miopenBackendDescriptorType_t {
@@ -4779,5 +4962,81 @@ extern "C" {
         descriptor: miopenBackendDescriptor_t,
         descriptorType: miopenBackendDescriptorType_t,
         sizeInBytes: usize,
+    ) -> miopenStatus_t;
+}
+extern "C" {
+    #[must_use]
+    #[doc = " @addtogroup SGD\n\n  @{\n/\n/*! @brief Perform Fused Adam optimization for a single tensor (Adaptive Moment Estimation).\n\n This function implements the Fused Adam optimization algorithm. Adam, short for Adaptive Moment\n Estimation, extends the RMSProp optimizer. It combines the advantages of AdaGrad and RMSProp by\n adaptively adjusting learning rates for each parameter using the first and second moments of\n gradients. Fused Adam optimization efficiently combines multiple operations into a single kernel,\n reducing memory access overhead and improving performance.\n\n @code\n // Execute Adam\n miopenFusedAdam(handle,\n                 paramDesc,\n                 param,\n                 gradDesc,\n                 grad,\n                 expAvgDesc,\n                 expAvg,\n                 expAvgSqDesc,\n                 expAvgSq,\n                 NULL,     // Unused maxExpAvgSqDesc because amsgrad is false\n                 NULL,\n                 NULL,     // Unused stateStep Tensor because use step integer argument\n                 NULL,\n                 step,\n                 lr,\n                 beta1,\n                 beta2,\n                 weight_decay,\n                 eps,\n                 false,    // amsgrad\n                 false,    // maximize\n                 false,    // adamw\n                 NULL,     // Unused gradScale Tensor because not amp\n                 NULL,\n                 NULL,     // Unused foundInf Tensor because not amp\n                 NULL);\n\n // Execute AMP Adam\n miopenFusedAdam(handle,\n                 paramDesc,\n                 param,\n                 gradDesc,\n                 grad,\n                 expAvgDesc,\n                 expAvg,\n                 expAvgSqDesc,\n                 expAvgSq,\n                 NULL,     // Unused maxExpAvgSqDesc because amsgrad is false\n                 NULL,\n                 stateStepDesc,\n                 stateStep,\n                 -1,       // Ignore step value because stateStep Tensor is used\n                 lr,\n                 beta1,\n                 beta2,\n                 weight_decay,\n                 eps,\n                 false,    // amsgrad\n                 false,    // maximize\n                 false,    // adamw\n                 gradScaleDesc,\n                 gradScale,\n                 foundInfDesc,\n                 foundInf);\n @endcode\n\n @param handle              MIOpen handle (input)\n @param paramDesc           Tensor descriptor for the input parameter tensor (input)\n @param param               Input parameter tensor (input)\n @param gradDesc            Tensor descriptor for the input gradient tensor (input)\n @param grad                Input gradient tensor (input)\n @param expAvgDesc          Tensor descriptor for the input exponential moving average tensor\n                            (input)\n @param expAvg              Input exponential moving average tensor (input)\n @param expAvgSqDesc        Tensor descriptor for the input exponential moving average squared\n                            tensor (input)\n @param expAvgSq            Input exponential moving average squared tensor (input)\n @param maxExpAvgSqDesc     Tensor descriptor for the input maximum exponential moving average\n                            squared tensor. Used when amsgrad is true (input, optional)\n @param maxExpAvgSq         Input maximum exponential moving average squared tensor. Used when\n                            amsgrad is true (input, optional)\n @param stateStepDesc       Tensor descriptor for the input state step tensor (input)\n @param stateStep           Input state step tensor (input)\n @param state_step          Input state step. used when the step tensor is null (input)\n @param lr                  Learning rate (input)\n @param beta1               Coefficient used for computing the first moment running average of\n                            gradient (input)\n @param beta2               Coefficient used for computing the second moment running average of\n                            gradient (input)\n @param weight_decay        Weight decay (input)\n @param eps                 Term added to the denominator to improve numerical stability (input)\n @param amsgrad             Flag indicating whether to use the AMSGrad variant of Adam (input)\n @param maximize            Flag indicating whether to maximize the objective with respect to the\n                            parameters (input)\n @param adamw               If true, the operation becomes AdamW (input) (not supported)\n @param gradScaleDesc       Tensor descriptor for the input grad scale tensor (input, optional)\n @param gradScale           Input grad scale tensor (input, optional)\n @param foundInfDesc        Tensor descriptor for the input found inf tensor (input, optional)\n @param foundInf            Tensor indicating the presence of inf or NaN in gradients. If true,\n                            skips operation and step update (input, optional)\n @return                    miopenStatus_t"]
+    pub fn miopenFusedAdam(
+        handle: miopenHandle_t,
+        paramDesc: miopenTensorDescriptor_t,
+        param: *mut ::std::os::raw::c_void,
+        gradDesc: miopenTensorDescriptor_t,
+        grad: *const ::std::os::raw::c_void,
+        expAvgDesc: miopenTensorDescriptor_t,
+        expAvg: *mut ::std::os::raw::c_void,
+        expAvgSqDesc: miopenTensorDescriptor_t,
+        expAvgSq: *mut ::std::os::raw::c_void,
+        maxExpAvgSqDesc: miopenTensorDescriptor_t,
+        maxExpAvgSq: *mut ::std::os::raw::c_void,
+        stateStepDesc: miopenTensorDescriptor_t,
+        stateStep: *mut ::std::os::raw::c_void,
+        state_step: ::std::os::raw::c_uint,
+        lr: f32,
+        beta1: f32,
+        beta2: f32,
+        weight_decay: f32,
+        eps: f32,
+        amsgrad: bool,
+        maximize: bool,
+        adamw: bool,
+        gradScaleDesc: miopenTensorDescriptor_t,
+        gradScale: *const ::std::os::raw::c_void,
+        foundInfDesc: miopenTensorDescriptor_t,
+        foundInf: *const ::std::os::raw::c_void,
+    ) -> miopenStatus_t;
+}
+extern "C" {
+    #[must_use]
+    #[doc = " @brief Execute single tensor Adam optimization and receive the result in a separate output\n tensor.\n\n This function is equivalent to miopenFusedAdam but receives the result in a separate output\n tensor.\n @see miopenFusedAdam\n\n @code\n // Execute Adam\n miopenFusedAdamWithOutput(handle,\n                           paramInDesc,\n                           paramIn,\n                           paramOutDesc,\n                           paramOut,\n                           NULL,   // Unused paramOutFloat16 tensor because is not amp\n                           NULL,\n                           gradInDesc,\n                           gradIn,\n                           expAvgInDesc,\n                           expAvgIn,\n                           expAvgOutDesc,\n                           expAvgOut,\n                           expAvgInSqDesc,\n                           expAvgSqIn,\n                           expAvgSqOutDesc,\n                           expAvgSqOut,\n                           NULL,   // Unused maxExpAvgSqIn tensor because amsgrad is false\n                           NULL,\n                           NULL,   // Unused maxExpAvgSqOut tensor because amsgrad is false\n                           NULL,\n                           NULL,   // Unused stateStepIn tensor because use step integer argument\n                           NULL,\n                           NULL,   // Unused stateStepOut tensor because use step integer argument\n                           NULL,\n                           step,\n                           lr,\n                           beta1,\n                           beta2,\n                           weight_decay,\n                           eps,\n                           false,  // amsgrad\n                           false,  // maximize\n                           false,  // adamw\n                           NULL,   // Unused gradScale Tensor because not amp\n                           NULL,\n                           NULL,   // Unused foundInf Tensor because not amp\n                           NULL);\n\n // Execute Amp Adam\n miopenFusedAdamWithOutput(handle,\n                           paramInDesc,\n                           paramIn,\n                           paramOutDesc,\n                           paramOut,\n                           paramOutFloat16Desc,  // paramOutFloat16 tensor is optional in amp\n                           paramOutFloat16,\n                           gradInDesc,\n                           gradIn,\n                           expAvgInDesc,\n                           expAvgIn,\n                           expAvgOutDesc,\n                           expAvgOut,\n                           expAvgInSqDesc,\n                           expAvgSqIn,\n                           expAvgSqIn,\n                           expAvgSqOutDesc,\n                           expAvgSqOut,\n                           NULL,         // Unused maxExpAvgSqIn tensor because amsgrad is false\n                           NULL,\n                           NULL,         // Unused maxExpAvgSqOut tensor because amsgrad is false\n                           NULL,\n                           stateStepInDesc,\n                           stateStepIn,\n                           stateStepOutDesc,\n                           stateStepOut\n                           -1,           // Ignore step value because stateStep Tensor is used\n                           lr, beta1, beta2, weight_decay, eps,\n                           false,        // amsgrad\n                           false,        // maximize\n                           false,        // adamw\n                           gradScaleDesc,\n                           gradScale,\n                           foundInfDesc,\n                           foundInf);\n @endcode\n\n @param handle              MIOpen handle (input)\n @param paramInDesc         Tensor descriptor for the input parameter tensor (input)\n @param paramIn             Input parameter tensor (input)\n @param paramOutDesc        Tensor descriptor for the output parameter tensor (input)\n @param paramOut            Output parameter tensor (output)\n @param paramOutFloat16Desc Tensor descriptor for the output parameter tensor float16 (input,\n                            optional)\n @param paramOutFloat16     Output parameter tensor (output, optional)\n @param gradInDesc          Tensor descriptor for the input gradient tensor (input)\n @param gradIn              Input gradient tensor (input)\n @param expAvgInDesc        Tensor descriptor for the input exponential moving average tensor\n                            (input)\n @param expAvgIn            Input exponential moving average tensor (input)\n @param expAvgOutDesc       Tensor descriptor for the output exponential moving average tensor\n                            (input)\n @param expAvgOut           Output exponential moving average tensor (output)\n @param expAvgSqInDesc      Tensor descriptor for the input exponential moving average squared\n                            tensor (input)\n @param expAvgSqIn          Input exponential moving average squared tensor (input)\n @param expAvgSqOutDesc     Tensor descriptor for the output exponential moving average squared\n                            tensor (input)\n @param expAvgSqOut         Output exponential moving average squared tensor (output)\n @param maxExpAvgSqInDesc   Tensor descriptor for the input maximum exponential moving average\n                            squared tensor. Used when amsgrad is true (input, optional)\n @param maxExpAvgSqIn       Input maximum exponential moving average squared tensor. Used when\n                            amsgrad is true (input, optional)\n @param maxExpAvgSqOutDesc  Tensor descriptor for the output maximum exponential moving average\n                            squared tensor. Used when amsgrad is true (input, optional)\n @param maxExpAvgSqOut      Output maximum exponential moving average squared tensor. Used when\n                            amsgrad is true (output, optional)\n @param stateStepInDesc     Tensor descriptor for the input state step tensor (input, optional)\n @param stateStepIn         Input state step tensor (input, optional)\n @param stateStepOutDesc    Tensor descriptor for the output state step tensor (input, optional)\n @param stateStepOut        Output state step tensor that stores the updated step value. (output,\n                            optional)\n @param state_step          Input state step, It is used when the step tensor is null. (input)\n @param lr                  Learning rate (input)\n @param beta1               Coefficient used for computing the first moment running average of\n                            gradient (input)\n @param beta2               Coefficient used for computing the second moment running average of\n                            gradient (input)\n @param weight_decay        Weight decay (input)\n @param eps                 Term added to the denominator to improve numerical stability (input)\n @param amsgrad             Flag indicating whether to use the AMSGrad variant of Adam (input)\n @param maximize            Flag indicating whether to maximize the objective with respect to the\n                            parameters (input)\n @param adamw               If it is true, the operation becomes AdamW (input) (not supported)\n @param gradScaleDesc       Tensor descriptor for the input grad scale tensor (input, optional)\n @param gradScale           Input grad scale tensor (input, optional)\n @param foundInfDesc        Tensor descriptor for the input found inf tensor (input, optional)\n @param foundInf            Tensor indicating presence of inf or nan in gradients. If true, skips\n                            operation and step update. (input, optional)\n @return                    miopenStatus_t"]
+    pub fn miopenFusedAdamWithOutput(
+        handle: miopenHandle_t,
+        paramInDesc: miopenTensorDescriptor_t,
+        paramIn: *mut ::std::os::raw::c_void,
+        paramOutDesc: miopenTensorDescriptor_t,
+        paramOut: *mut ::std::os::raw::c_void,
+        paramOutFloat16Desc: miopenTensorDescriptor_t,
+        paramOutFloat16: *mut ::std::os::raw::c_void,
+        gradInDesc: miopenTensorDescriptor_t,
+        gradIn: *const ::std::os::raw::c_void,
+        expAvgInDesc: miopenTensorDescriptor_t,
+        expAvgIn: *mut ::std::os::raw::c_void,
+        expAvgOutDesc: miopenTensorDescriptor_t,
+        expAvgOut: *mut ::std::os::raw::c_void,
+        expAvgSqInDesc: miopenTensorDescriptor_t,
+        expAvgSqIn: *mut ::std::os::raw::c_void,
+        expAvgSqOutDesc: miopenTensorDescriptor_t,
+        expAvgSqOut: *mut ::std::os::raw::c_void,
+        maxExpAvgSqInDesc: miopenTensorDescriptor_t,
+        maxExpAvgSqIn: *mut ::std::os::raw::c_void,
+        maxExpAvgSqOutDesc: miopenTensorDescriptor_t,
+        maxExpAvgSqOut: *mut ::std::os::raw::c_void,
+        stateStepInDesc: miopenTensorDescriptor_t,
+        stateStepIn: *mut ::std::os::raw::c_void,
+        stateStepOutDesc: miopenTensorDescriptor_t,
+        stateStepOut: *mut ::std::os::raw::c_void,
+        state_step: ::std::os::raw::c_uint,
+        lr: f32,
+        beta1: f32,
+        beta2: f32,
+        weight_decay: f32,
+        eps: f32,
+        amsgrad: bool,
+        maximize: bool,
+        adamw: bool,
+        gradScaleDesc: miopenTensorDescriptor_t,
+        gradScale: *const ::std::os::raw::c_void,
+        foundInfDesc: miopenTensorDescriptor_t,
+        foundInf: *const ::std::os::raw::c_void,
     ) -> miopenStatus_t;
 }
