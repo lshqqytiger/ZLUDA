@@ -7133,3 +7133,95 @@ extern "C" {
         userData: *mut ::std::os::raw::c_void,
     ) -> hipError_t;
 }
+extern "C" {
+    #[must_use]
+    pub fn __hipPopCallConfiguration(
+        gridDim: *mut dim3,
+        blockDim: *mut dim3,
+        sharedMem: *mut usize,
+        stream: *mut hipStream_t,
+    ) -> hipError_t;
+}
+extern "C" {
+    #[must_use]
+    pub fn __hipPushCallConfiguration(
+        gridDim: dim3,
+        blockDim: dim3,
+        sharedMem: usize,
+        stream: hipStream_t,
+    ) -> hipError_t;
+}
+extern "C" {
+    #[must_use]
+    pub fn __hipRegisterFatBinary(
+        data: *const ::std::os::raw::c_void,
+    ) -> *mut *mut ::std::os::raw::c_void;
+}
+extern "C" {
+    #[must_use]
+    pub fn __hipRegisterFunction(
+        modules: *mut *mut ::std::os::raw::c_void,
+        hostFunction: *const ::std::os::raw::c_void,
+        deviceFunction: *mut ::std::os::raw::c_char,
+        deviceName: *const ::std::os::raw::c_char,
+        threadLimit: ::std::os::raw::c_uint,
+        tid: *mut ::std::os::raw::c_void,
+        bid: *mut ::std::os::raw::c_void,
+        blockDim: *mut dim3,
+        gridDim: *mut dim3,
+        wSize: *mut ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_void;
+}
+extern "C" {
+    #[must_use]
+    pub fn __hipRegisterManagedVar(
+        hipModule: *mut ::std::os::raw::c_void,
+        pointer: *mut *mut ::std::os::raw::c_void,
+        init_value: *mut ::std::os::raw::c_void,
+        name: *const ::std::os::raw::c_char,
+        size: usize,
+        align: ::std::os::raw::c_uint,
+    ) -> ::std::os::raw::c_void;
+}
+extern "C" {
+    #[must_use]
+    pub fn __hipRegisterSurface(
+        modules: *mut *mut ::std::os::raw::c_void,
+        var: *mut ::std::os::raw::c_void,
+        hostVar: *mut ::std::os::raw::c_char,
+        deviceVar: *mut ::std::os::raw::c_char,
+        type_: ::std::os::raw::c_int,
+        ext: ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_void;
+}
+extern "C" {
+    #[must_use]
+    pub fn __hipRegisterTexture(
+        modules: *mut *mut ::std::os::raw::c_void,
+        var: *mut ::std::os::raw::c_void,
+        hostVar: *mut ::std::os::raw::c_char,
+        deviceVar: *mut ::std::os::raw::c_char,
+        type_: ::std::os::raw::c_int,
+        norm: ::std::os::raw::c_int,
+        ext: ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_void;
+}
+extern "C" {
+    #[must_use]
+    pub fn __hipRegisterVar(
+        modules: *mut *mut ::std::os::raw::c_void,
+        var: *mut ::std::os::raw::c_void,
+        hostVar: *mut ::std::os::raw::c_char,
+        deviceVar: *mut ::std::os::raw::c_char,
+        ext: ::std::os::raw::c_int,
+        size: usize,
+        constant: ::std::os::raw::c_int,
+        global: ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_void;
+}
+extern "C" {
+    #[must_use]
+    pub fn __hipUnregisterFatBinary(
+        modules: *mut *mut ::std::os::raw::c_void,
+    ) -> ::std::os::raw::c_void;
+}
