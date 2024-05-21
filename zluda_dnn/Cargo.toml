@@ -9,8 +9,11 @@ name = "cudnn"
 crate-type = ["cdylib"]
 
 [dependencies]
+cuda_types = { path = "../cuda_types" }
+hip_common = { path = "../hip_common" }
 miopen-sys = { path = "../miopen-sys" }
 hip_runtime-sys = { path = "../hip_runtime-sys" }
+zluda_dark_api = { path = "../zluda_dark_api" }
 
 [package.metadata.zluda]
 linux_names = ["libcudnn.so.7", "libcudnn.so.8"]

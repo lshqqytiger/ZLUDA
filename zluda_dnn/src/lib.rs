@@ -8,6 +8,8 @@ pub mod types {
     pub use super::cudnn_types_v8::*;
 }
 
+use cuda_types::{CUuuid, CUresult};
+
 #[allow(warnings)]
 mod cudnn_v7;
 pub use cudnn_v7::*;
@@ -916,11 +918,23 @@ unsafe fn transform_tensor(
 
 unsafe fn set_stream(
     handle: cudnnHandle_t,
-    stream_id: cudaStream_t,
+    stream_id: *mut CUstream_st,
 ) -> cudnnStatus_t {
+    let lib = hip_common::zluda_ext::get_cuda_library().unwrap();
+    let cu_get_export_table = lib
+        .get::<unsafe extern "C" fn(
+            ppExportTable: *mut *const ::std::os::raw::c_void,
+            pExportTableId: *const CUuuid,
+        ) -> CUresult>(b"cuGetExportTable\0")
+        .unwrap();
+    let mut export_table = ptr::null();
+    let error = (cu_get_export_table)(&mut export_table, &zluda_dark_api::ZludaExt::GUID);
+    assert_eq!(error, CUresult::CUDA_SUCCESS);
+    let zluda_ext = zluda_dark_api::ZludaExt::new(export_table);
+    let stream: Result<_, _> = zluda_ext.get_hip_stream(stream_id as _).into();
     to_cudnn(miopenSetStream(
         handle.cast(),
-        stream_id.cast(),
+        stream.unwrap() as _,
     ))
 }
 

@@ -2427,8 +2427,11 @@ dependencies = [
 name = "zluda_dnn"
 version = "0.0.0"
 dependencies = [
+ "cuda_types",
+ "hip_common",
  "hip_runtime-sys",
  "miopen-sys",
+ "zluda_dark_api",
 ]
 
 [[package]]
