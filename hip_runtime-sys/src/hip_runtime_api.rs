@@ -7154,9 +7154,17 @@ extern "C" {
 extern "C" {
     #[must_use]
     pub fn __hipRegisterFatBinary(
-        data: *const ::std::os::raw::c_void,
+        data: *mut ::std::os::raw::c_void,
     ) -> *mut *mut ::std::os::raw::c_void;
 }
+/*
+extern "C" {
+    #[must_use]
+    pub fn __hipRegisterFatBinaryEnd(
+        fatCubinHandle: *mut *mut ::std::os::raw::c_void,
+    ) -> ::std::os::raw::c_void;
+}
+*/
 extern "C" {
     #[must_use]
     pub fn __hipRegisterFunction(
@@ -7172,6 +7180,17 @@ extern "C" {
         wSize: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_void;
 }
+/*
+extern "C" {
+    #[must_use]
+    pub fn __hipRegisterHostVar(
+        fatCubinHandle: *mut *mut ::std::os::raw::c_void,
+        deviceName: *const ::std::os::raw::c_char,
+        hostVar: *mut ::std::os::raw::c_char,
+        size: usize,
+    ) -> ::std::os::raw::c_void;
+}
+*/
 extern "C" {
     #[must_use]
     pub fn __hipRegisterManagedVar(
