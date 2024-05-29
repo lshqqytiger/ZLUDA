@@ -3878,7 +3878,7 @@ pub unsafe extern "system" fn cudaStreamQuery(stream: cudaStream_t) -> cudaError
 
 #[no_mangle]
 pub unsafe extern "system" fn cudaStreamQuery_ptsz(stream: cudaStream_t) -> cudaError_t {
-    crate::stream_query_ptsz(stream)
+    crate::unsupported()
 }
 
 #[no_mangle]
@@ -3950,7 +3950,7 @@ pub unsafe extern "system" fn cudaStreamEndCapture_ptsz(
     stream: cudaStream_t,
     pGraph: *mut cudaGraph_t,
 ) -> cudaError_t {
-    crate::stream_end_capture_ptsz(stream, pGraph)
+    crate::unsupported()
 }
 
 #[doc = " \\brief Returns a stream's capture status\n\n Return the capture status of \\p stream via \\p pCaptureStatus. After a successful\n call, \\p *pCaptureStatus will contain one of the following:\n - ::cudaStreamCaptureStatusNone: The stream is not capturing.\n - ::cudaStreamCaptureStatusActive: The stream is capturing.\n - ::cudaStreamCaptureStatusInvalidated: The stream was capturing but an error\n   has invalidated the capture sequence. The capture sequence must be terminated\n   with ::cudaStreamEndCapture on the stream where it was initiated in order to\n   continue using \\p stream.\n\n Note that, if this is called on ::cudaStreamLegacy (the \"null stream\") while\n a blocking stream on the same device is capturing, it will return\n ::cudaErrorStreamCaptureImplicit and \\p *pCaptureStatus is unspecified\n after the call. The blocking stream capture is not invalidated.\n\n When a blocking stream is capturing, the legacy stream is in an\n unusable state until the blocking stream capture is terminated. The legacy\n stream is not supported for stream capture, but attempted use would have an\n implicit dependency on the capturing stream(s).\n\n \\param stream         - Stream to query\n \\param pCaptureStatus - Returns the stream's capture status\n\n \\return\n ::cudaSuccess,\n ::cudaErrorInvalidValue,\n ::cudaErrorStreamCaptureImplicit\n \\notefnerr\n\n \\sa\n ::cudaStreamCreate,\n ::cudaStreamBeginCapture,\n ::cudaStreamEndCapture"]
@@ -3968,7 +3968,7 @@ pub unsafe extern "system" fn cudaStreamIsCapturing_ptsz(
     pCaptureStatus: *mut cudaStreamCaptureStatus,
     _: ::std::os::raw::c_char,
 ) -> cudaError_t {
-    crate::stream_is_capturing_ptsz(stream, pCaptureStatus)
+    crate::unsupported()
 }
 
 #[doc = " \\brief Query capture status of a stream\n\n Note there is a later version of this API, ::cudaStreamGetCaptureInfo_v2. It will\n supplant this version in 12.0, which is retained for minor version compatibility.\n\n Query the capture status of a stream and get a unique id representing\n the capture sequence over the lifetime of the process.\n\n If called on ::cudaStreamLegacy (the \"null stream\") while a stream not created\n with ::cudaStreamNonBlocking is capturing, returns ::cudaErrorStreamCaptureImplicit.\n\n A valid id is returned only if both of the following are true:\n - the call returns ::cudaSuccess\n - captureStatus is set to ::cudaStreamCaptureStatusActive\n\n \\param stream         - Stream to query\n \\param pCaptureStatus - Returns the stream's capture status\n \\param pId            - Returns the unique id of the capture sequence\n\n \\return\n ::cudaSuccess,\n ::cudaErrorStreamCaptureImplicit\n \\notefnerr\n\n \\sa\n ::cudaStreamGetCaptureInfo_v2,\n ::cudaStreamBeginCapture,\n ::cudaStreamIsCapturing"]
@@ -3991,11 +3991,7 @@ pub unsafe extern "system" fn cudaStreamGetCaptureInfo_ptsz(
     pCaptureStatus: *mut cudaStreamCaptureStatus,
     pId: *mut ::std::os::raw::c_ulonglong,
 ) -> cudaError_t {
-    crate::stream_get_capture_info_ptsz(
-        stream,
-        pCaptureStatus,
-        pId,
-    )
+    crate::unsupported()
 }
 
 #[doc = " \\brief Query a stream's capture state (11.3+)\n\n Query stream state related to stream capture.\n\n If called on ::cudaStreamLegacy (the \"null stream\") while a stream not created\n with ::cudaStreamNonBlocking is capturing, returns ::cudaErrorStreamCaptureImplicit.\n\n Valid data (other than capture status) is returned only if both of the following are true:\n - the call returns cudaSuccess\n - the returned capture status is ::cudaStreamCaptureStatusActive\n\n This version of cudaStreamGetCaptureInfo is introduced in CUDA 11.3 and will supplant the\n previous version ::cudaStreamGetCaptureInfo in 12.0. Developers requiring compatibility\n across minor versions to CUDA 11.0 (driver version 445) can do one of the following:\n - Use the older version of the API, ::cudaStreamGetCaptureInfo\n - Pass null for all of \\p graph_out, \\p dependencies_out, and \\p numDependencies_out.\n\n \\param stream - The stream to query\n \\param captureStatus_out - Location to return the capture status of the stream; required\n \\param id_out - Optional location to return an id for the capture sequence, which is\n           unique over the lifetime of the process\n \\param graph_out - Optional location to return the graph being captured into. All\n           operations other than destroy and node removal are permitted on the graph\n           while the capture sequence is in progress. This API does not transfer\n           ownership of the graph, which is transferred or destroyed at\n           ::cudaStreamEndCapture. Note that the graph handle may be invalidated before\n           end of capture for certain errors. Nodes that are or become\n           unreachable from the original stream at ::cudaStreamEndCapture due to direct\n           actions on the graph do not trigger ::cudaErrorStreamCaptureUnjoined.\n \\param dependencies_out - Optional location to store a pointer to an array of nodes.\n           The next node to be captured in the stream will depend on this set of nodes,\n           absent operations such as event wait which modify this set. The array pointer\n           is valid until the next API call which operates on the stream or until end of\n           capture. The node handles may be copied out and are valid until they or the\n           graph is destroyed. The driver-owned array may also be passed directly to\n           APIs that operate on the graph (not the stream) without copying.\n \\param numDependencies_out - Optional location to store the size of the array\n           returned in dependencies_out.\n\n \\return\n ::cudaSuccess,\n ::cudaErrorInvalidValue,\n ::cudaErrorStreamCaptureImplicit\n \\note_graph_thread_safety\n \\notefnerr\n\n \\sa\n ::cudaStreamGetCaptureInfo,\n ::cudaStreamBeginCapture,\n ::cudaStreamIsCapturing,\n ::cudaStreamUpdateCaptureDependencies"]
@@ -4070,7 +4066,7 @@ pub unsafe extern "system" fn cudaEventRecord_ptsz(
     event: cudaEvent_t,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    crate::event_record_ptsz(event, stream)
+    crate::unsupported()
 }
 
 #[no_mangle]
@@ -4280,14 +4276,7 @@ pub unsafe extern "system" fn cudaLaunchKernel_ptsz(
     sharedMem: usize,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    crate::launch_kernel_ptsz(
-        func,
-        gridDim,
-        blockDim,
-        args,
-        sharedMem,
-        stream,
-    )
+    crate::unsupported()
 }
 
 #[no_mangle]
@@ -4338,14 +4327,7 @@ pub unsafe extern "system" fn cudaLaunchCooperativeKernel_ptsz(
     sharedMem: usize,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    crate::launch_cooperative_kernel_ptsz(
-        func,
-        gridDim,
-        blockDim,
-        args,
-        sharedMem,
-        stream,
-    )
+    crate::unsupported()
 }
 
 #[doc = " \\brief Launches device functions on multiple devices where thread blocks can cooperate and synchronize as they execute\n\n \\deprecated This function is deprecated as of CUDA 11.3.\n\n Invokes kernels as specified in the \\p launchParamsList array where each element\n of the array specifies all the parameters required to perform a single kernel launch.\n These kernels can cooperate and synchronize as they execute. The size of the array is\n specified by \\p numDevices.\n\n No two kernels can be launched on the same device. All the devices targeted by this\n multi-device launch must be identical. All devices must have a non-zero value for the\n device attribute ::cudaDevAttrCooperativeMultiDeviceLaunch.\n\n The same kernel must be launched on all devices. Note that any __device__ or __constant__\n variables are independently instantiated on every device. It is the application's\n responsibility to ensure these variables are initialized and used appropriately.\n\n The size of the grids as specified in blocks, the size of the blocks themselves and the\n amount of shared memory used by each thread block must also match across all launched kernels.\n\n The streams used to launch these kernels must have been created via either ::cudaStreamCreate\n or ::cudaStreamCreateWithPriority or ::cudaStreamCreateWithPriority. The NULL stream or\n ::cudaStreamLegacy or ::cudaStreamPerThread cannot be used.\n\n The total number of blocks launched per kernel cannot exceed the maximum number of blocks\n per multiprocessor as returned by ::cudaOccupancyMaxActiveBlocksPerMultiprocessor (or\n ::cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags) times the number of multiprocessors\n as specified by the device attribute ::cudaDevAttrMultiProcessorCount. Since the\n total number of blocks launched per device has to match across all devices, the maximum\n number of blocks that can be launched per device will be limited by the device with the\n least number of multiprocessors.\n\n The kernel cannot make use of CUDA dynamic parallelism.\n\n The ::cudaLaunchParams structure is defined as:\n \\code\nstruct cudaLaunchParams\n{\nvoid *func;\ndim3 gridDim;\ndim3 blockDim;\nvoid **args;\nsize_t sharedMem;\ncudaStream_t stream;\n};\n \\endcode\n where:\n - ::cudaLaunchParams::func specifies the kernel to be launched. This same functions must\n   be launched on all devices. For templated functions, pass the function symbol as follows:\n   func_name<template_arg_0,...,template_arg_N>\n - ::cudaLaunchParams::gridDim specifies the width, height and depth of the grid in blocks.\n   This must match across all kernels launched.\n - ::cudaLaunchParams::blockDim is the width, height and depth of each thread block. This\n   must match across all kernels launched.\n - ::cudaLaunchParams::args specifies the arguments to the kernel. If the kernel has\n   N parameters then ::cudaLaunchParams::args should point to array of N pointers. Each\n   pointer, from <tt>::cudaLaunchParams::args[0]</tt> to <tt>::cudaLaunchParams::args[N - 1]</tt>,\n   point to the region of memory from which the actual parameter will be copied.\n - ::cudaLaunchParams::sharedMem is the dynamic shared-memory size per thread block in bytes.\n   This must match across all kernels launched.\n - ::cudaLaunchParams::stream is the handle to the stream to perform the launch in. This cannot\n   be the NULL stream or ::cudaStreamLegacy or ::cudaStreamPerThread.\n\n By default, the kernel won't begin execution on any GPU until all prior work in all the specified\n streams has completed. This behavior can be overridden by specifying the flag\n ::cudaCooperativeLaunchMultiDeviceNoPreSync. When this flag is specified, each kernel\n will only wait for prior work in the stream corresponding to that GPU to complete before it begins\n execution.\n\n Similarly, by default, any subsequent work pushed in any of the specified streams will not begin\n execution until the kernels on all GPUs have completed. This behavior can be overridden by specifying\n the flag ::cudaCooperativeLaunchMultiDeviceNoPostSync. When this flag is specified,\n any subsequent work pushed in any of the specified streams will only wait for the kernel launched\n on the GPU corresponding to that stream to complete before it begins execution.\n\n \\param launchParamsList - List of launch parameters, one per device\n \\param numDevices       - Size of the \\p launchParamsList array\n \\param flags            - Flags to control launch behavior\n\n \\return\n ::cudaSuccess,\n ::cudaErrorInvalidDeviceFunction,\n ::cudaErrorInvalidConfiguration,\n ::cudaErrorLaunchFailure,\n ::cudaErrorLaunchTimeout,\n ::cudaErrorLaunchOutOfResources,\n ::cudaErrorCooperativeLaunchTooLarge,\n ::cudaErrorSharedObjectInitFailed\n \\note_null_stream\n \\notefnerr\n \\note_init_rt\n \\note_callback\n\n \\sa\n \\ref ::cudaLaunchCooperativeKernel(const T *func, dim3 gridDim, dim3 blockDim, void **args, size_t sharedMem, cudaStream_t stream) \"cudaLaunchCooperativeKernel (C++ API)\",\n ::cudaLaunchCooperativeKernel,\n ::cuLaunchCooperativeKernelMultiDevice"]
@@ -4427,11 +4409,7 @@ pub unsafe extern "system" fn cudaLaunchHostFunc_ptsz(
     fn_: cudaHostFn_t,
     userData: *mut ::std::os::raw::c_void,
 ) -> cudaError_t {
-    crate::launch_host_func_ptsz(
-        stream,
-        fn_,
-        userData,
-    )
+    crate::unsupported()
 }
 
 #[doc = " \\brief Returns occupancy for a device function\n\n Returns in \\p *numBlocks the maximum number of active blocks per\n streaming multiprocessor for the device function.\n\n \\param numBlocks       - Returned occupancy\n \\param func            - Kernel function for which occupancy is calculated\n \\param blockSize       - Block size the kernel is intended to be launched with\n \\param dynamicSMemSize - Per-block dynamic shared memory usage intended, in bytes\n\n \\return\n ::cudaSuccess,\n ::cudaErrorInvalidDevice,\n ::cudaErrorInvalidDeviceFunction,\n ::cudaErrorInvalidValue,\n ::cudaErrorUnknown,\n \\notefnerr\n \\note_init_rt\n \\note_callback\n\n \\sa ::cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags,\n \\ref ::cudaOccupancyMaxPotentialBlockSize(int*, int*, T, size_t, int) \"cudaOccupancyMaxPotentialBlockSize (C++ API)\",\n \\ref ::cudaOccupancyMaxPotentialBlockSizeWithFlags(int*, int*, T, size_t, int, unsigned int) \"cudaOccupancyMaxPotentialBlockSizeWithFlags (C++ API)\",\n \\ref ::cudaOccupancyMaxPotentialBlockSizeVariableSMem(int*, int*, T, UnaryFunction, int) \"cudaOccupancyMaxPotentialBlockSizeVariableSMem (C++ API)\",\n \\ref ::cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags(int*, int*, T, UnaryFunction, int, unsigned int) \"cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags (C++ API)\",\n \\ref ::cudaOccupancyAvailableDynamicSMemPerBlock(size_t*, T, int, int) \"cudaOccupancyAvailableDynamicSMemPerBlock (C++ API)\",\n ::cuOccupancyMaxActiveBlocksPerMultiprocessor"]
@@ -4442,12 +4420,7 @@ pub unsafe extern "system" fn cudaOccupancyMaxActiveBlocksPerMultiprocessor(
     blockSize: ::std::os::raw::c_int,
     dynamicSMemSize: usize,
 ) -> cudaError_t {
-    crate::occupancy_max_active_blocks_per_multiprocessor(
-        numBlocks,
-        func,
-        blockSize,
-        dynamicSMemSize,
-    )
+    crate::unsupported()
 }
 
 #[doc = " \\brief Returns dynamic shared memory available per block when launching \\p numBlocks blocks on SM.\n\n Returns in \\p *dynamicSmemSize the maximum size of dynamic shared memory to allow \\p numBlocks blocks per SM.\n\n \\param dynamicSmemSize - Returned maximum dynamic shared memory\n \\param func            - Kernel function for which occupancy is calculated\n \\param numBlocks       - Number of blocks to fit on SM\n \\param blockSize       - Size of the block\n\n \\return\n ::cudaSuccess,\n ::cudaErrorInvalidDevice,\n ::cudaErrorInvalidDeviceFunction,\n ::cudaErrorInvalidValue,\n ::cudaErrorUnknown,\n \\notefnerr\n \\note_init_rt\n \\note_callback\n\n \\sa ::cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags,\n \\ref ::cudaOccupancyMaxPotentialBlockSize(int*, int*, T, size_t, int) \"cudaOccupancyMaxPotentialBlockSize (C++ API)\",\n \\ref ::cudaOccupancyMaxPotentialBlockSizeWithFlags(int*, int*, T, size_t, int, unsigned int) \"cudaOccupancyMaxPotentialBlockSizeWithFlags (C++ API)\",\n \\ref ::cudaOccupancyMaxPotentialBlockSizeVariableSMem(int*, int*, T, UnaryFunction, int) \"cudaOccupancyMaxPotentialBlockSizeVariableSMem (C++ API)\",\n \\ref ::cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags(int*, int*, T, UnaryFunction, int, unsigned int) \"cudaOccupancyMaxPotentialBlockSizeVariableSMemWithFlags (C++ API)\",\n ::cudaOccupancyAvailableDynamicSMemPerBlock"]
@@ -5105,13 +5078,7 @@ pub unsafe extern "system" fn cudaMemcpyAsync_ptsz(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    crate::memcpy_async_ptsz(
-        dst,
-        src,
-        count,
-        kind,
-        stream,
-    )
+    crate::unsupported()
 }
 
 #[doc = " \\brief Copies memory between two devices asynchronously.\n\n Copies memory from one device to memory on another device.  \\p dst is the\n base device pointer of the destination memory and \\p dstDevice is the\n destination device.  \\p src is the base device pointer of the source memory\n and \\p srcDevice is the source device.  \\p count specifies the number of bytes\n to copy.\n\n Note that this function is asynchronous with respect to the host and all work\n on other devices.\n\n \\param dst       - Destination device pointer\n \\param dstDevice - Destination device\n \\param src       - Source device pointer\n \\param srcDevice - Source device\n \\param count     - Size of memory copy in bytes\n \\param stream    - Stream identifier\n\n \\return\n ::cudaSuccess,\n ::cudaErrorInvalidValue,\n ::cudaErrorInvalidDevice\n \\notefnerr\n \\note_async\n \\note_null_stream\n \\note_init_rt\n \\note_callback\n\n \\sa ::cudaMemcpy, ::cudaMemcpyPeer, ::cudaMemcpyAsync,\n ::cudaMemcpy3DPeerAsync,\n ::cuMemcpyPeerAsync"]
@@ -5169,16 +5136,7 @@ pub unsafe extern "system" fn cudaMemcpy2DAsync_ptsz(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    crate::memcpy_2d_async_ptsz(
-        dst,
-        dpitch,
-        src,
-        spitch,
-        width,
-        height,
-        kind,
-        stream,
-    )
+    crate::unsupported()
 }
 
 #[doc = " \\brief Copies data between host and device\n\n Copies a matrix (\\p height rows of \\p width bytes each) from the memory\n area pointed to by \\p src to the CUDA array \\p dst starting at \\p hOffset\n rows and \\p wOffset bytes from the upper left corner, where \\p kind specifies\n the direction of the copy, and must be one of ::cudaMemcpyHostToHost,\n ::cudaMemcpyHostToDevice, ::cudaMemcpyDeviceToHost,\n ::cudaMemcpyDeviceToDevice, or ::cudaMemcpyDefault. Passing\n ::cudaMemcpyDefault is recommended, in which case the type of transfer is\n inferred from the pointer values. However, ::cudaMemcpyDefault is only\n allowed on systems that support unified virtual addressing.\n \\p spitch is the width in memory in bytes of the 2D array pointed to by\n \\p src, including any padding added to the end of each row. \\p wOffset +\n \\p width must not exceed the width of the CUDA array \\p dst. \\p width must\n not exceed \\p spitch. ::cudaMemcpy2DToArrayAsync() returns an error if\n \\p spitch exceeds the maximum allowed.\n\n ::cudaMemcpy2DToArrayAsync() is asynchronous with respect to the host, so\n the call may return before the copy is complete. The copy can optionally\n be associated to a stream by passing a non-zero \\p stream argument. If\n \\p kind is ::cudaMemcpyHostToDevice or ::cudaMemcpyDeviceToHost and\n \\p stream is non-zero, the copy may overlap with operations in other\n streams.\n\n \\param dst     - Destination memory address\n \\param wOffset - Destination starting X offset (columns in bytes)\n \\param hOffset - Destination starting Y offset (rows)\n \\param src     - Source memory address\n \\param spitch  - Pitch of source memory\n \\param width   - Width of matrix transfer (columns in bytes)\n \\param height  - Height of matrix transfer (rows)\n \\param kind    - Type of transfer\n \\param stream  - Stream identifier\n\n \\return\n ::cudaSuccess,\n ::cudaErrorInvalidValue,\n ::cudaErrorInvalidPitchValue,\n ::cudaErrorInvalidMemcpyDirection\n \\notefnerr\n \\note_async\n \\note_null_stream\n \\note_init_rt\n \\note_callback\n \\note_memcpy\n\n \\sa ::cudaMemcpy, ::cudaMemcpy2D,\n ::cudaMemcpy2DToArray, ::cudaMemcpy2DFromArray,\n ::cudaMemcpy2DArrayToArray, ::cudaMemcpyToSymbol,\n ::cudaMemcpyFromSymbol, ::cudaMemcpyAsync, ::cudaMemcpy2DAsync,\n\n ::cudaMemcpy2DFromArrayAsync,\n ::cudaMemcpyToSymbolAsync, ::cudaMemcpyFromSymbolAsync,\n ::cuMemcpy2DAsync"]
@@ -5219,17 +5177,7 @@ pub unsafe extern "system" fn cudaMemcpy2DToArrayAsync_ptsz(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    crate::memcpy_2d_to_array_async_ptsz(
-        dst,
-        wOffset,
-        hOffset,
-        src,
-        spitch,
-        width,
-        height,
-        kind,
-        stream,
-    )
+    crate::unsupported()
 }
 
 #[doc = " \\brief Copies data between host and device\n\n Copies a matrix (\\p height rows of \\p width bytes each) from the CUDA\n array \\p src starting at \\p hOffset rows and \\p wOffset bytes from the\n upper left corner to the memory area pointed to by \\p dst,\n where \\p kind specifies the direction of the copy, and must be one of\n ::cudaMemcpyHostToHost, ::cudaMemcpyHostToDevice, ::cudaMemcpyDeviceToHost,\n ::cudaMemcpyDeviceToDevice, or ::cudaMemcpyDefault. Passing\n ::cudaMemcpyDefault is recommended, in which case the type of transfer is\n inferred from the pointer values. However, ::cudaMemcpyDefault is only\n allowed on systems that support unified virtual addressing.\n \\p dpitch is the width in memory in bytes of the 2D\n array pointed to by \\p dst, including any padding added to the end of each\n row. \\p wOffset + \\p width must not exceed the width of the CUDA array\n \\p src. \\p width must not exceed \\p dpitch. ::cudaMemcpy2DFromArrayAsync()\n returns an error if \\p dpitch exceeds the maximum allowed.\n\n ::cudaMemcpy2DFromArrayAsync() is asynchronous with respect to the host, so\n the call may return before the copy is complete. The copy can optionally be\n associated to a stream by passing a non-zero \\p stream argument. If \\p kind\n is ::cudaMemcpyHostToDevice or ::cudaMemcpyDeviceToHost and \\p stream is\n non-zero, the copy may overlap with operations in other streams.\n\n \\param dst     - Destination memory address\n \\param dpitch  - Pitch of destination memory\n \\param src     - Source memory address\n \\param wOffset - Source starting X offset (columns in bytes)\n \\param hOffset - Source starting Y offset (rows)\n \\param width   - Width of matrix transfer (columns in bytes)\n \\param height  - Height of matrix transfer (rows)\n \\param kind    - Type of transfer\n \\param stream  - Stream identifier\n\n \\return\n ::cudaSuccess,\n ::cudaErrorInvalidValue,\n ::cudaErrorInvalidPitchValue,\n ::cudaErrorInvalidMemcpyDirection\n \\notefnerr\n \\note_async\n \\note_null_stream\n \\note_init_rt\n \\note_callback\n \\note_memcpy\n\n \\sa ::cudaMemcpy, ::cudaMemcpy2D,\n ::cudaMemcpy2DToArray, ::cudaMemcpy2DFromArray,\n ::cudaMemcpy2DArrayToArray, ::cudaMemcpyToSymbol,\n ::cudaMemcpyFromSymbol, ::cudaMemcpyAsync, ::cudaMemcpy2DAsync,\n ::cudaMemcpy2DToArrayAsync,\n\n ::cudaMemcpyToSymbolAsync, ::cudaMemcpyFromSymbolAsync,\n ::cuMemcpy2DAsync"]
@@ -5270,17 +5218,7 @@ pub unsafe extern "system" fn cudaMemcpy2DFromArrayAsync_ptsz(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    crate::memcpy_2d_from_array_async_ptsz(
-        dst,
-        dpitch,
-        src,
-        wOffset,
-        hOffset,
-        width,
-        height,
-        kind,
-        stream,
-    )
+    crate::unsupported()
 }
 
 #[doc = " \\brief Copies data to the given symbol on the device\n\n Copies \\p count bytes from the memory area pointed to by \\p src\n to the memory area pointed to by \\p offset bytes from the start of symbol\n \\p symbol. The memory areas may not overlap. \\p symbol is a variable that\n resides in global or constant memory space. \\p kind can be either\n ::cudaMemcpyHostToDevice, ::cudaMemcpyDeviceToDevice, or ::cudaMemcpyDefault.\n Passing ::cudaMemcpyDefault is recommended, in which case the type of transfer\n is inferred from the pointer values. However, ::cudaMemcpyDefault is only\n allowed on systems that support unified virtual addressing.\n\n ::cudaMemcpyToSymbolAsync() is asynchronous with respect to the host, so\n the call may return before the copy is complete. The copy can optionally\n be associated to a stream by passing a non-zero \\p stream argument. If\n \\p kind is ::cudaMemcpyHostToDevice and \\p stream is non-zero, the copy\n may overlap with operations in other streams.\n\n \\param symbol - Device symbol address\n \\param src    - Source memory address\n \\param count  - Size in bytes to copy\n \\param offset - Offset from start of symbol in bytes\n \\param kind   - Type of transfer\n \\param stream - Stream identifier\n\n \\return\n ::cudaSuccess,\n ::cudaErrorInvalidValue,\n ::cudaErrorInvalidSymbol,\n ::cudaErrorInvalidMemcpyDirection,\n ::cudaErrorNoKernelImageForDevice\n \\notefnerr\n \\note_async\n \\note_null_stream\n \\note_string_api_deprecation\n \\note_init_rt\n \\note_callback\n\n \\sa ::cudaMemcpy, ::cudaMemcpy2D,\n ::cudaMemcpy2DToArray, ::cudaMemcpy2DFromArray,\n ::cudaMemcpy2DArrayToArray, ::cudaMemcpyToSymbol,\n ::cudaMemcpyFromSymbol, ::cudaMemcpyAsync, ::cudaMemcpy2DAsync,\n ::cudaMemcpy2DToArrayAsync,\n ::cudaMemcpy2DFromArrayAsync,\n ::cudaMemcpyFromSymbolAsync,\n ::cuMemcpyAsync,\n ::cuMemcpyHtoDAsync,\n ::cuMemcpyDtoDAsync"]
@@ -5312,14 +5250,7 @@ pub unsafe extern "system" fn cudaMemcpyToSymbolAsync_ptsz(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    crate::memcpy_to_symbol_async_ptsz(
-        symbol,
-        src,
-        count,
-        offset,
-        kind,
-        stream,
-    )
+    crate::unsupported()
 }
 
 #[doc = " \\brief Copies data from the given symbol on the device\n\n Copies \\p count bytes from the memory area pointed to by \\p offset bytes\n from the start of symbol \\p symbol to the memory area pointed to by \\p dst.\n The memory areas may not overlap. \\p symbol is a variable that resides in\n global or constant memory space. \\p kind can be either\n ::cudaMemcpyDeviceToHost, ::cudaMemcpyDeviceToDevice, or ::cudaMemcpyDefault.\n Passing ::cudaMemcpyDefault is recommended, in which case the type of transfer\n is inferred from the pointer values. However, ::cudaMemcpyDefault is only\n allowed on systems that support unified virtual addressing.\n\n ::cudaMemcpyFromSymbolAsync() is asynchronous with respect to the host, so\n the call may return before the copy is complete. The copy can optionally be\n associated to a stream by passing a non-zero \\p stream argument. If \\p kind\n is ::cudaMemcpyDeviceToHost and \\p stream is non-zero, the copy may overlap\n with operations in other streams.\n\n \\param dst    - Destination memory address\n \\param symbol - Device symbol address\n \\param count  - Size in bytes to copy\n \\param offset - Offset from start of symbol in bytes\n \\param kind   - Type of transfer\n \\param stream - Stream identifier\n\n \\return\n ::cudaSuccess,\n ::cudaErrorInvalidValue,\n ::cudaErrorInvalidSymbol,\n ::cudaErrorInvalidMemcpyDirection,\n ::cudaErrorNoKernelImageForDevice\n \\notefnerr\n \\note_async\n \\note_null_stream\n \\note_string_api_deprecation\n \\note_init_rt\n \\note_callback\n\n \\sa ::cudaMemcpy, ::cudaMemcpy2D,\n ::cudaMemcpy2DToArray, ::cudaMemcpy2DFromArray,\n ::cudaMemcpy2DArrayToArray, ::cudaMemcpyToSymbol,\n ::cudaMemcpyFromSymbol, ::cudaMemcpyAsync, ::cudaMemcpy2DAsync,\n ::cudaMemcpy2DToArrayAsync,\n ::cudaMemcpy2DFromArrayAsync,\n ::cudaMemcpyToSymbolAsync,\n ::cuMemcpyAsync,\n ::cuMemcpyDtoHAsync,\n ::cuMemcpyDtoDAsync"]
@@ -5351,14 +5282,7 @@ pub unsafe extern "system" fn cudaMemcpyFromSymbolAsync_ptsz(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    crate::memcpy_from_symbol_async_ptsz(
-        dst,
-        symbol,
-        count,
-        offset,
-        kind,
-        stream,
-    )
+    crate::unsupported()
 }
 
 #[doc = " \\brief Initializes or sets device memory to a value\n\n Fills the first \\p count bytes of the memory area pointed to by \\p devPtr\n with the constant byte value \\p value.\n\n Note that this function is asynchronous with respect to the host unless\n \\p devPtr refers to pinned host memory.\n\n \\param devPtr - Pointer to device memory\n \\param value  - Value to set for each byte of specified memory\n \\param count  - Size in bytes to set\n\n \\return\n ::cudaSuccess,\n ::cudaErrorInvalidValue,\n \\notefnerr\n \\note_memset\n \\note_init_rt\n \\note_callback\n\n \\sa\n ::cuMemsetD8,\n ::cuMemsetD16,\n ::cuMemsetD32"]
@@ -5466,12 +5390,7 @@ pub unsafe extern "system" fn cudaMemsetAsync_ptsz(
     count: usize,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    crate::memset_async_ptsz(
-        devPtr,
-        value,
-        count,
-        stream,
-    )
+    crate::unsupported()
 }
 
 #[doc = " \\brief Initializes or sets device memory to a value\n\n Sets to the specified value \\p value a matrix (\\p height rows of \\p width\n bytes each) pointed to by \\p dstPtr. \\p pitch is the width in bytes of the\n 2D array pointed to by \\p dstPtr, including any padding added to the end\n of each row. This function performs fastest when the pitch is one that has\n been passed back by ::cudaMallocPitch().\n\n ::cudaMemset2DAsync() is asynchronous with respect to the host, so\n the call may return before the memset is complete. The operation can optionally\n be associated to a stream by passing a non-zero \\p stream argument.\n If \\p stream is non-zero, the operation may overlap with operations in other streams.\n\n The device version of this function only handles device to device copies and\n cannot be given local or shared pointers.\n\n \\param devPtr - Pointer to 2D device memory\n \\param pitch  - Pitch in bytes of 2D device memory(Unused if \\p height is 1)\n \\param value  - Value to set for each byte of specified memory\n \\param width  - Width of matrix set (columns in bytes)\n \\param height - Height of matrix set (rows)\n \\param stream - Stream identifier\n\n \\return\n ::cudaSuccess,\n ::cudaErrorInvalidValue,\n \\notefnerr\n \\note_memset\n \\note_null_stream\n \\note_init_rt\n \\note_callback\n\n \\sa ::cudaMemset, ::cudaMemset2D, ::cudaMemset3D,\n ::cudaMemsetAsync, ::cudaMemset3DAsync,\n ::cuMemsetD2D8Async,\n ::cuMemsetD2D16Async,\n ::cuMemsetD2D32Async"]
@@ -5503,14 +5422,7 @@ pub unsafe extern "system" fn cudaMemset2DAsync_ptsz(
     height: usize,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    crate::memset_2d_async_ptsz(
-        devPtr,
-        pitch,
-        value,
-        width,
-        height,
-        stream,
-    )
+    crate::unsupported()
 }
 
 #[doc = " \\brief Initializes or sets device memory to a value\n\n Initializes each element of a 3D array to the specified value \\p value.\n The object to initialize is defined by \\p pitchedDevPtr. The \\p pitch field\n of \\p pitchedDevPtr is the width in memory in bytes of the 3D array pointed\n to by \\p pitchedDevPtr, including any padding added to the end of each row.\n The \\p xsize field specifies the logical width of each row in bytes, while\n the \\p ysize field specifies the height of each 2D slice in rows.\n The \\p pitch field of \\p pitchedDevPtr is ignored when \\p height and \\p depth\n are both equal to 1.\n\n The extents of the initialized region are specified as a \\p width in bytes,\n a \\p height in rows, and a \\p depth in slices.\n\n Extents with \\p width greater than or equal to the \\p xsize of\n \\p pitchedDevPtr may perform significantly faster than extents narrower\n than the \\p xsize. Secondarily, extents with \\p height equal to the\n \\p ysize of \\p pitchedDevPtr will perform faster than when the \\p height is\n shorter than the \\p ysize.\n\n This function performs fastest when the \\p pitchedDevPtr has been allocated\n by ::cudaMalloc3D().\n\n ::cudaMemset3DAsync() is asynchronous with respect to the host, so\n the call may return before the memset is complete. The operation can optionally\n be associated to a stream by passing a non-zero \\p stream argument.\n If \\p stream is non-zero, the operation may overlap with operations in other streams.\n\n The device version of this function only handles device to device copies and\n cannot be given local or shared pointers.\n\n \\param pitchedDevPtr - Pointer to pitched device memory\n \\param value         - Value to set for each byte of specified memory\n \\param extent        - Size parameters for where to set device memory (\\p width field in bytes)\n \\param stream - Stream identifier\n\n \\return\n ::cudaSuccess,\n ::cudaErrorInvalidValue,\n \\notefnerr\n \\note_memset\n \\note_null_stream\n \\note_init_rt\n \\note_callback\n\n \\sa ::cudaMemset, ::cudaMemset2D, ::cudaMemset3D,\n ::cudaMemsetAsync, ::cudaMemset2DAsync,\n ::cudaMalloc3D, ::make_cudaPitchedPtr,\n ::make_cudaExtent"]
@@ -5767,15 +5679,7 @@ pub unsafe extern "system" fn cudaMemcpyToArrayAsync_ptsz(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    crate::memcpy_to_array_async_ptsz(
-        dst,
-        wOffset,
-        hOffset,
-        src,
-        count,
-        kind,
-        stream,
-    )
+    crate::unsupported()
 }
 
 #[doc = " \\brief Copies data between host and device\n\n \\deprecated\n\n Copies \\p count bytes from the CUDA array \\p src starting at \\p hOffset rows\n and \\p wOffset bytes from the upper left corner to the memory area pointed to\n by \\p dst, where \\p kind specifies the direction of the copy, and must be one of\n ::cudaMemcpyHostToHost, ::cudaMemcpyHostToDevice, ::cudaMemcpyDeviceToHost,\n ::cudaMemcpyDeviceToDevice, or ::cudaMemcpyDefault. Passing\n ::cudaMemcpyDefault is recommended, in which case the type of transfer is\n inferred from the pointer values. However, ::cudaMemcpyDefault is only\n allowed on systems that support unified virtual addressing.\n\n ::cudaMemcpyFromArrayAsync() is asynchronous with respect to the host, so\n the call may return before the copy is complete. The copy can optionally\n be associated to a stream by passing a non-zero \\p stream argument. If \\p\n kind is ::cudaMemcpyHostToDevice or ::cudaMemcpyDeviceToHost and \\p stream\n is non-zero, the copy may overlap with operations in other streams.\n\n \\param dst     - Destination memory address\n \\param src     - Source memory address\n \\param wOffset - Source starting X offset (columns in bytes)\n \\param hOffset - Source starting Y offset (rows)\n \\param count   - Size in bytes to copy\n \\param kind    - Type of transfer\n \\param stream  - Stream identifier\n\n \\return\n ::cudaSuccess,\n ::cudaErrorInvalidValue,\n ::cudaErrorInvalidMemcpyDirection\n \\notefnerr\n \\note_async\n \\note_null_stream\n \\note_init_rt\n \\note_callback\n\n \\sa ::cudaMemcpy, ::cudaMemcpy2D, ::cudaMemcpyToArray,\n ::cudaMemcpy2DToArray, ::cudaMemcpyFromArray, ::cudaMemcpy2DFromArray,\n ::cudaMemcpyArrayToArray, ::cudaMemcpy2DArrayToArray, ::cudaMemcpyToSymbol,\n ::cudaMemcpyFromSymbol, ::cudaMemcpyAsync, ::cudaMemcpy2DAsync,\n ::cudaMemcpyToArrayAsync, ::cudaMemcpy2DToArrayAsync,\n ::cudaMemcpy2DFromArrayAsync,\n ::cudaMemcpyToSymbolAsync, ::cudaMemcpyFromSymbolAsync,\n ::cuMemcpyAtoHAsync,\n ::cuMemcpy2DAsync"]
@@ -5810,15 +5714,7 @@ pub unsafe extern "system" fn cudaMemcpyFromArrayAsync_ptsz(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    crate::memcpy_from_array_async_ptsz(
-        dst,
-        src,
-        wOffset,
-        hOffset,
-        count,
-        kind,
-        stream,
-    )
+    crate::unsupported()
 }
 
 #[doc = " \\brief Allocates memory with stream ordered semantics\n\n Inserts an allocation operation into \\p hStream.\n A pointer to the allocated memory is returned immediately in *dptr.\n The allocation must not be accessed until the the allocation operation completes.\n The allocation comes from the memory pool associated with the stream's device.\n\n \\note The default memory pool of a device contains device memory from that device.\n \\note Basic stream ordering allows future work submitted into the same stream to use the allocation.\n       Stream query, stream synchronize, and CUDA events can be used to guarantee that the allocation\n       operation completes before work submitted in a separate stream runs.\n \\note During stream capture, this function results in the creation of an allocation node.  In this case,\n       the allocation is owned by the graph instead of the memory pool. The memory pool's properties\n       are used to set the node's creation parameters.\n\n \\param[out] devPtr  - Returned device pointer\n \\param[in] size     - Number of bytes to allocate\n \\param[in] hStream  - The stream establishing the stream ordering contract and the memory pool to allocate from\n\n \\return\n ::cudaSuccess,\n ::cudaErrorInvalidValue,\n ::cudaErrorNotSupported,\n ::cudaErrorOutOfMemory,\n \\notefnerr\n \\note_null_stream\n \\note_init_rt\n \\note_callback\n\n \\sa ::cuMemAllocAsync,\n \\ref ::cudaMallocAsync(void** ptr, size_t size, cudaMemPool_t memPool, cudaStream_t stream)  \"cudaMallocAsync (C++ API)\",\n ::cudaMallocFromPoolAsync, ::cudaFreeAsync, ::cudaDeviceSetMemPool, ::cudaDeviceGetDefaultMemPool, ::cudaDeviceGetMemPool, ::cudaMemPoolSetAccess, ::cudaMemPoolSetAttribute, ::cudaMemPoolGetAttribute"]
