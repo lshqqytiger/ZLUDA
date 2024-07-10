@@ -60,7 +60,7 @@ impl Comgr {
 
     #[cfg(windows)]
     unsafe fn load_library() -> std::result::Result<LibComgr, libloading::Error> {
-        LibComgr::new("amd_comgr.dll")
+        LibComgr::new("amd_comgr_2.dll")
     }
 
     #[cfg(not(windows))]
