@@ -127,6 +127,12 @@ If an application fails to start under ZLUDA or crashes please check [Known Issu
 
 ### Applications
 
+#### CGBN
+
+CGBN crashes due to an underlying ROCm/HIP issue.
+
+You can solve the issue by building comgr with LLVM containing this patch: ROCm/llvm-project#91. ZLUDA then must be able to find the comgr library (amd_comgr.dll on Windows and libamd_comgr.so.2 on Linux) in a library search path.
+
 #### Meshroom
 
 Meshroom works only with on Windows due to an underlying ROCm/HIP issue.
