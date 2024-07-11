@@ -41,7 +41,6 @@ members = [
     "zluda_redirect",
     "zluda_rt",
     "zluda_rtc",
-    "zluda_runtime",
     "zluda_sparse",
 ]
 
