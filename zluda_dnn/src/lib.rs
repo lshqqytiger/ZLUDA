@@ -25,19 +25,19 @@ use miopen_sys::*;
 use std::{mem, ptr};
 
 impl miopenBackendHeurMode_t {
-    pub const CUDNN_HEUR_MODE_INSTANT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(0);
+    pub const MIOPEN_HEUR_MODE_INSTANT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(0);
 }
 impl miopenBackendHeurMode_t {
-    pub const CUDNN_HEUR_MODE_B: miopenBackendHeurMode_t = miopenBackendHeurMode_t(1);
+    pub const MIOPEN_HEUR_MODE_B: miopenBackendHeurMode_t = miopenBackendHeurMode_t(1);
 }
 impl miopenBackendHeurMode_t {
-    pub const CUDNN_HEUR_MODE_FALLBACK: miopenBackendHeurMode_t = miopenBackendHeurMode_t(2);
+    pub const MIOPEN_HEUR_MODE_FALLBACK: miopenBackendHeurMode_t = miopenBackendHeurMode_t(2);
 }
 impl miopenBackendHeurMode_t {
-    pub const CUDNN_HEUR_MODE_A: miopenBackendHeurMode_t = miopenBackendHeurMode_t(3);
+    pub const MIOPEN_HEUR_MODE_A: miopenBackendHeurMode_t = miopenBackendHeurMode_t(3);
 }
 impl miopenBackendHeurMode_t {
-    pub const CUDNN_HEUR_MODES_COUNT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(4);
+    pub const MIOPEN_HEUR_MODES_COUNT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(4);
 }
 #[repr(transparent)]
 #[derive(Copy, Clone, Hash, PartialEq, Eq)]
@@ -234,6 +234,8 @@ fn to_conv_mode(mode: cudnnConvolutionMode_t) -> miopenConvolutionMode_t {
 
 fn to_heur_mode(mode: cudnnBackendHeurMode_t) -> miopenBackendHeurMode_t {
     match mode {
+        cudnnBackendHeurMode_t::CUDNN_HEUR_MODE_INSTANT => miopenBackendHeurMode_t::MIOPEN_HEUR_MODE_INSTANT,
+        cudnnBackendHeurMode_t::CUDNN_HEUR_MODE_FALLBACK => miopenBackendHeurMode_t::MIOPEN_HEUR_MODE_FALLBACK,
         _ => panic!("[ZLUDA] Unknown heuristic mode: {}", mode.0),
     }
 }
