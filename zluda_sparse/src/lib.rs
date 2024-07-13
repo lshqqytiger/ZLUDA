@@ -502,6 +502,7 @@ unsafe fn spmv(
         vec_y.cast(),
         compute_type,
         alg,
+        rocsparse_spmv_stage::rocsparse_spmv_stage_compute,
         &mut size,
         external_buffer,
     ))
@@ -532,6 +533,7 @@ unsafe fn spmv_buffersize(
         vec_y.cast(),
         compute_type,
         alg,
+        rocsparse_spmv_stage::rocsparse_spmv_stage_buffer_size,
         buffer_size,
         ptr::null_mut(),
     ))

@@ -1730,12 +1730,12 @@ fn emit_inst_sqrt(
         (ast::ScalarType::F64, ast::RcpSqrtKind::Approx) => {
             (&b"llvm.sqrt.f64\0"[..], FastMathFlags::ApproxFunc)
         }
-        // TODO: Go back to llvm.sqrt.f64 when this commit lands:
-        //       https://github.com/RadeonOpenCompute/llvm-project/commit/e3fd8f83a801b1918508c7c0a71cc31bc95ad4d2
-        //       It's not yet present as of ROCm 5.7.1
-        // TODO: support correct rounding
-        (ast::ScalarType::F32, _) => (&b"__ocml_sqrt_f32\0"[..], FastMathFlags::empty()),
-        (ast::ScalarType::F64, _) => (&b"__ocml_sqrt_f64\0"[..], FastMathFlags::empty()),
+        (ast::ScalarType::F32, _) => {
+            (&b"llvm.sqrt.f32\0"[..], FastMathFlags::empty())
+        },
+        (ast::ScalarType::F64, _) => {
+            (&b"llvm.sqrt.f64\0"[..], FastMathFlags::empty())
+        },
         _ => return Err(TranslateError::unreachable()),
     };
     let sqrt_result = emit_intrinsic_arg2(
