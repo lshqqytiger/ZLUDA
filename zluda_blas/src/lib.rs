@@ -868,7 +868,7 @@ unsafe fn dtrmm_v2(
     let uplo = to_fill(uplo);
     let transa = op_from_cuda(transa);
     let diag = to_diag(diag);
-    to_cuda(rocblas_dtrmm_outofplace(
+    to_cuda(rocblas_dtrmm(
         handle.cast(),
         side,
         uplo,
@@ -952,7 +952,7 @@ unsafe fn get_pointer_mode(
 unsafe fn set_pointer_mode(handle: cublasHandle_t, mode: cublasPointerMode_t) -> cublasStatus_t {
     to_cuda(rocblas_set_pointer_mode(
         handle.cast(),
-        rocblas_pointer_mode_(mode.0),
+        rocblas_pointer_mode_(mode.0 as _),
     ))
 }
 
@@ -1207,7 +1207,7 @@ unsafe fn gemm_batched_ex(
         compute_type,
         algo,
         0,
-        rocblas_gemm_flags::rocblas_gemm_flags_none.0,
+        0,
     ))
 }
 
@@ -1272,6 +1272,6 @@ unsafe fn gemm_strided_batched_ex(
         compute_type,
         algo,
         0,
-        rocblas_gemm_flags::rocblas_gemm_flags_none.0,
+        0,
     ))
 }

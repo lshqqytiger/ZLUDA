@@ -76,7 +76,7 @@ pub enum CompilationMode {
 impl CompilationMode {
     pub unsafe fn from_device(device: i32) -> Result<CompilationMode, hipError_t> {
         let mut device_props = mem::zeroed();
-        hip! { hipGetDeviceProperties(&mut device_props, device) };
+        hip! { hipGetDevicePropertiesR0600(&mut device_props, device) };
         if device_props.warpSize == 32 {
             Ok(CompilationMode::Wave32)
         } else {
@@ -96,7 +96,7 @@ impl CompilationMode {
 
 pub unsafe fn comgr_isa(device: i32) -> Result<CString, hipError_t> {
     let mut device_props = mem::zeroed();
-    hip! { hipGetDeviceProperties(&mut device_props, device) };
+    hip! { hipGetDevicePropertiesR0600(&mut device_props, device) };
     let gcn_arch = CStr::from_ptr(device_props.gcnArchName.as_ptr() as _);
     let mut arch_name = b"amdgcn-amd-amdhsa--".to_vec();
     arch_name.extend_from_slice(gcn_arch.to_bytes_with_nul());
