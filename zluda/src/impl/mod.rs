@@ -109,13 +109,6 @@ pub(crate) trait ZludaObject: Sized {
     fn drop_with_result(&mut self, by_owner: bool) -> Result<(), CUresult>;
 }
 
-pub(crate) trait HasLivenessCookie: Sized {
-    const COOKIE: usize;
-    const LIVENESS_FAIL: CUresult;
-
-    fn try_drop(&mut self) -> Result<(), CUresult>;
-}
-
 // This struct is a best-effort check if wrapped value has been dropped,
 // while it's inherently safe, its use coming from FFI is very unsafe
 #[repr(C)]

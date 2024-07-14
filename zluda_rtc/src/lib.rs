@@ -1,3 +1,4 @@
+#![allow(warnings)]
 mod nvrtc;
 pub use nvrtc::*;
 
@@ -22,6 +23,7 @@ fn to_nvrtc(status: hiprtc_sys::hiprtcResult) -> nvrtcResult {
         hiprtc_sys::hiprtcResult::HIPRTC_SUCCESS => nvrtcResult::NVRTC_SUCCESS,
         hiprtc_sys::hiprtcResult::HIPRTC_ERROR_INVALID_PROGRAM => nvrtcResult::NVRTC_ERROR_INVALID_PROGRAM,
         hiprtc_sys::hiprtcResult::HIPRTC_ERROR_COMPILATION => nvrtcResult::NVRTC_ERROR_COMPILATION,
+        hiprtc_sys::hiprtcResult::HIPRTC_ERROR_INTERNAL_ERROR => nvrtcResult::NVRTC_ERROR_INTERNAL_ERROR,
         err => panic!("[ZLUDA] HIPRTC failed: {}", err.0),
     }
 }
@@ -31,6 +33,7 @@ fn to_hiprtc(status: nvrtcResult) -> hiprtc_sys::hiprtcResult {
         nvrtcResult::NVRTC_SUCCESS => hiprtc_sys::hiprtcResult::HIPRTC_SUCCESS,
         nvrtcResult::NVRTC_ERROR_INVALID_PROGRAM => hiprtc_sys::hiprtcResult::HIPRTC_ERROR_INVALID_PROGRAM,
         nvrtcResult::NVRTC_ERROR_COMPILATION => hiprtc_sys::hiprtcResult::HIPRTC_ERROR_COMPILATION,
+        nvrtcResult::NVRTC_ERROR_INTERNAL_ERROR => hiprtc_sys::hiprtcResult::HIPRTC_ERROR_INTERNAL_ERROR,
         err => panic!("[ZLUDA] HIPRTC failed: {}", err.0),
     }
 }
@@ -86,7 +89,12 @@ unsafe fn compile_program(
             arguments.push(cstr.as_ptr());
         }
     }
-    to_nvrtc(hiprtcCompileProgram(prog.cast(), arguments.len() as _, arguments.as_mut_ptr()))
+    // TODO
+    to_nvrtc(hiprtcCompileProgram(
+        prog.cast(),
+        arguments.len() as _,
+        arguments.as_mut_ptr(),
+    ))
 }
 
 unsafe fn get_code_size(prog: nvrtcProgram, code_size_ret: *mut usize) -> nvrtcResult {
