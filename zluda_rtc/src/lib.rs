@@ -1,3 +1,4 @@
+#![allow(warnings)]
 mod nvrtc;
 pub use nvrtc::*;
 
