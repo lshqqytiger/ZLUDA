@@ -273,17 +273,15 @@ Performance is currently much lower than the native HIP backend, see the discuss
 
 - Why is this project suddenly back after 3 years? What happened to Intel GPU support?
 
-  In 2021 I was contacted by Intel about the development of ZLUDA. I was an Intel employee at the time. While we were building a case for ZLUDA internally, I was asked for a far-reaching discretion: not to advertise the fact that Intel was evaluating ZLUDA and definitely not to make any commits to the public ZLUDA repo. After some deliberation, Intel decided that there is no business case for running CUDA applications on Intel GPUs.
+  In 2021 Janik was contacted by Intel about the development of ZLUDA. He was an Intel employee at the time. While they were building a case for ZLUDA internally, he was asked for a far-reaching discretion: not to advertise the fact that Intel was evaluating ZLUDA and definitely not to make any commits to the public ZLUDA repo. After some deliberation, Intel decided that there is no business case for running CUDA applications on Intel GPUs.
 
-  Shortly thereafter I got in contact with AMD and in early 2022 I have left Intel and signed a ZLUDA development contract with AMD. Once again I was asked for a far-reaching discretion: not to advertise the fact that AMD is evaluating ZLUDA and definitely not to make any commits to the public ZLUDA repo. After two years of development and some deliberation, AMD decided that there is no business case for running CUDA applications on AMD GPUs.
+  Shortly thereafter he got in contact with AMD and in early 2022 he have left Intel and signed a ZLUDA development contract with AMD. Once again he was asked for a far-reaching discretion: not to advertise the fact that AMD is evaluating ZLUDA and definitely not to make any commits to the public ZLUDA repo. After two years of development and some deliberation, AMD decided that there is no business case for running CUDA applications on AMD GPUs.
 
-  One of the terms of my contract with AMD was that if AMD did not find it fit for further development, I could release it. Which brings us to today.
+  One of the terms of his contract with AMD was that if AMD did not find it fit for further development, he could release it. Which brings us to today.
 
 * What's the future of the project?
 
-  With neither Intel nor AMD interested, we've run out of GPU companies. I'm open though to any offers of that could move the project forward.
-
-  Realistically, it's now abandoned and will only possibly receive updates to run workloads I am personally interested in (DLSS).
+  This branch is planned to be ported to newer ROCm/HIP versions.
 
 * What underlying GPU API does ZLUDA use? Is it OpenCL? ROCm? Vulkan?
 
@@ -292,6 +290,10 @@ Performance is currently much lower than the native HIP backend, see the discuss
 * I am a developer writing CUDA code, does this project help me port my code to ROCm/HIP?
 
   Currently no, this project is strictly for end users. However this project could be used for a much more gradual porting from CUDA to HIP than anything else. You could start with an unmodified application running on ZLUDA, then have ZLUDA expose the underlying HIP objects (streams, modules, etc.), allowing to rewrite GPU kernels one at a time. Or you could have a mixed CUDA-HIP application where only the most performance sensitive GPU kernels are written in the native AMD language.
+
+* What happened to the upstream version?
+
+  The upstream received a legal threat, forcing him to revert the repository to a previous version.
 
 ## For developers
 
