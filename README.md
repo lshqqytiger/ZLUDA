@@ -295,6 +295,10 @@ Performance is currently much lower than the native HIP backend, see the discuss
 
   The upstream received a legal threat, forcing him to revert the repository to a previous version.
 
+* Why is this called ZLUDA?
+
+  The name is a Polish language word play on the word _cuda_, which means miracles; whereas _zluda_ means delusion.
+
 ## For developers
 
 If you are curious about ZLUDA's architecture, you can read a broad overview in [ARCHITECTURE.md](ARCHITECTURE.md). If you want to debug ZLUDA check the "Debugging" section in [TROUBLESHOOTING.md](TROUBLESHOOTING.md#debugging).
