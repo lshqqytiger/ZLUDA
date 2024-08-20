@@ -15,8 +15,8 @@ fn unsupported() -> nvrtcResult {
 }
 
 const NVRTC_VERSION_MAJOR: i32 = 11;
-const NVRTC_VERSION_MINOR: i32 = 8;
-const SUPPORTED_OPTIONS: [&'static str; 1] = ["--std"];
+const NVRTC_VERSION_MINOR: i32 = 7;
+const SUPPORTED_OPTIONS: [&'static str; 2] = ["--std", "-default-device"];
 
 fn to_nvrtc(status: hiprtc_sys::hiprtcResult) -> nvrtcResult {
     match status {
