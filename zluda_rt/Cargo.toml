@@ -38,9 +38,6 @@ float-cmp = "0.9.0"
 
 [build-dependencies]
 vergen = { version = "7.5.1", default-features = false, features = ["git"] }
-# We don't use time crate, but this coerces vergen to not use newer version that requires 
-# higher minimum rust version
-time = "=0.3.23"
 
 [package.metadata.zluda]
 broken = true
