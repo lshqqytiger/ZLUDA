@@ -61,6 +61,7 @@ mod os {
 #[cfg(target_os = "windows")]
 mod os {
     use std::ffi::OsString;
+    use std::os::windows::ffi::OsStringExt;
     use std::mem;
     use widestring::U16CStr;
     use winapi::shared::minwindef::HMODULE;
@@ -79,6 +80,21 @@ mod os {
         ) {
             return None;
         }
-        Some(U16CStr::from_ptr_str(module.cast()).to_os_string())
+
+        let mut path_buffer: [u16; winapi::shared::minwindef::MAX_PATH] = std::mem::zeroed();
+
+        let length = GetModuleFileNameW(
+            module,
+            path_buffer.as_mut_ptr(),
+            path_buffer.len() as u32,
+        );
+        if length == 0 {
+            return None;
+        }
+
+        Some(OsString::from_wide(&path_buffer[..length as usize])
+            .to_string_lossy()
+            .into_owned()
+            .into())
     }
 }
