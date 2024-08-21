@@ -1,3 +1,4 @@
+#![allow(warnings)]
 mod cudart;
 pub use cudart::*;
 
@@ -36,6 +37,15 @@ fn to_hip(status: cudaError_t) -> hipError_t {
         cudaError_t::cudaErrorNotSupported => hipError_t::hipErrorNotSupported,
         err => panic!("[ZLUDA] HIP Runtime failed: {}", err.0),
     }
+}
+
+const HIP_FAT_BINARY_MAGIC: u32 = 0x48495046;
+
+struct CUDAFatBinaryWrapper {
+    magic: u32,
+    version: u32,
+    binary: *mut ::std::os::raw::c_void,
+    unused: *mut ::std::os::raw::c_void,
 }
 
 unsafe fn to_stream(stream: cudaStream_t) -> hipStream_t {
@@ -130,7 +140,9 @@ unsafe fn push_call_configuration(
 unsafe fn register_fat_binary(
     fat_cubin: *mut ::std::os::raw::c_void,
 ) -> *mut *mut ::std::os::raw::c_void {
-    __hipRegisterFatBinary(fat_cubin)
+    let fat_cubin = fat_cubin as *mut CUDAFatBinaryWrapper;
+    (*fat_cubin).magic = HIP_FAT_BINARY_MAGIC;
+    __hipRegisterFatBinary(fat_cubin as _)
 }
 
 unsafe fn register_fat_binary_end(
@@ -369,7 +381,7 @@ unsafe fn get_device_properties(
     prop: *mut cudaDeviceProp,
     device: i32,
 ) -> cudaError_t {
-    to_cuda(hipGetDeviceProperties(
+    to_cuda(hipGetDevicePropertiesR0600(
         prop.cast(),
         device,
     ))
