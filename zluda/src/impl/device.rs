@@ -176,7 +176,7 @@ pub(crate) unsafe fn get_attribute(
         | CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR => {
             // in practical terms max group size = max blocks * warp size
             let mut prop = mem::zeroed();
-            hip_call_cuda! { hipGetDeviceProperties(&mut prop, dev) };
+            hip_call_cuda! { hipGetDevicePropertiesR0600(&mut prop, dev) };
             *pi = (prop.maxThreadsPerBlock / 2) / prop.warpSize;
             return Ok(());
         }
@@ -260,13 +260,13 @@ pub(crate) unsafe fn get_attribute(
         // linear sizes
         CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE1D_LINEAR_WIDTH => {
             let mut prop = mem::zeroed();
-            hip_call_cuda! { hipGetDeviceProperties(&mut prop, dev) };
+            hip_call_cuda! { hipGetDevicePropertiesR0600(&mut prop, dev) };
             *pi = prop.maxTexture1DLinear;
             return Ok(());
         }
         CUdevice_attribute::CU_DEVICE_ATTRIBUTE_PCI_DOMAIN_ID => {
             let mut prop = mem::zeroed();
-            hip_call_cuda! { hipGetDeviceProperties(&mut prop, dev) };
+            hip_call_cuda! { hipGetDevicePropertiesR0600(&mut prop, dev) };
             *pi = prop.pciDomainID;
             return Ok(());
         }
@@ -455,7 +455,7 @@ pub(crate) unsafe fn get_properties(
         return Err(CUresult::CUDA_ERROR_INVALID_VALUE);
     }
     let mut hip_props = mem::zeroed();
-    hip_call_cuda! { hipGetDeviceProperties(&mut hip_props, dev) };
+    hip_call_cuda! { hipGetDevicePropertiesR0600(&mut hip_props, dev) };
     (*prop).maxThreadsPerBlock = hip_props.maxThreadsPerBlock;
     (*prop).maxThreadsDim = hip_props.maxThreadsDim;
     (*prop).maxGridSize = hip_props.maxGridSize;

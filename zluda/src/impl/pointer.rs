@@ -25,7 +25,7 @@ pub(crate) unsafe fn get_attribute(
     match attribute {
         hipPointer_attribute::HIP_POINTER_ATTRIBUTE_MEMORY_TYPE => {
             *(data as *mut _) =
-                memory_type(attribs.__bindgen_anon_1.memoryType).map_err(IntoCuda::into_cuda)?;
+                memory_type(attribs.type_).map_err(IntoCuda::into_cuda)?;
             Ok(())
         }
         hipPointer_attribute::HIP_POINTER_ATTRIBUTE_DEVICE_POINTER => {

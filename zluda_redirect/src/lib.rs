@@ -3,7 +3,7 @@
 extern crate detours_sys;
 extern crate winapi;
 
-use std::{ffi::c_void, mem, path::PathBuf, ptr, slice, usize};
+use std::{ffi::c_void, mem, path::PathBuf, ptr::{self, addr_of, addr_of_mut}, slice, usize};
 
 use detours_sys::{
     DetourAttach, DetourRestoreAfterWith, DetourTransactionAbort, DetourTransactionBegin,
@@ -306,11 +306,11 @@ unsafe fn zero_terminated<T: Default + PartialEq>(t: *const T) -> &'static [T] {
 }
 
 unsafe fn is_driverstore_utf8(lib: &[u8]) -> bool {
-    starts_with_ignore_case(lib, &DRIVERSTORE_UTF8, utf8_to_ascii_uppercase)
+    starts_with_ignore_case(lib, addr_of!(DRIVERSTORE_UTF8).as_ref().unwrap(), utf8_to_ascii_uppercase)
 }
 
 unsafe fn is_driverstore_utf16(lib: &[u16]) -> bool {
-    starts_with_ignore_case(lib, &DRIVERSTORE_UTF16, utf16_to_ascii_uppercase)
+    starts_with_ignore_case(lib, addr_of!(DRIVERSTORE_UTF16).as_ref().unwrap(), utf16_to_ascii_uppercase)
 }
 
 fn is_nvcuda_dll_utf8(lib: &[u8]) -> bool {
@@ -578,36 +578,36 @@ impl DetourDetachGuard {
         }
         result.overriden_non_cuda_fns.extend_from_slice(&[
             (
-                &mut LOAD_LIBRARY_A as *mut _ as *mut *mut c_void,
+                addr_of_mut!(LOAD_LIBRARY_A) as *mut *mut c_void,
                 ZludaLoadLibraryA as *mut c_void,
             ),
-            (&mut LOAD_LIBRARY_W as *mut _ as _, ZludaLoadLibraryW as _),
+            (addr_of_mut!(LOAD_LIBRARY_W) as _, ZludaLoadLibraryW as _),
             (
-                &mut LOAD_LIBRARY_EX_A as *mut _ as _,
+                addr_of_mut!(LOAD_LIBRARY_EX_A) as _,
                 ZludaLoadLibraryExA as _,
             ),
             (
-                &mut LOAD_LIBRARY_EX_W as *mut _ as _,
+                addr_of_mut!(LOAD_LIBRARY_EX_W) as _,
                 ZludaLoadLibraryExW as _,
             ),
             (
-                &mut CREATE_PROCESS_A as *mut _ as _,
+                addr_of_mut!(CREATE_PROCESS_A) as _,
                 ZludaCreateProcessA as _,
             ),
             (
-                &mut CREATE_PROCESS_W as *mut _ as _,
+                addr_of_mut!(CREATE_PROCESS_W) as _,
                 ZludaCreateProcessW as _,
             ),
             (
-                &mut CREATE_PROCESS_AS_USER_W as *mut _ as _,
+                addr_of_mut!(CREATE_PROCESS_AS_USER_W) as _,
                 ZludaCreateProcessAsUserW as _,
             ),
             (
-                &mut CREATE_PROCESS_WITH_LOGON_W as *mut _ as _,
+                addr_of_mut!(CREATE_PROCESS_WITH_LOGON_W) as _,
                 ZludaCreateProcessWithLogonW as _,
             ),
             (
-                &mut CREATE_PROCESS_WITH_TOKEN_W as *mut _ as _,
+                addr_of_mut!(CREATE_PROCESS_WITH_TOKEN_W) as _,
                 ZludaCreateProcessWithTokenW as _,
             ),
         ]);
@@ -845,20 +845,20 @@ unsafe fn initialize_globals(current_module: HINSTANCE) -> bool {
     let driver_store_string = driver_store.to_str().unwrap().to_ascii_uppercase();
     DRIVERSTORE_UTF16 = driver_store_string.encode_utf16().collect::<Vec<_>>();
     DRIVERSTORE_UTF8 = driver_store_string.into_bytes();
-    if !load_global_string(&PAYLOAD_NVCUDA_GUID, &mut ZLUDA_PATH_UTF8, || {
-        &mut ZLUDA_PATH_UTF16
+    if !load_global_string(&PAYLOAD_NVCUDA_GUID, addr_of_mut!(ZLUDA_PATH_UTF8).as_mut().unwrap(), || {
+        addr_of_mut!(ZLUDA_PATH_UTF16).as_mut().unwrap()
     }) {
         return false;
     }
-    if !load_global_string(&PAYLOAD_NVML_GUID, &mut ZLUDA_ML_PATH_UTF8, || {
-        &mut ZLUDA_ML_PATH_UTF16
+    if !load_global_string(&PAYLOAD_NVML_GUID, addr_of_mut!(ZLUDA_ML_PATH_UTF8).as_mut().unwrap(), || {
+        addr_of_mut!(ZLUDA_ML_PATH_UTF16).as_mut().unwrap()
     }) {
         return false;
     }
-    load_global_string(&PAYLOAD_NVAPI_GUID, &mut ZLUDA_API_PATH_UTF8, || {
+    load_global_string(&PAYLOAD_NVAPI_GUID, addr_of_mut!(ZLUDA_API_PATH_UTF8).as_mut().unwrap(), || {
         ZLUDA_API_PATH_UTF16.get_or_insert(Vec::new())
     });
-    load_global_string(&PAYLOAD_NVOPTIX_GUID, &mut ZLUDA_OPTIX_PATH_UTF8, || {
+    load_global_string(&PAYLOAD_NVOPTIX_GUID, addr_of_mut!(ZLUDA_OPTIX_PATH_UTF8).as_mut().unwrap(), || {
         ZLUDA_OPTIX_PATH_UTF16.get_or_insert(Vec::new())
     });
     true

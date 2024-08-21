@@ -57,39 +57,39 @@ impl hiprtcResult {
 #[derive(Copy, Clone, Hash, PartialEq, Eq)]
 pub struct hiprtcResult(pub ::std::os::raw::c_int);
 impl hiprtcJIT_option {
-    #[doc = "< Maximum registers"]
+    #[doc = "< Maximum registers may be used in a thread, passed to compiler"]
     pub const HIPRTC_JIT_MAX_REGISTERS: hiprtcJIT_option = hiprtcJIT_option(0);
 }
 impl hiprtcJIT_option {
-    #[doc = "< Thread per block"]
+    #[doc = "< Number of thread per block"]
     pub const HIPRTC_JIT_THREADS_PER_BLOCK: hiprtcJIT_option = hiprtcJIT_option(1);
 }
 impl hiprtcJIT_option {
-    #[doc = "< Time from aall clock"]
+    #[doc = "< Value for total wall clock time"]
     pub const HIPRTC_JIT_WALL_TIME: hiprtcJIT_option = hiprtcJIT_option(2);
 }
 impl hiprtcJIT_option {
-    #[doc = "< Log buffer info"]
+    #[doc = "< Pointer to the buffer with logged information"]
     pub const HIPRTC_JIT_INFO_LOG_BUFFER: hiprtcJIT_option = hiprtcJIT_option(3);
 }
 impl hiprtcJIT_option {
-    #[doc = "< Log buffer size in bytes"]
+    #[doc = "< Size of the buffer in bytes for logged info"]
     pub const HIPRTC_JIT_INFO_LOG_BUFFER_SIZE_BYTES: hiprtcJIT_option = hiprtcJIT_option(4);
 }
 impl hiprtcJIT_option {
-    #[doc = "< Log buffer error"]
+    #[doc = "< Pointer to the buffer with logged error(s)"]
     pub const HIPRTC_JIT_ERROR_LOG_BUFFER: hiprtcJIT_option = hiprtcJIT_option(5);
 }
 impl hiprtcJIT_option {
-    #[doc = "< Log buffer size in bytes"]
+    #[doc = "< Size of the buffer in bytes for logged error(s)"]
     pub const HIPRTC_JIT_ERROR_LOG_BUFFER_SIZE_BYTES: hiprtcJIT_option = hiprtcJIT_option(6);
 }
 impl hiprtcJIT_option {
-    #[doc = "< Optimization level"]
+    #[doc = "< Value of optimization level for generated codes"]
     pub const HIPRTC_JIT_OPTIMIZATION_LEVEL: hiprtcJIT_option = hiprtcJIT_option(7);
 }
 impl hiprtcJIT_option {
-    #[doc = "<"]
+    #[doc = "< The target context, which is the default"]
     pub const HIPRTC_JIT_TARGET_FROM_HIPCONTEXT: hiprtcJIT_option = hiprtcJIT_option(8);
 }
 impl hiprtcJIT_option {
@@ -105,55 +105,55 @@ impl hiprtcJIT_option {
     pub const HIPRTC_JIT_GENERATE_DEBUG_INFO: hiprtcJIT_option = hiprtcJIT_option(11);
 }
 impl hiprtcJIT_option {
-    #[doc = "< Log verbose"]
+    #[doc = "< Generate log verbose"]
     pub const HIPRTC_JIT_LOG_VERBOSE: hiprtcJIT_option = hiprtcJIT_option(12);
 }
 impl hiprtcJIT_option {
-    #[doc = "< Generate line information"]
+    #[doc = "< Generate line number information"]
     pub const HIPRTC_JIT_GENERATE_LINE_INFO: hiprtcJIT_option = hiprtcJIT_option(13);
 }
 impl hiprtcJIT_option {
-    #[doc = "< Cache mode"]
+    #[doc = "< Set cache mode"]
     pub const HIPRTC_JIT_CACHE_MODE: hiprtcJIT_option = hiprtcJIT_option(14);
 }
 impl hiprtcJIT_option {
-    #[doc = "< New SM3X option"]
+    #[doc = "< @deprecated  New SM3X option."]
     pub const HIPRTC_JIT_NEW_SM3X_OPT: hiprtcJIT_option = hiprtcJIT_option(15);
 }
 impl hiprtcJIT_option {
-    #[doc = "< Fast compile"]
+    #[doc = "< Set fast compile"]
     pub const HIPRTC_JIT_FAST_COMPILE: hiprtcJIT_option = hiprtcJIT_option(16);
 }
 impl hiprtcJIT_option {
-    #[doc = "< Global symbol names"]
+    #[doc = "< Array of device symbol names to be relocated to the host"]
     pub const HIPRTC_JIT_GLOBAL_SYMBOL_NAMES: hiprtcJIT_option = hiprtcJIT_option(17);
 }
 impl hiprtcJIT_option {
-    #[doc = "< Global symbol address"]
+    #[doc = "< Array of host addresses to be relocated to the device"]
     pub const HIPRTC_JIT_GLOBAL_SYMBOL_ADDRESS: hiprtcJIT_option = hiprtcJIT_option(18);
 }
 impl hiprtcJIT_option {
-    #[doc = "< Global symbol count"]
+    #[doc = "< Number of symbol count."]
     pub const HIPRTC_JIT_GLOBAL_SYMBOL_COUNT: hiprtcJIT_option = hiprtcJIT_option(19);
 }
 impl hiprtcJIT_option {
-    #[doc = "< LTO"]
+    #[doc = "< @deprecated  Enable link-time optimization for device code"]
     pub const HIPRTC_JIT_LTO: hiprtcJIT_option = hiprtcJIT_option(20);
 }
 impl hiprtcJIT_option {
-    #[doc = "< FTZ"]
+    #[doc = "< @deprecated  Set single-precision denormals."]
     pub const HIPRTC_JIT_FTZ: hiprtcJIT_option = hiprtcJIT_option(21);
 }
 impl hiprtcJIT_option {
-    #[doc = "< Prec_VIV"]
+    #[doc = "< @deprecated  Set single-precision floating-point division and\n< reciprocals"]
     pub const HIPRTC_JIT_PREC_DIV: hiprtcJIT_option = hiprtcJIT_option(22);
 }
 impl hiprtcJIT_option {
-    #[doc = "< PREC_SQRT"]
+    #[doc = "< @deprecated  Set single-precision floating-point square root"]
     pub const HIPRTC_JIT_PREC_SQRT: hiprtcJIT_option = hiprtcJIT_option(23);
 }
 impl hiprtcJIT_option {
-    #[doc = "< FMA"]
+    #[doc = "< @deprecated  Enable floating-point multiplies and adds/subtracts operations"]
     pub const HIPRTC_JIT_FMA: hiprtcJIT_option = hiprtcJIT_option(24);
 }
 impl hiprtcJIT_option {
@@ -161,11 +161,11 @@ impl hiprtcJIT_option {
     pub const HIPRTC_JIT_NUM_OPTIONS: hiprtcJIT_option = hiprtcJIT_option(25);
 }
 impl hiprtcJIT_option {
-    #[doc = "< AMD only. Linker options to be passed on to"]
+    #[doc = "< Linker options to be passed on to compiler"]
     pub const HIPRTC_JIT_IR_TO_ISA_OPT_EXT: hiprtcJIT_option = hiprtcJIT_option(10000);
 }
 impl hiprtcJIT_option {
-    #[doc = "< AMD only. Count of linker options"]
+    #[doc = "< Count of linker options to be passed on to\n< compiler  @note  Only supported for the AMD platform"]
     pub const HIPRTC_JIT_IR_TO_ISA_OPT_COUNT_EXT: hiprtcJIT_option = hiprtcJIT_option(10001);
 }
 #[repr(transparent)]
@@ -201,7 +201,7 @@ impl hiprtcJITInputType {
     pub const HIPRTC_JIT_NUM_LEGACY_INPUT_TYPES: hiprtcJITInputType = hiprtcJITInputType(6);
 }
 impl hiprtcJITInputType {
-    #[doc = "< LLVM bitcode"]
+    #[doc = "< LLVM bitcode or IR assembly"]
     pub const HIPRTC_JIT_INPUT_LLVM_BITCODE: hiprtcJITInputType = hiprtcJITInputType(100);
 }
 impl hiprtcJITInputType {

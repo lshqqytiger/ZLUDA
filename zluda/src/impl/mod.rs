@@ -109,13 +109,6 @@ pub(crate) trait ZludaObject: Sized {
     fn drop_with_result(&mut self, by_owner: bool) -> Result<(), CUresult>;
 }
 
-pub(crate) trait HasLivenessCookie: Sized {
-    const COOKIE: usize;
-    const LIVENESS_FAIL: CUresult;
-
-    fn try_drop(&mut self) -> Result<(), CUresult>;
-}
-
 // This struct is a best-effort check if wrapped value has been dropped,
 // while it's inherently safe, its use coming from FFI is very unsafe
 #[repr(C)]
@@ -299,46 +292,30 @@ macro_rules! try_downcast {
 
 #[allow(non_snake_case)]
 pub(crate) fn memcpy3d_from_cuda(this: &CUDA_MEMCPY3D) -> Result<HIP_MEMCPY3D, CUresult> {
-    // TODO: remove the casts when HIP fixes it
-    let srcXInBytes = try_downcast!(this.srcXInBytes, usize => u32);
-    let srcY = try_downcast!(this.srcY, usize => u32);
-    let srcZ = try_downcast!(this.srcZ, usize => u32);
-    let srcLOD = try_downcast!(this.srcLOD, usize => u32);
-    let srcPitch = try_downcast!(this.srcPitch, usize => u32);
-    let srcHeight = try_downcast!(this.srcHeight, usize => u32);
-    let dstXInBytes = try_downcast!(this.dstXInBytes, usize => u32);
-    let dstY = try_downcast!(this.dstY, usize => u32);
-    let dstZ = try_downcast!(this.dstZ, usize => u32);
-    let dstLOD = try_downcast!(this.dstLOD, usize => u32);
-    let dstPitch = try_downcast!(this.dstPitch, usize => u32);
-    let dstHeight = try_downcast!(this.dstHeight, usize => u32);
-    let WidthInBytes = try_downcast!(this.WidthInBytes, usize => u32);
-    let Height = try_downcast!(this.Height, usize => u32);
-    let Depth = try_downcast!(this.Depth, usize => u32);
     Ok(HIP_MEMCPY3D {
-        srcXInBytes,
-        srcY,
-        srcZ,
-        srcLOD,
+        srcXInBytes: this.srcXInBytes,
+        srcY: this.srcY,
+        srcZ: this.srcZ,
+        srcLOD: this.srcLOD,
         srcMemoryType: memory_type_from_cuda(this.srcMemoryType),
         srcHost: this.srcHost,
         srcDevice: FromCuda::from_cuda(this.srcDevice),
         srcArray: hipfix::array::get(this.srcArray),
-        srcPitch,
-        srcHeight,
-        dstXInBytes,
-        dstY,
-        dstZ,
-        dstLOD,
+        srcPitch: this.srcPitch,
+        srcHeight: this.srcHeight,
+        dstXInBytes: this.dstXInBytes,
+        dstY: this.dstY,
+        dstZ: this.dstZ,
+        dstLOD: this.dstLOD,
         dstMemoryType: memory_type_from_cuda(this.dstMemoryType),
         dstHost: this.dstHost,
         dstDevice: FromCuda::from_cuda(this.dstDevice),
         dstArray: hipfix::array::get(this.dstArray),
-        dstPitch,
-        dstHeight,
-        WidthInBytes,
-        Height,
-        Depth,
+        dstPitch: this.dstPitch,
+        dstHeight: this.dstHeight,
+        WidthInBytes: this.WidthInBytes,
+        Height: this.Height,
+        Depth: this.Depth,
     })
 }
 
@@ -348,7 +325,7 @@ pub(crate) fn memory_type_from_cuda(this: CUmemorytype) -> hipMemoryType {
         CUmemorytype::CU_MEMORYTYPE_DEVICE => hipMemoryType::hipMemoryTypeDevice,
         CUmemorytype::CU_MEMORYTYPE_ARRAY => hipMemoryType::hipMemoryTypeArray,
         CUmemorytype::CU_MEMORYTYPE_UNIFIED => hipMemoryType::hipMemoryTypeUnified,
-        CUmemorytype(val) => hipMemoryType(val - 1),
+        _ => panic!("[ZLUDA] Unknown memory type: {}", this.0),
     }
 }
 
