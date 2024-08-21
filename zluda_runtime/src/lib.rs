@@ -39,15 +39,6 @@ fn to_hip(status: cudaError_t) -> hipError_t {
     }
 }
 
-const HIP_FAT_BINARY_MAGIC: u32 = 0x48495046;
-
-struct CUDAFatBinaryWrapper {
-    magic: u32,
-    version: u32,
-    binary: *mut ::std::os::raw::c_void,
-    unused: *mut ::std::os::raw::c_void,
-}
-
 unsafe fn to_stream(stream: cudaStream_t) -> hipStream_t {
     let lib = hip_common::zluda_ext::get_cuda_library().unwrap();
     let cu_get_export_table = lib
@@ -140,9 +131,7 @@ unsafe fn push_call_configuration(
 unsafe fn register_fat_binary(
     fat_cubin: *mut ::std::os::raw::c_void,
 ) -> *mut *mut ::std::os::raw::c_void {
-    let fat_cubin = fat_cubin as *mut CUDAFatBinaryWrapper;
-    (*fat_cubin).magic = HIP_FAT_BINARY_MAGIC;
-    __hipRegisterFatBinary(fat_cubin as _)
+    __hipRegisterFatBinary(fat_cubin)
 }
 
 unsafe fn register_fat_binary_end(

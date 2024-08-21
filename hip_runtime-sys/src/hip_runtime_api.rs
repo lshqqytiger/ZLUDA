@@ -7495,7 +7495,7 @@ extern "C" {
 extern "C" {
     #[must_use]
     pub fn __hipRegisterFatBinary(
-        data: *mut ::std::os::raw::c_void,
+        data: *const ::std::os::raw::c_void,
     ) -> *mut *mut ::std::os::raw::c_void;
 }
 /*
