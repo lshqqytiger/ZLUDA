@@ -239,6 +239,26 @@ Performance is currently much lower than the native HIP backend, see the discuss
   torch.backends.cuda.enable_mem_efficient_sdp(False)
   ```
 
+  If you are getting an error about nvrtc/hiprtc, insert
+
+  ```py
+  def jit_script(f, *_, **__):
+      f.graph = torch._C.Graph() # pylint: disable=protected-access
+      return f
+  torch.jit.script = jit_script
+  ```
+
+  You may have an issue while running `torch.topk`. If so, insert
+
+  ```py
+  _topk = torch.topk
+  def topk(tensor: torch.Tensor, *args, **kwargs):
+      device = tensor.device
+      values, indices = _topk(tensor.cpu(), *args, **kwargs)
+      return torch.return_types.topk((values.to(device), indices.to(device),))
+  torch.topk = topk
+  ```
+
 #### 3DF Zephyr
 
 - ZLUDA is much slower than CUDA.

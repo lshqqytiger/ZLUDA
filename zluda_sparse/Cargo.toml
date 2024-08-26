@@ -8,6 +8,9 @@ edition = "2018"
 name = "cusparse"
 crate-type = ["cdylib"]
 
+[features]
+rocm5 = ["hip_common/rocm5", "hip_runtime-sys/rocm5", "zluda_dark_api/rocm5"]
+
 [dependencies]
 rocsparse-sys = { path = "../rocsparse-sys" }
 hip_common = { path = "../hip_common" }

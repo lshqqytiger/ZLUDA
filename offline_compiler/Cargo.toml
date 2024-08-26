@@ -8,6 +8,9 @@ edition = "2018"
 name = "zoc"
 path = "src/main.rs"
 
+[features]
+rocm5 = ["comgr/rocm5", "hip_common/rocm5", "hip_runtime-sys/rocm5", "ptx/rocm5"]
+
 [dependencies]
 comgr = { path = "../comgr" }
 hip_common = { path = "../hip_common" }
