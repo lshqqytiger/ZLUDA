@@ -59,6 +59,13 @@ impl Comgr {
     }
 
     #[cfg(windows)]
+    #[cfg(feature = "rocm5")]
+    unsafe fn load_library() -> std::result::Result<LibComgr, libloading::Error> {
+        LibComgr::new("amd_comgr.dll")
+    }
+
+    #[cfg(windows)]
+    #[cfg(not(feature = "rocm5"))]
     unsafe fn load_library() -> std::result::Result<LibComgr, libloading::Error> {
         LibComgr::new("amd_comgr_2.dll")
     }

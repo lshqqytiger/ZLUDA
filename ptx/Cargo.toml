@@ -6,6 +6,9 @@ edition = "2018"
 
 [lib]
 
+[features]
+rocm5 = ["hip_common/rocm5", "hip_runtime-sys/rocm5", "comgr/rocm5"]
+
 [dependencies]
 hip_common = { path = "../hip_common" }
 zluda_llvm = { path = "../zluda_llvm" }

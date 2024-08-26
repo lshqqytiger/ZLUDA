@@ -1,9 +1,15 @@
-[tasks.bindgen]
+[env]
+HIP_PATH_5 = { source = "${CARGO_MAKE_RUST_TARGET_OS}", mapping = { "linux" = "/opt/rocm/", "windows" = "${HIP_PATH_57}" } }
+HIP_PATH_6 = { source = "${CARGO_MAKE_RUST_TARGET_OS}", mapping = { "linux" = "/opt/rocm/", "windows" = "${HIP_PATH_61}" } }
+HEADER_5 = { source = "${CARGO_MAKE_RUST_TARGET_OS}", mapping = { "linux" = "/opt/rocm/include/hip_runtime_api.h", "windows" = "${HIP_PATH_5}/include/hip/hip_runtime_api.h" } }
+HEADER_6 = { source = "${CARGO_MAKE_RUST_TARGET_OS}", mapping = { "linux" = "/opt/rocm/include/hip_runtime_api.h", "windows" = "${HIP_PATH_6}/include/hip/hip_runtime_api.h" } }
+
+[tasks.bindgen_v5]
 command = "bindgen"
 args = [
-    "include/hip_runtime_api.h",
-    "-o", "src/hip_runtime_api.rs",
-    "--rust-target", "1.64",
+    "${HEADER_5}",
+    "-o", "src/hip_runtime_api_v5.rs",
+    "--rust-target", "1.71",
     "--no-layout-tests",
     "--no-derive-debug",
     "--default-enum-style=newtype",
@@ -12,6 +18,26 @@ args = [
     "--allowlist-type", "hip.*",
     "--allowlist-var", "^hip.*$",
     "--new-type-alias", "hipDeviceptr_t",
-    "--", "-I/opt/rocm/include", "-D__HIP_PLATFORM_AMD__",
-    "-IZ:/opt/rocm-5.7.2/include"
+    "--",
+    "-I", "${HIP_PATH_5}/include",
+    "-D__HIP_PLATFORM_AMD__"
+]
+
+[tasks.bindgen_v6]
+command = "bindgen"
+args = [
+    "${HEADER_6}",
+    "-o", "src/hip_runtime_api_v6.rs",
+    "--rust-target", "1.71",
+    "--no-layout-tests",
+    "--no-derive-debug",
+    "--default-enum-style=newtype",
+    "--must-use-type", "hipError_t",
+    "--allowlist-function", "hip.*",
+    "--allowlist-type", "hip.*",
+    "--allowlist-var", "^hip.*$",
+    "--new-type-alias", "hipDeviceptr_t",
+    "--",
+    "-I", "${HIP_PATH_6}/include",
+    "-D__HIP_PLATFORM_AMD__"
 ]

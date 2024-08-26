@@ -5,6 +5,9 @@ authors = ["Andrzej Janik <vosen@vosen.pl>"]
 edition = "2018"
 links = "amdhip"
 
+[features]
+rocm5 = []
+
 [lib]
 
 [dependencies]

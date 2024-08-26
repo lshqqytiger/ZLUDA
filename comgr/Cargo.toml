@@ -4,6 +4,9 @@ version = "0.0.0"
 authors = ["Andrzej Janik <vosen@vosen.pl>"]
 edition = "2018"
 
+[features]
+rocm5 = ["hip_common/rocm5"]
+
 [lib]
 
 [dependencies]

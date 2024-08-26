@@ -47,7 +47,7 @@ enum Subcommand {
 
 impl Default for Subcommand {
     fn default() -> Self {
-        Subcommand::Build(BuildCommand { release: false })
+        Subcommand::Build(BuildCommand { release: false, rocm5: false })
     }
 }
 
@@ -58,6 +58,10 @@ struct BuildCommand {
     /// build artifacts in release mode, with optimizations
     #[argh(switch, short = 'r')]
     release: bool,
+
+    /// build for ROCm 5 (Windows only)
+    #[argh(switch)]
+    rocm5: bool,
 }
 
 #[derive(FromArgs)]
@@ -68,18 +72,22 @@ struct ZipCommand {
     #[argh(switch, short = 'r')]
     #[allow(dead_code)]
     release: bool,
+
+    /// use artifacts for ROCm 5 (Windows only)
+    #[argh(switch)]
+    rocm5: bool,
 }
 
 fn main() -> Result<(), DynError> {
     let args: Arguments = argh::from_env();
     std::process::exit(match args.command {
-        Subcommand::Build(BuildCommand { release }) => build(!release)?,
-        Subcommand::Zip(ZipCommand { release }) => build_and_zip(!release),
+        Subcommand::Build(BuildCommand { release, rocm5 }) => build(!release, rocm5)?,
+        Subcommand::Zip(ZipCommand { release, rocm5 }) => build_and_zip(!release, rocm5),
     })
 }
 
-fn build_and_zip(is_debug: bool) -> i32 {
-    let workspace = build_impl(is_debug).unwrap();
+fn build_and_zip(is_debug: bool, rocm5: bool) -> i32 {
+    let workspace = build_impl(is_debug, rocm5).unwrap();
     os::zip(workspace)
 }
 
@@ -205,12 +213,12 @@ impl Project {
     }
 }
 
-fn build(is_debug: bool) -> Result<i32, DynError> {
-    build_impl(is_debug)?;
+fn build(is_debug: bool, rocm5: bool) -> Result<i32, DynError> {
+    build_impl(is_debug, rocm5)?;
     Ok(0)
 }
 
-fn build_impl(is_debug: bool) -> Result<Workspace, DynError> {
+fn build_impl(is_debug: bool, rocm5: bool) -> Result<Workspace, DynError> {
     let workspace = Workspace::open(is_debug)?;
     let mut command = workspace.cargo_command();
     command.arg("build");
@@ -223,6 +231,25 @@ fn build_impl(is_debug: bool) -> Result<Workspace, DynError> {
         });
     if !is_debug {
         command.arg("--release");
+    }
+    if cfg!(windows) { // Should we allow ROCm 5 for Linux?
+        if rocm5 {
+            command.args(["--features", "rocm5"]);
+        }
+        if let Ok(path_default) = env::var("HIP_PATH") {
+            env::set_var("HIP_PATH",
+                env::var(
+                    if rocm5 {
+                        "HIP_PATH_57"
+                    } else {
+                        "HIP_PATH_61"
+                    }
+                )
+                .unwrap_or(path_default)
+            );
+        } else {
+            return Err("Could not find HIP SDK installed. Please check if HIP_PATH is set.".into());
+        }
     }
     let build_result = command.status()?.code().unwrap();
     if build_result != 0 {

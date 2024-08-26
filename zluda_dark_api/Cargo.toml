@@ -6,6 +6,9 @@ edition = "2018"
 
 [lib]
 
+[features]
+rocm5 = ["hip_common/rocm5"]
+
 [dependencies]
 cuda_types = { path = "../cuda_types" }
 hip_common = { path = "../hip_common" }

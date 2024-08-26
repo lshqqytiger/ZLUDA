@@ -671,7 +671,7 @@ fn run_hip<Input: From<u8> + Copy + Debug, Output: From<u8> + Copy + Debug + Def
         let mut stream = ptr::null_mut();
         hip_call! { hipStreamCreateWithFlags(&mut stream, hipStreamNonBlocking) };
         let mut dev_props = unsafe { mem::zeroed() };
-        hip_call! { hipGetDevicePropertiesR0600(&mut dev_props, dev) };
+        hip_call! { hipGetDeviceProperties!(&mut dev_props, dev) };
         let mut module = ptr::null_mut();
         hip_call! { hipModuleLoadData(&mut module, compiled.as_ptr() as _) };
         let mut kernel = ptr::null_mut();

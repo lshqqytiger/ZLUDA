@@ -6,6 +6,9 @@ edition = "2018"
 
 [lib]
 
+[features]
+rocm5 = ["hip_runtime-sys/rocm5"]
+
 [dependencies]
 const_format = "0.2.30"
 hip_runtime-sys = { path = "../hip_runtime-sys" }
