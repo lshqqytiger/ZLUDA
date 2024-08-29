@@ -62,6 +62,37 @@ impl CudaDarkApi for CudaDarkApiZluda {
         device::primary_ctx_get(pctx, hip_dev).into_cuda()
     }
 
+    unsafe extern "system" fn set_device_flags(
+        dev: cuda_types::CUdevice,
+        flags: c_uint,
+    ) -> CUresult {
+        use hip_runtime_sys::*;
+        let hip_dev = FromCuda::from_cuda(dev);
+        let mut active_dev = 0i32;
+        let res = hipGetDevice(&mut active_dev as _).into_cuda();
+        if res != CUresult::CUDA_SUCCESS {
+            return res;
+        }
+        if hip_dev != active_dev {
+            let res = hipSetDevice(hip_dev).into_cuda();
+            if res != CUresult::CUDA_SUCCESS {
+                return res;
+            }
+        }
+        let res = hipSetDeviceFlags(flags).into_cuda();
+        if hip_dev != active_dev {
+            let _ = hipSetDevice(active_dev);
+        }
+        res
+    }
+
+    unsafe extern "system" fn set_device(
+        dev: cuda_types::CUdevice,
+    ) -> CUresult {
+        use hip_runtime_sys::*;
+        hipSetDevice(FromCuda::from_cuda(dev)).into_cuda()
+    }
+
     unsafe extern "system" fn get_module_from_cubin_ex1(
         module: *mut cuda_types::CUmodule,
         fatbinc_wrapper: *const zluda_dark_api::FatbincWrapper,
@@ -187,19 +218,24 @@ impl CudaDarkApi for CudaDarkApiZluda {
         context::create(pctx, flags, dev).into_cuda()
     }
 
-    unsafe extern "system" fn heap_alloc(
-        _halloc_ptr: *mut *mut zluda_dark_api::HeapAllocRecord,
-        _param1: usize,
-        _param2: usize,
+    // These two functions are stubs that only implement add/remove functionality and nothing else
+    unsafe extern "system" fn list_add(
+        precord: *mut *mut zluda_dark_api::ListRecord,
+        _func: *const c_void,
+        data: usize,
     ) -> CUresult {
-        super::unimplemented()
+        *(precord as *mut usize) = data;
+        CUresult::CUDA_SUCCESS
     }
 
-    unsafe extern "system" fn heap_free(
-        _halloc: *mut zluda_dark_api::HeapAllocRecord,
-        _param2: *mut usize,
+    unsafe extern "system" fn list_remove(
+        record: *mut zluda_dark_api::ListRecord,
+        pdata: *mut usize,
     ) -> CUresult {
-        super::unimplemented()
+        if pdata != ptr::null_mut() {
+            *pdata = record as usize;
+        }
+        CUresult::CUDA_SUCCESS
     }
 
     unsafe extern "system" fn device_get_attribute_ex(
