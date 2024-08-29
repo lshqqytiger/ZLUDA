@@ -69,13 +69,19 @@ impl CudaDarkApi for CudaDarkApiZluda {
         use hip_runtime_sys::*;
         let hip_dev = FromCuda::from_cuda(dev);
         let mut active_dev = 0i32;
-        hipGetDevice(&mut active_dev as _);
+        let res = hipGetDevice(&mut active_dev as _).into_cuda();
+        if res != CUresult::CUDA_SUCCESS {
+            return res;
+        }
         if hip_dev != active_dev {
-            hipSetDevice(hip_dev);
+            let res = hipSetDevice(hip_dev).into_cuda();
+            if res != CUresult::CUDA_SUCCESS {
+                return res;
+            }
         }
         let res = hipSetDeviceFlags(flags).into_cuda();
         if hip_dev != active_dev {
-            hipSetDevice(active_dev);
+            let _ = hipSetDevice(active_dev);
         }
         res
     }
