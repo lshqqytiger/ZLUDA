@@ -55,8 +55,8 @@ unsafe fn to_stream(stream: cudaStream_t) -> hipStream_t {
     maybe_hip_stream.unwrap() as _
 }
 
-fn to_hip_memcpy_kind(memcpy_kind: cudaMemcpyKind) -> hipMemcpyKind {
-    match memcpy_kind {
+fn memcpy_kind(kind: cudaMemcpyKind) -> hipMemcpyKind {
+    match kind {
         cudaMemcpyKind::cudaMemcpyHostToHost => hipMemcpyKind::hipMemcpyHostToHost,
         cudaMemcpyKind::cudaMemcpyHostToDevice => hipMemcpyKind::hipMemcpyHostToDevice,
         cudaMemcpyKind::cudaMemcpyDeviceToHost => hipMemcpyKind::hipMemcpyDeviceToHost,
@@ -68,29 +68,49 @@ fn to_hip_memcpy_kind(memcpy_kind: cudaMemcpyKind) -> hipMemcpyKind {
 
 fn to_hip_mem_pool_attr(mem_pool_attr: cudaMemPoolAttr) -> hipMemPoolAttr {
     match mem_pool_attr {
-        cudaMemPoolAttr::cudaMemPoolReuseFollowEventDependencies => hipMemPoolAttr::hipMemPoolReuseFollowEventDependencies,
-        cudaMemPoolAttr::cudaMemPoolReuseAllowOpportunistic => hipMemPoolAttr::hipMemPoolReuseAllowOpportunistic,
-        cudaMemPoolAttr::cudaMemPoolReuseAllowInternalDependencies => hipMemPoolAttr::hipMemPoolReuseAllowInternalDependencies,
-        cudaMemPoolAttr::cudaMemPoolAttrReleaseThreshold => hipMemPoolAttr::hipMemPoolAttrReleaseThreshold,
-        cudaMemPoolAttr::cudaMemPoolAttrReservedMemCurrent => hipMemPoolAttr::hipMemPoolAttrReservedMemCurrent,
-        cudaMemPoolAttr::cudaMemPoolAttrReservedMemHigh => hipMemPoolAttr::hipMemPoolAttrReservedMemHigh,
-        cudaMemPoolAttr::cudaMemPoolAttrUsedMemCurrent => hipMemPoolAttr::hipMemPoolAttrUsedMemCurrent,
+        cudaMemPoolAttr::cudaMemPoolReuseFollowEventDependencies => {
+            hipMemPoolAttr::hipMemPoolReuseFollowEventDependencies
+        }
+        cudaMemPoolAttr::cudaMemPoolReuseAllowOpportunistic => {
+            hipMemPoolAttr::hipMemPoolReuseAllowOpportunistic
+        }
+        cudaMemPoolAttr::cudaMemPoolReuseAllowInternalDependencies => {
+            hipMemPoolAttr::hipMemPoolReuseAllowInternalDependencies
+        }
+        cudaMemPoolAttr::cudaMemPoolAttrReleaseThreshold => {
+            hipMemPoolAttr::hipMemPoolAttrReleaseThreshold
+        }
+        cudaMemPoolAttr::cudaMemPoolAttrReservedMemCurrent => {
+            hipMemPoolAttr::hipMemPoolAttrReservedMemCurrent
+        }
+        cudaMemPoolAttr::cudaMemPoolAttrReservedMemHigh => {
+            hipMemPoolAttr::hipMemPoolAttrReservedMemHigh
+        }
+        cudaMemPoolAttr::cudaMemPoolAttrUsedMemCurrent => {
+            hipMemPoolAttr::hipMemPoolAttrUsedMemCurrent
+        }
         cudaMemPoolAttr::cudaMemPoolAttrUsedMemHigh => hipMemPoolAttr::hipMemPoolAttrUsedMemHigh,
         _ => panic!(),
     }
 }
 
-fn to_cuda_stream_capture_status(stream_capture_status: hipStreamCaptureStatus) -> cudaStreamCaptureStatus {
-    match stream_capture_status {
-        hipStreamCaptureStatus::hipStreamCaptureStatusNone => cudaStreamCaptureStatus::cudaStreamCaptureStatusNone,
-        hipStreamCaptureStatus::hipStreamCaptureStatusActive => cudaStreamCaptureStatus::cudaStreamCaptureStatusActive,
-        hipStreamCaptureStatus::hipStreamCaptureStatusInvalidated => cudaStreamCaptureStatus::cudaStreamCaptureStatusInvalidated,
+fn to_cuda_stream_capture_status(status: hipStreamCaptureStatus) -> cudaStreamCaptureStatus {
+    match status {
+        hipStreamCaptureStatus::hipStreamCaptureStatusNone => {
+            cudaStreamCaptureStatus::cudaStreamCaptureStatusNone
+        }
+        hipStreamCaptureStatus::hipStreamCaptureStatusActive => {
+            cudaStreamCaptureStatus::cudaStreamCaptureStatusActive
+        }
+        hipStreamCaptureStatus::hipStreamCaptureStatusInvalidated => {
+            cudaStreamCaptureStatus::cudaStreamCaptureStatusInvalidated
+        }
         _ => panic!(),
     }
 }
 
-fn to_hip_dim3(dim: cudart::dim3) -> hip_runtime_api::dim3 {
-    hip_runtime_api::dim3 {
+fn to_hip_dim3(dim: cudart::dim3) -> hip_runtime_sys::dim3 {
+    hip_runtime_sys::dim3 {
         x: dim.x,
         y: dim.y,
         z: dim.z,
@@ -121,10 +141,7 @@ unsafe fn push_call_configuration(
     let block_dim = to_hip_dim3(block_dim);
     let stream = to_stream(stream);
     to_cuda(__hipPushCallConfiguration(
-        grid_dim,
-        block_dim,
-        shared_mem,
-        stream,
+        grid_dim, block_dim, shared_mem, stream,
     ))
 }
 
@@ -134,20 +151,14 @@ unsafe fn register_fat_binary(
     __hipRegisterFatBinary(fat_cubin)
 }
 
-unsafe fn register_fat_binary_end(
-    _fat_cubin_handle: *mut *mut ::std::os::raw::c_void,
-) -> () {
-    //__hipRegisterFatBinaryEnd(fat_cubin_handle)
-}
-
 unsafe fn register_function(
     fat_cubin_handle: *mut *mut ::std::os::raw::c_void,
     host_fun: *const ::std::os::raw::c_char,
     device_fun: *mut ::std::os::raw::c_char,
     device_name: *const ::std::os::raw::c_char,
     thread_limit: i32,
-    tid: *mut ::std::os::raw::c_void,
-    bid: *mut ::std::os::raw::c_void,
+    tid: *mut uint3,
+    bid: *mut uint3,
     b_dim: *mut cudart::dim3,
     g_dim: *mut cudart::dim3,
     w_size: *mut i32,
@@ -158,8 +169,8 @@ unsafe fn register_function(
         device_fun,
         device_name,
         thread_limit as _,
-        tid,
-        bid,
+        tid.cast(),
+        bid.cast(),
         b_dim.cast(),
         g_dim.cast(),
         w_size,
@@ -256,8 +267,8 @@ unsafe fn register_var(
 ) -> ::std::os::raw::c_void {
     __hipRegisterVar(
         fat_cubin_handle,
-        host_var.cast(),
-        device_address,
+        device_address.cast(),
+        host_var,
         device_name.cast_mut(),
         ext,
         size,
@@ -294,10 +305,7 @@ unsafe fn device_get_by_pci_bus_id(
     device: *mut i32,
     pci_bus_id: *const ::std::os::raw::c_char,
 ) -> cudaError_t {
-    to_cuda(hipDeviceGetByPCIBusId(
-        device,
-        pci_bus_id,
-    ))
+    to_cuda(hipDeviceGetByPCIBusId(device, pci_bus_id))
 }
 
 unsafe fn device_get_pci_bus_id(
@@ -305,36 +313,24 @@ unsafe fn device_get_pci_bus_id(
     len: i32,
     device: i32,
 ) -> cudaError_t {
-    to_cuda(hipDeviceGetPCIBusId(
-        pci_bus_id,
-        len,
-        device,
-    ))
+    to_cuda(hipDeviceGetPCIBusId(pci_bus_id, len, device))
 }
 
 unsafe fn ipc_get_event_handle(
     handle: *mut cudaIpcEventHandle_t,
     event: cudaEvent_t,
 ) -> cudaError_t {
-    to_cuda(hipIpcGetEventHandle(
-        handle.cast(),
-        event.cast(),
-    ))
+    to_cuda(hipIpcGetEventHandle(handle.cast(), event.cast()))
 }
 
 unsafe fn ipc_get_mem_handle(
     handle: *mut cudaIpcMemHandle_t,
     dev_ptr: *mut ::std::os::raw::c_void,
 ) -> cudaError_t {
-    to_cuda(hipIpcGetMemHandle(
-        handle.cast(),
-        dev_ptr,
-    ))
+    to_cuda(hipIpcGetMemHandle(handle.cast(), dev_ptr))
 }
 
-unsafe fn ipc_close_mem_handle(
-    dev_ptr: *mut ::std::os::raw::c_void,
-) -> cudaError_t {
+unsafe fn ipc_close_mem_handle(dev_ptr: *mut ::std::os::raw::c_void) -> cudaError_t {
     to_cuda(hipIpcCloseMemHandle(dev_ptr))
 }
 
@@ -346,103 +342,57 @@ unsafe fn peek_at_last_error() -> cudaError_t {
     to_cuda(hipPeekAtLastError())
 }
 
-unsafe fn get_error_name(
-    error: cudaError_t,
-) -> *const ::std::os::raw::c_char {
+unsafe fn get_error_name(error: cudaError_t) -> *const ::std::os::raw::c_char {
     let error = to_hip(error);
     hipGetErrorName(error)
 }
 
-unsafe fn get_error_string(
-    error: cudaError_t,
-) -> *const ::std::os::raw::c_char {
+unsafe fn get_error_string(error: cudaError_t) -> *const ::std::os::raw::c_char {
     let error = to_hip(error);
     hipGetErrorString(error)
 }
 
-unsafe fn get_device_count(
-    count: *mut i32,
-) -> cudaError_t {
+unsafe fn get_device_count(count: *mut i32) -> cudaError_t {
     to_cuda(hipGetDeviceCount(count))
 }
 
-unsafe fn get_device_properties(
-    prop: *mut cudaDeviceProp,
-    device: i32,
-) -> cudaError_t {
-    to_cuda(hipGetDevicePropertiesR0600(
-        prop.cast(),
-        device,
-    ))
+unsafe fn get_device_properties(prop: *mut cudaDeviceProp, device: i32) -> cudaError_t {
+    to_cuda(hipGetDeviceProperties!(prop.cast(), device))
 }
 
-unsafe fn device_get_default_mem_pool(
-    mem_pool: *mut cudaMemPool_t,
-    device: i32,
-) -> cudaError_t {
-    to_cuda(hipDeviceGetDefaultMemPool(
-        mem_pool.cast(),
-        device,
-    ))
+unsafe fn device_get_default_mem_pool(mem_pool: *mut cudaMemPool_t, device: i32) -> cudaError_t {
+    to_cuda(hipDeviceGetDefaultMemPool(mem_pool.cast(), device))
 }
 
-unsafe fn device_set_mem_pool(
-    device: i32,
-    mem_pool: cudaMemPool_t,
-) -> cudaError_t {
-    to_cuda(hipDeviceSetMemPool(
-        device,
-        mem_pool.cast(),
-    ))
+unsafe fn device_set_mem_pool(device: i32, mem_pool: cudaMemPool_t) -> cudaError_t {
+    to_cuda(hipDeviceSetMemPool(device, mem_pool.cast()))
 }
 
-unsafe fn device_get_mem_pool(
-    mem_pool: *mut cudaMemPool_t,
-    device: i32,
-) -> cudaError_t {
-    to_cuda(hipDeviceGetMemPool(
-        mem_pool.cast(),
-        device,
-    ))
+unsafe fn device_get_mem_pool(mem_pool: *mut cudaMemPool_t, device: i32) -> cudaError_t {
+    to_cuda(hipDeviceGetMemPool(mem_pool.cast(), device))
 }
 
-unsafe fn set_device(
-    device: i32,
-) -> cudaError_t {
+unsafe fn set_device(device: i32) -> cudaError_t {
     to_cuda(hipSetDevice(device))
 }
 
-unsafe fn get_device(
-    device: *mut i32,
-) -> cudaError_t {
+unsafe fn get_device(device: *mut i32) -> cudaError_t {
     to_cuda(hipGetDevice(device))
 }
 
-unsafe fn set_device_flags(
-    flags: u32,
-) -> cudaError_t {
+unsafe fn set_device_flags(flags: u32) -> cudaError_t {
     to_cuda(hipSetDeviceFlags(flags))
 }
 
-unsafe fn get_device_flags(
-    flags: *mut u32,
-) -> cudaError_t {
+unsafe fn get_device_flags(flags: *mut u32) -> cudaError_t {
     to_cuda(hipGetDeviceFlags(flags))
 }
 
-unsafe fn stream_create(
-    p_stream: *mut cudaStream_t,
-) -> cudaError_t {
-    stream_create_with_flags(
-        p_stream,
-        0,
-    )
+unsafe fn stream_create(p_stream: *mut cudaStream_t) -> cudaError_t {
+    stream_create_with_flags(p_stream, 0)
 }
 
-unsafe fn stream_create_with_flags(
-    p_stream: *mut cudaStream_t,
-    flags: u32,
-) -> cudaError_t {
+unsafe fn stream_create_with_flags(p_stream: *mut cudaStream_t, flags: u32) -> cudaError_t {
     let lib = hip_common::zluda_ext::get_cuda_library().unwrap();
     let cu_stream_create = lib
         .get::<unsafe extern "C" fn(
@@ -450,10 +400,7 @@ unsafe fn stream_create_with_flags(
             Flags: ::std::os::raw::c_uint,
         ) -> cuda_types::CUresult>(b"cuStreamCreate\0")
         .unwrap();
-    cudaError_t((cu_stream_create)(
-        p_stream.cast(),
-        flags,
-    ).0)
+    cudaError_t((cu_stream_create)(p_stream.cast(), flags).0)
 }
 
 unsafe fn stream_create_with_priority(
@@ -469,80 +416,42 @@ unsafe fn stream_create_with_priority(
             priority: ::std::os::raw::c_int,
         ) -> cuda_types::CUresult>(b"cuStreamCreateWithPriority\0")
         .unwrap();
-    cudaError_t((cu_stream_create_with_priority)(
-        p_stream.cast(),
-        flags,
-        priority,
-    ).0)
+    cudaError_t((cu_stream_create_with_priority)(p_stream.cast(), flags, priority).0)
 }
 
-unsafe fn stream_get_priority(
-    h_stream: cudaStream_t,
-    priority: *mut i32,
-) -> cudaError_t {
+unsafe fn stream_get_priority(h_stream: cudaStream_t, priority: *mut i32) -> cudaError_t {
     let h_stream = to_stream(h_stream);
-    to_cuda(hipStreamGetPriority(
-        h_stream,
-        priority,
-    ))
+    to_cuda(hipStreamGetPriority(h_stream, priority))
 }
 
-unsafe fn stream_get_priority_ptsz(
-    h_stream: cudaStream_t,
-    priority: *mut i32,
-) -> cudaError_t {
+unsafe fn stream_get_priority_ptsz(h_stream: cudaStream_t, priority: *mut i32) -> cudaError_t {
     let h_stream = to_stream(h_stream);
-    to_cuda(hipStreamGetPriority_spt(
-        h_stream,
-        priority,
-    ))
+    to_cuda(hipStreamGetPriority_spt(h_stream, priority))
 }
 
-unsafe fn stream_get_flags(
-    h_stream: cudaStream_t,
-    flags: *mut u32,
-) -> cudaError_t {
+unsafe fn stream_get_flags(h_stream: cudaStream_t, flags: *mut u32) -> cudaError_t {
     let h_stream = to_stream(h_stream);
-    to_cuda(hipStreamGetFlags(
-        h_stream,
-        flags,
-    ))
+    to_cuda(hipStreamGetFlags(h_stream, flags))
 }
 
-unsafe fn stream_get_flags_ptsz(
-    h_stream: cudaStream_t,
-    flags: *mut u32,
-) -> cudaError_t {
+unsafe fn stream_get_flags_ptsz(h_stream: cudaStream_t, flags: *mut u32) -> cudaError_t {
     let h_stream = to_stream(h_stream);
-    to_cuda(hipStreamGetFlags_spt(
-        h_stream,
-        flags,
-    ))
+    to_cuda(hipStreamGetFlags_spt(h_stream, flags))
 }
 
-unsafe fn stream_destroy(
-    stream: cudaStream_t,
-) -> cudaError_t {
+unsafe fn stream_destroy(stream: cudaStream_t) -> cudaError_t {
     let lib = hip_common::zluda_ext::get_cuda_library().unwrap();
     let cu_stream_destroy = lib
-        .get::<unsafe extern "C" fn(hStream: cuda_types::CUstream) -> cuda_types::CUresult>(b"cuStreamDestroy\0")
+        .get::<unsafe extern "C" fn(hStream: cuda_types::CUstream) -> cuda_types::CUresult>(
+            b"cuStreamDestroy\0",
+        )
         .unwrap();
-    cudaError_t((cu_stream_destroy)(
-        stream.cast(),
-    ).0)
+    cudaError_t((cu_stream_destroy)(stream.cast()).0)
 }
 
-unsafe fn stream_wait_event(
-    stream: cudaStream_t,
-    event: cudaEvent_t,
-    flags: u32,
-) -> cudaError_t {
+unsafe fn stream_wait_event(stream: cudaStream_t, event: cudaEvent_t, flags: u32) -> cudaError_t {
     let stream = to_stream(stream);
-    to_cuda(hipStreamWaitEvent(
-        stream,
-        event.cast(),
-        flags,
-    ))
+    to_cuda(hipStreamWaitEvent(stream, event.cast(), flags))
 }
 
 unsafe fn stream_wait_event_ptsz(
@@ -558,37 +467,25 @@ unsafe fn stream_wait_event_ptsz(
             Flags: ::std::os::raw::c_uint,
         ) -> cuda_types::CUresult>(b"cuStreamWaitEvent_ptsz\0")
         .unwrap();
-    cudaError_t((cu_stream_wait_event)(
-        stream.cast(),
-        event.cast(),
-        flags,
-    ).0)
+    cudaError_t((cu_stream_wait_event)(stream.cast(), event.cast(), flags).0)
 }
 
-unsafe fn stream_synchronize(
-    stream: cudaStream_t,
-) -> cudaError_t {
+unsafe fn stream_synchronize(stream: cudaStream_t) -> cudaError_t {
     let stream = to_stream(stream);
     to_cuda(hipStreamSynchronize(stream))
 }
 
-unsafe fn stream_synchronize_ptsz(
-    stream: cudaStream_t,
-) -> cudaError_t {
+unsafe fn stream_synchronize_ptsz(stream: cudaStream_t) -> cudaError_t {
     let lib = hip_common::zluda_ext::get_cuda_library().unwrap();
     let cu_stream_synchronize = lib
-        .get::<unsafe extern "C" fn(
-            hStream: cuda_types::CUstream,
-        ) -> cuda_types::CUresult>(b"cuStreamSynchronize_ptsz\0")
+        .get::<unsafe extern "C" fn(hStream: cuda_types::CUstream) -> cuda_types::CUresult>(
+            b"cuStreamSynchronize_ptsz\0",
+        )
         .unwrap();
-    cudaError_t((cu_stream_synchronize)(
-        stream.cast(),
-    ).0)
+    cudaError_t((cu_stream_synchronize)(stream.cast()).0)
 }
 
-unsafe fn stream_query(
-    stream: cudaStream_t,
-) -> cudaError_t {
+unsafe fn stream_query(stream: cudaStream_t) -> cudaError_t {
     let stream = to_stream(stream);
     to_cuda(hipStreamQuery(stream))
 }
@@ -600,23 +497,12 @@ unsafe fn stream_attach_mem_async(
     flags: u32,
 ) -> cudaError_t {
     let stream = to_stream(stream);
-    to_cuda(hipStreamAttachMemAsync(
-        stream,
-        dev_ptr,
-        length,
-        flags,
-    ))
+    to_cuda(hipStreamAttachMemAsync(stream, dev_ptr, length, flags))
 }
 
-unsafe fn stream_end_capture(
-    stream: cudaStream_t,
-    p_graph: *mut cudaGraph_t,
-) -> cudaError_t {
+unsafe fn stream_end_capture(stream: cudaStream_t, p_graph: *mut cudaGraph_t) -> cudaError_t {
     let stream = to_stream(stream);
-    to_cuda(hipStreamEndCapture(
-        stream,
-        p_graph.cast(),
-    ))
+    to_cuda(hipStreamEndCapture(stream, p_graph.cast()))
 }
 
 unsafe fn stream_is_capturing(
@@ -625,10 +511,7 @@ unsafe fn stream_is_capturing(
 ) -> cudaError_t {
     let stream = to_stream(stream);
     let mut capture_status = mem::zeroed();
-    let status = to_cuda(hipStreamIsCapturing(
-        stream,
-        &mut capture_status,
-    ));
+    let status = to_cuda(hipStreamIsCapturing(stream, &mut capture_status));
     *p_capture_status = to_cuda_stream_capture_status(capture_status);
     status
 }
@@ -640,78 +523,38 @@ unsafe fn stream_get_capture_info(
 ) -> cudaError_t {
     let stream = to_stream(stream);
     let mut capture_status = mem::zeroed();
-    let status = to_cuda(hipStreamGetCaptureInfo(
-        stream,
-        &mut capture_status,
-        p_id,
-    ));
+    let status = to_cuda(hipStreamGetCaptureInfo(stream, &mut capture_status, p_id));
     *p_capture_status = to_cuda_stream_capture_status(capture_status);
     status
 }
 
-unsafe fn event_create(
-    event: *mut cudaEvent_t,
-) -> cudaError_t {
-    to_cuda(hipEventCreate(
-        event.cast(),
-    ))
+unsafe fn event_create(event: *mut cudaEvent_t) -> cudaError_t {
+    to_cuda(hipEventCreate(event.cast()))
 }
 
-unsafe fn event_create_with_flags(
-    event: *mut cudaEvent_t,
-    flags: u32,
-) -> cudaError_t {
-    to_cuda(hipEventCreateWithFlags(
-        event.cast(),
-        flags,
-    ))
+unsafe fn event_create_with_flags(event: *mut cudaEvent_t, flags: u32) -> cudaError_t {
+    to_cuda(hipEventCreateWithFlags(event.cast(), flags))
 }
 
-unsafe fn event_record(
-    event: cudaEvent_t,
-    stream: cudaStream_t,
-) -> cudaError_t {
+unsafe fn event_record(event: cudaEvent_t, stream: cudaStream_t) -> cudaError_t {
     let stream = to_stream(stream);
-    to_cuda(hipEventRecord(
-        event.cast(),
-        stream,
-    ))
+    to_cuda(hipEventRecord(event.cast(), stream))
 }
 
-unsafe fn event_query(
-    event: cudaEvent_t,
-) -> cudaError_t {
-    to_cuda(hipEventQuery(
-        event.cast(),
-    ))
+unsafe fn event_query(event: cudaEvent_t) -> cudaError_t {
+    to_cuda(hipEventQuery(event.cast()))
 }
 
-unsafe fn event_synchronize(
-    event: cudaEvent_t,
-) -> cudaError_t {
-    to_cuda(hipEventSynchronize(
-        event.cast(),
-    ))
+unsafe fn event_synchronize(event: cudaEvent_t) -> cudaError_t {
+    to_cuda(hipEventSynchronize(event.cast()))
 }
 
-unsafe fn event_destroy(
-    event: cudaEvent_t,
-) -> cudaError_t {
-    to_cuda(hipEventDestroy(
-        event.cast(),
-    ))
+unsafe fn event_destroy(event: cudaEvent_t) -> cudaError_t {
+    to_cuda(hipEventDestroy(event.cast()))
 }
 
-unsafe fn event_elapsed_time(
-    ms: *mut f32,
-    start: cudaEvent_t,
-    end: cudaEvent_t,
-) -> cudaError_t {
-    to_cuda(hipEventElapsedTime(
-        ms,
-        start.cast(),
-        end.cast(),
-    ))
+unsafe fn event_elapsed_time(ms: *mut f32, start: cudaEvent_t, end: cudaEvent_t) -> cudaError_t {
+    to_cuda(hipEventElapsedTime(ms, start.cast(), end.cast()))
 }
 
 unsafe fn launch_kernel(
@@ -726,12 +569,7 @@ unsafe fn launch_kernel(
     let block_dim = to_hip_dim3(block_dim);
     let stream = to_stream(stream); // TODO
     to_cuda(hipLaunchKernel(
-        func,
-        grid_dim,
-        block_dim,
-        args,
-        shared_mem,
-        stream,
+        func, grid_dim, block_dim, args, shared_mem, stream,
     ))
 }
 
@@ -762,11 +600,7 @@ unsafe fn launch_host_func(
     user_data: *mut ::std::os::raw::c_void,
 ) -> cudaError_t {
     let stream = to_stream(stream);
-    to_cuda(hipLaunchHostFunc(
-        stream,
-        fn_,
-        user_data,
-    ))
+    to_cuda(hipLaunchHostFunc(stream, fn_, user_data))
 }
 
 unsafe fn occupancy_max_active_blocks_per_multiprocessor_with_flags(
@@ -786,13 +620,16 @@ unsafe fn occupancy_max_active_blocks_per_multiprocessor_with_flags(
             flags: ::std::os::raw::c_uint,
         ) -> cuda_types::CUresult>(b"cuOccupancyMaxActiveBlocksPerMultiprocessorWithFlags\0")
         .unwrap();
-    cudaError_t((cu_stream_synchronize)(
-        num_blocks,
-        func.cast(),
-        block_size,
-        dynamic_s_mem_size,
-        flags,
-    ).0)
+    cudaError_t(
+        (cu_stream_synchronize)(
+            num_blocks,
+            func.cast(),
+            block_size,
+            dynamic_s_mem_size,
+            flags,
+        )
+        .0,
+    )
 }
 
 unsafe fn malloc_managed(
@@ -800,31 +637,15 @@ unsafe fn malloc_managed(
     size: usize,
     flags: u32,
 ) -> cudaError_t {
-    to_cuda(hipMallocManaged(
-        dev_ptr,
-        size,
-        flags,
-    ))
+    to_cuda(hipMallocManaged(dev_ptr, size, flags))
 }
 
-unsafe fn malloc(
-    dev_ptr: *mut *mut ::std::os::raw::c_void,
-    size: usize,
-) -> cudaError_t {
-    to_cuda(hipMalloc(
-        dev_ptr,
-        size,
-    ))
+unsafe fn malloc(dev_ptr: *mut *mut ::std::os::raw::c_void, size: usize) -> cudaError_t {
+    to_cuda(hipMalloc(dev_ptr, size))
 }
 
-unsafe fn malloc_host(
-    ptr: *mut *mut ::std::os::raw::c_void,
-    size: usize,
-) -> cudaError_t {
-    to_cuda(hipMallocHost(
-        ptr,
-        size,
-    ))
+unsafe fn malloc_host(ptr: *mut *mut ::std::os::raw::c_void, size: usize) -> cudaError_t {
+    to_cuda(hipMallocHost(ptr, size))
 }
 
 unsafe fn malloc_pitch(
@@ -833,40 +654,23 @@ unsafe fn malloc_pitch(
     width: usize,
     height: usize,
 ) -> cudaError_t {
-    to_cuda(hipMallocPitch(
-        dev_ptr,
-        pitch,
-        width,
-        height,
-    ))
+    to_cuda(hipMallocPitch(dev_ptr, pitch, width, height))
 }
 
-unsafe fn free(
-    dev_ptr: *mut ::std::os::raw::c_void,
-) -> cudaError_t {
+unsafe fn free(dev_ptr: *mut ::std::os::raw::c_void) -> cudaError_t {
     to_cuda(hipFree(dev_ptr))
 }
 
-unsafe fn free_host(
-    ptr: *mut ::std::os::raw::c_void,
-) -> cudaError_t {
+unsafe fn free_host(ptr: *mut ::std::os::raw::c_void) -> cudaError_t {
     to_cuda(hipFreeHost(ptr))
 }
 
-unsafe fn free_array(
-    array: cudaArray_t,
-) -> cudaError_t {
-    to_cuda(hipFreeArray(
-        array.cast(),
-    ))
+unsafe fn free_array(array: cudaArray_t) -> cudaError_t {
+    to_cuda(hipFreeArray(array.cast()))
 }
 
-unsafe fn free_mipmapped_array(
-    mipmapped_array: cudaMipmappedArray_t,
-) -> cudaError_t {
-    to_cuda(hipFreeMipmappedArray(
-        mipmapped_array.cast(),
-    ))
+unsafe fn free_mipmapped_array(mipmapped_array: cudaMipmappedArray_t) -> cudaError_t {
+    to_cuda(hipFreeMipmappedArray(mipmapped_array.cast()))
 }
 
 unsafe fn host_alloc(
@@ -874,28 +678,14 @@ unsafe fn host_alloc(
     size: usize,
     flags: u32,
 ) -> cudaError_t {
-    to_cuda(hipHostAlloc(
-        p_host,
-        size,
-        flags,
-    ))
+    to_cuda(hipHostAlloc(p_host, size, flags))
 }
 
-unsafe fn host_register(
-    ptr: *mut ::std::os::raw::c_void,
-    size: usize,
-    flags: u32,
-) -> cudaError_t {
-    to_cuda(hipHostRegister(
-        ptr,
-        size,
-        flags,
-    ))
+unsafe fn host_register(ptr: *mut ::std::os::raw::c_void, size: usize, flags: u32) -> cudaError_t {
+    to_cuda(hipHostRegister(ptr, size, flags))
 }
 
-unsafe fn host_unregister(
-    ptr: *mut ::std::os::raw::c_void,
-) -> cudaError_t {
+unsafe fn host_unregister(ptr: *mut ::std::os::raw::c_void) -> cudaError_t {
     to_cuda(hipHostUnregister(ptr))
 }
 
@@ -904,21 +694,11 @@ unsafe fn host_get_device_pointer(
     p_host: *mut ::std::os::raw::c_void,
     flags: u32,
 ) -> cudaError_t {
-    to_cuda(hipHostGetDevicePointer(
-        p_device,
-        p_host,
-        flags,
-    ))
+    to_cuda(hipHostGetDevicePointer(p_device, p_host, flags))
 }
 
-unsafe fn host_get_flags(
-    p_flags: *mut u32,
-    p_host: *mut ::std::os::raw::c_void,
-) -> cudaError_t {
-    to_cuda(hipHostGetFlags(
-        p_flags,
-        p_host,
-    ))
+unsafe fn host_get_flags(p_flags: *mut u32, p_host: *mut ::std::os::raw::c_void) -> cudaError_t {
+    to_cuda(hipHostGetFlags(p_flags, p_host))
 }
 
 unsafe fn get_mipmapped_array_level(
@@ -933,14 +713,8 @@ unsafe fn get_mipmapped_array_level(
     ))
 }
 
-unsafe fn mem_get_info(
-    free: *mut usize,
-    total: *mut usize,
-) -> cudaError_t {
-    to_cuda(hipMemGetInfo(
-        free,
-        total,
-    ))
+unsafe fn mem_get_info(free: *mut usize, total: *mut usize) -> cudaError_t {
+    to_cuda(hipMemGetInfo(free, total))
 }
 
 unsafe fn memcpy(
@@ -949,13 +723,8 @@ unsafe fn memcpy(
     count: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
-    to_cuda(hipMemcpy(
-        dst,
-        src,
-        count,
-        kind,
-    ))
+    let kind = memcpy_kind(kind);
+    to_cuda(hipMemcpy(dst, src, count, kind))
 }
 
 unsafe fn memcpy_ptds(
@@ -964,13 +733,8 @@ unsafe fn memcpy_ptds(
     count: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
-    to_cuda(hipMemcpy_spt(
-        dst,
-        src,
-        count,
-        kind,
-    ))
+    let kind = memcpy_kind(kind);
+    to_cuda(hipMemcpy_spt(dst, src, count, kind))
 }
 
 unsafe fn memcpy_peer(
@@ -980,13 +744,7 @@ unsafe fn memcpy_peer(
     src_device: i32,
     count: usize,
 ) -> cudaError_t {
-    to_cuda(hipMemcpyPeer(
-        dst,
-        dst_device,
-        src,
-        src_device,
-        count,
-    ))
+    to_cuda(hipMemcpyPeer(dst, dst_device, src, src_device, count))
 }
 
 unsafe fn memcpy_2d(
@@ -998,16 +756,8 @@ unsafe fn memcpy_2d(
     height: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
-    to_cuda(hipMemcpy2D(
-        dst,
-        dpitch,
-        src,
-        spitch,
-        width,
-        height,
-        kind,
-    ))
+    let kind = memcpy_kind(kind);
+    to_cuda(hipMemcpy2D(dst, dpitch, src, spitch, width, height, kind))
 }
 
 unsafe fn memcpy_2d_ptds(
@@ -1019,15 +769,9 @@ unsafe fn memcpy_2d_ptds(
     height: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipMemcpy2D_spt(
-        dst,
-        dpitch,
-        src,
-        spitch,
-        width,
-        height,
-        kind,
+        dst, dpitch, src, spitch, width, height, kind,
     ))
 }
 
@@ -1041,7 +785,7 @@ unsafe fn memcpy_2d_to_array(
     height: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipMemcpy2DToArray(
         dst.cast(),
         w_offset,
@@ -1064,7 +808,7 @@ unsafe fn memcpy_2d_to_array_ptds(
     height: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipMemcpy2DToArray_spt(
         dst.cast(),
         w_offset,
@@ -1087,7 +831,7 @@ unsafe fn memcpy_2d_from_array(
     height: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipMemcpy2DFromArray(
         dst,
         dpitch,
@@ -1110,7 +854,7 @@ unsafe fn memcpy_2d_from_array_ptds(
     height: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipMemcpy2DFromArray_spt(
         dst,
         dpitch,
@@ -1130,14 +874,8 @@ unsafe fn memcpy_to_symbol(
     offset: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
-    to_cuda(hipMemcpyToSymbol(
-        symbol,
-        src,
-        count,
-        offset,
-        kind,
-    ))
+    let kind = memcpy_kind(kind);
+    to_cuda(hipMemcpyToSymbol(symbol, src, count, offset, kind))
 }
 
 unsafe fn memcpy_to_symbol_ptds(
@@ -1147,14 +885,8 @@ unsafe fn memcpy_to_symbol_ptds(
     offset: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
-    to_cuda(hipMemcpyToSymbol_spt(
-        symbol,
-        src,
-        count,
-        offset,
-        kind,
-    ))
+    let kind = memcpy_kind(kind);
+    to_cuda(hipMemcpyToSymbol_spt(symbol, src, count, offset, kind))
 }
 
 unsafe fn memcpy_from_symbol(
@@ -1164,14 +896,8 @@ unsafe fn memcpy_from_symbol(
     offset: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
-    to_cuda(hipMemcpyFromSymbol(
-        dst,
-        symbol,
-        count,
-        offset,
-        kind,
-    ))
+    let kind = memcpy_kind(kind);
+    to_cuda(hipMemcpyFromSymbol(dst, symbol, count, offset, kind))
 }
 
 unsafe fn memcpy_from_symbol_ptds(
@@ -1181,14 +907,8 @@ unsafe fn memcpy_from_symbol_ptds(
     offset: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
-    to_cuda(hipMemcpyFromSymbol_spt(
-        dst,
-        symbol,
-        count,
-        offset,
-        kind,
-    ))
+    let kind = memcpy_kind(kind);
+    to_cuda(hipMemcpyFromSymbol_spt(dst, symbol, count, offset, kind))
 }
 
 unsafe fn memcpy_async(
@@ -1198,15 +918,9 @@ unsafe fn memcpy_async(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     let stream = to_stream(stream);
-    to_cuda(hipMemcpyAsync(
-        dst,
-        src,
-        count,
-        kind,
-        stream,
-    ))
+    to_cuda(hipMemcpyAsync(dst, src, count, kind, stream))
 }
 
 unsafe fn memcpy_peer_async(
@@ -1219,12 +933,7 @@ unsafe fn memcpy_peer_async(
 ) -> cudaError_t {
     let stream = to_stream(stream);
     to_cuda(hipMemcpyPeerAsync(
-        dst,
-        dst_device,
-        src,
-        src_device,
-        count,
-        stream,
+        dst, dst_device, src, src_device, count, stream,
     ))
 }
 
@@ -1238,17 +947,10 @@ unsafe fn memcpy_2d_async(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     let stream = to_stream(stream);
     to_cuda(hipMemcpy2DAsync(
-        dst,
-        dpitch,
-        src,
-        spitch,
-        width,
-        height,
-        kind,
-        stream,
+        dst, dpitch, src, spitch, width, height, kind, stream,
     ))
 }
 
@@ -1263,7 +965,7 @@ unsafe fn memcpy_2d_to_array_async(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     let stream = to_stream(stream);
     to_cuda(hipMemcpy2DToArrayAsync(
         dst.cast(),
@@ -1289,7 +991,7 @@ unsafe fn memcpy_2d_from_array_async(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     let stream = to_stream(stream);
     to_cuda(hipMemcpy2DFromArrayAsync(
         dst,
@@ -1312,15 +1014,10 @@ unsafe fn memcpy_to_symbol_async(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     let stream = to_stream(stream);
     to_cuda(hipMemcpyToSymbolAsync(
-        symbol,
-        src,
-        count,
-        offset,
-        kind,
-        stream,
+        symbol, src, count, offset, kind, stream,
     ))
 }
 
@@ -1332,28 +1029,15 @@ unsafe fn memcpy_from_symbol_async(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     let stream = to_stream(stream);
     to_cuda(hipMemcpyFromSymbolAsync(
-        dst,
-        symbol,
-        count,
-        offset,
-        kind,
-        stream,
+        dst, symbol, count, offset, kind, stream,
     ))
 }
 
-unsafe fn memset(
-    dev_ptr: *mut ::std::os::raw::c_void,
-    value: i32,
-    count: usize,
-) -> cudaError_t {
-    to_cuda(hipMemset(
-        dev_ptr,
-        value,
-        count,
-    ))
+unsafe fn memset(dev_ptr: *mut ::std::os::raw::c_void, value: i32, count: usize) -> cudaError_t {
+    to_cuda(hipMemset(dev_ptr, value, count))
 }
 
 unsafe fn memset_ptds(
@@ -1361,11 +1045,7 @@ unsafe fn memset_ptds(
     value: i32,
     count: usize,
 ) -> cudaError_t {
-    to_cuda(hipMemset_spt(
-        dev_ptr,
-        value,
-        count,
-    ))
+    to_cuda(hipMemset_spt(dev_ptr, value, count))
 }
 
 unsafe fn memset_2d(
@@ -1375,13 +1055,7 @@ unsafe fn memset_2d(
     width: usize,
     height: usize,
 ) -> cudaError_t {
-    to_cuda(hipMemset2D(
-        dev_ptr,
-        pitch,
-        value,
-        width,
-        height,
-    ))
+    to_cuda(hipMemset2D(dev_ptr, pitch, value, width, height))
 }
 
 unsafe fn memset_2d_ptds(
@@ -1391,13 +1065,7 @@ unsafe fn memset_2d_ptds(
     width: usize,
     height: usize,
 ) -> cudaError_t {
-    to_cuda(hipMemset2D_spt(
-        dev_ptr,
-        pitch,
-        value,
-        width,
-        height,
-    ))
+    to_cuda(hipMemset2D_spt(dev_ptr, pitch, value, width, height))
 }
 
 unsafe fn memset_async(
@@ -1407,12 +1075,7 @@ unsafe fn memset_async(
     stream: cudaStream_t,
 ) -> cudaError_t {
     let stream = to_stream(stream);
-    to_cuda(hipMemsetAsync(
-        dev_ptr,
-        value,
-        count,
-        stream,
-    ))
+    to_cuda(hipMemsetAsync(dev_ptr, value, count, stream))
 }
 
 unsafe fn memset_2d_async(
@@ -1425,12 +1088,7 @@ unsafe fn memset_2d_async(
 ) -> cudaError_t {
     let stream = to_stream(stream);
     to_cuda(hipMemset2DAsync(
-        dev_ptr,
-        pitch,
-        value,
-        width,
-        height,
-        stream,
+        dev_ptr, pitch, value, width, height, stream,
     ))
 }
 
@@ -1438,20 +1096,11 @@ unsafe fn get_symbol_address(
     dev_ptr: *mut *mut ::std::os::raw::c_void,
     symbol: *const ::std::os::raw::c_void,
 ) -> cudaError_t {
-    to_cuda(hipGetSymbolAddress(
-        dev_ptr,
-        symbol,
-    ))
+    to_cuda(hipGetSymbolAddress(dev_ptr, symbol))
 }
 
-unsafe fn get_symbol_size(
-    size: *mut usize,
-    symbol: *const ::std::os::raw::c_void,
-) -> cudaError_t {
-    to_cuda(hipGetSymbolSize(
-        size,
-        symbol,
-    ))
+unsafe fn get_symbol_size(size: *mut usize, symbol: *const ::std::os::raw::c_void) -> cudaError_t {
+    to_cuda(hipGetSymbolSize(size, symbol))
 }
 
 unsafe fn mem_prefetch_async(
@@ -1461,12 +1110,7 @@ unsafe fn mem_prefetch_async(
     stream: cudaStream_t,
 ) -> cudaError_t {
     let stream = to_stream(stream);
-    to_cuda(hipMemPrefetchAsync(
-        dev_ptr,
-        count,
-        dst_device,
-        stream,
-    ))
+    to_cuda(hipMemPrefetchAsync(dev_ptr, count, dst_device, stream))
 }
 
 unsafe fn memcpy_to_array(
@@ -1477,7 +1121,7 @@ unsafe fn memcpy_to_array(
     count: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipMemcpyToArray(
         dst.cast(),
         w_offset,
@@ -1496,7 +1140,7 @@ unsafe fn memcpy_from_array(
     count: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipMemcpyFromArray(
         dst,
         src.cast(),
@@ -1515,7 +1159,7 @@ unsafe fn memcpy_from_array_ptds(
     count: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipMemcpyFromArray_spt(
         dst,
         src.cast(),
@@ -1535,7 +1179,7 @@ unsafe fn memcpy_to_array_async(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     let stream = to_stream(stream);
     to_cuda(hipMemcpy2DToArrayAsync(
         dst.cast(),
@@ -1559,7 +1203,7 @@ unsafe fn memcpy_from_array_async(
     kind: cudaMemcpyKind,
     stream: cudaStream_t,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     let stream = to_stream(stream);
     to_cuda(hipMemcpy2DFromArrayAsync(
         dst,
@@ -1569,7 +1213,7 @@ unsafe fn memcpy_from_array_async(
         h_offset,
         w_offset,
         h_offset,
-        kind, 
+        kind,
         stream,
     ))
 }
@@ -1580,32 +1224,16 @@ unsafe fn malloc_async(
     h_stream: cudaStream_t,
 ) -> cudaError_t {
     let h_stream = to_stream(h_stream);
-    to_cuda(hipMallocAsync(
-        dev_ptr,
-        size,
-        h_stream,
-    ))
+    to_cuda(hipMallocAsync(dev_ptr, size, h_stream))
 }
 
-unsafe fn free_async(
-    dev_ptr: *mut ::std::os::raw::c_void,
-    h_stream: cudaStream_t,
-) -> cudaError_t {
+unsafe fn free_async(dev_ptr: *mut ::std::os::raw::c_void, h_stream: cudaStream_t) -> cudaError_t {
     let h_stream = to_stream(h_stream);
-    to_cuda(hipFreeAsync(
-        dev_ptr,
-        h_stream,
-    ))
+    to_cuda(hipFreeAsync(dev_ptr, h_stream))
 }
 
-unsafe fn mem_pool_trim_to(
-    mem_pool: cudaMemPool_t,
-    min_bytes_to_keep: usize,
-) -> cudaError_t {
-    to_cuda(hipMemPoolTrimTo(
-        mem_pool.cast(),
-        min_bytes_to_keep,
-    ))
+unsafe fn mem_pool_trim_to(mem_pool: cudaMemPool_t, min_bytes_to_keep: usize) -> cudaError_t {
+    to_cuda(hipMemPoolTrimTo(mem_pool.cast(), min_bytes_to_keep))
 }
 
 unsafe fn mem_pool_set_attribute(
@@ -1614,11 +1242,7 @@ unsafe fn mem_pool_set_attribute(
     value: *mut ::std::os::raw::c_void,
 ) -> cudaError_t {
     let attr = to_hip_mem_pool_attr(attr);
-    to_cuda(hipMemPoolSetAttribute(
-        mem_pool.cast(),
-        attr,
-        value,
-    ))
+    to_cuda(hipMemPoolSetAttribute(mem_pool.cast(), attr, value))
 }
 
 unsafe fn mem_pool_get_attribute(
@@ -1627,19 +1251,11 @@ unsafe fn mem_pool_get_attribute(
     value: *mut ::std::os::raw::c_void,
 ) -> cudaError_t {
     let attr = to_hip_mem_pool_attr(attr);
-    to_cuda(hipMemPoolGetAttribute(
-        mem_pool.cast(),
-        attr,
-        value,
-    ))
+    to_cuda(hipMemPoolGetAttribute(mem_pool.cast(), attr, value))
 }
 
-unsafe fn mem_pool_destroy(
-    mem_pool: cudaMemPool_t,
-) -> cudaError_t {
-    to_cuda(hipMemPoolDestroy(
-        mem_pool.cast(),
-    ))
+unsafe fn mem_pool_destroy(mem_pool: cudaMemPool_t) -> cudaError_t {
+    to_cuda(hipMemPoolDestroy(mem_pool.cast()))
 }
 
 unsafe fn malloc_from_pool_async(
@@ -1649,22 +1265,14 @@ unsafe fn malloc_from_pool_async(
     stream: cudaStream_t,
 ) -> cudaError_t {
     let stream = to_stream(stream);
-    to_cuda(hipMallocFromPoolAsync(
-        ptr,
-        size,
-        mem_pool.cast(),
-        stream,
-    ))
+    to_cuda(hipMallocFromPoolAsync(ptr, size, mem_pool.cast(), stream))
 }
 
 unsafe fn mem_pool_export_pointer(
     export_data: *mut cudaMemPoolPtrExportData,
     ptr: *mut ::std::os::raw::c_void,
 ) -> cudaError_t {
-    to_cuda(hipMemPoolExportPointer(
-        export_data.cast(),
-        ptr,
-    ))
+    to_cuda(hipMemPoolExportPointer(export_data.cast(), ptr))
 }
 
 unsafe fn mem_pool_import_pointer(
@@ -1684,35 +1292,19 @@ unsafe fn device_can_access_peer(
     device: i32,
     peer_device: i32,
 ) -> cudaError_t {
-    to_cuda(hipDeviceCanAccessPeer(
-        can_access_peer,
-        device,
-        peer_device,
-    ))
+    to_cuda(hipDeviceCanAccessPeer(can_access_peer, device, peer_device))
 }
 
-unsafe fn device_enable_peer_access(
-    peer_device: i32,
-    flags: u32,
-) -> cudaError_t {
-    to_cuda(hipDeviceEnablePeerAccess(
-        peer_device,
-        flags,
-    ))
+unsafe fn device_enable_peer_access(peer_device: i32, flags: u32) -> cudaError_t {
+    to_cuda(hipDeviceEnablePeerAccess(peer_device, flags))
 }
 
-unsafe fn device_disable_peer_access(
-    peer_device: i32,
-) -> cudaError_t {
+unsafe fn device_disable_peer_access(peer_device: i32) -> cudaError_t {
     to_cuda(hipDeviceDisablePeerAccess(peer_device))
 }
 
-unsafe fn graphics_unregister_resource(
-    resource: cudaGraphicsResource_t,
-) -> cudaError_t {
-    to_cuda(hipGraphicsUnregisterResource(
-        resource.cast(),
-    ))
+unsafe fn graphics_unregister_resource(resource: cudaGraphicsResource_t) -> cudaError_t {
+    to_cuda(hipGraphicsUnregisterResource(resource.cast()))
 }
 
 unsafe fn graphics_map_resources(
@@ -1721,11 +1313,7 @@ unsafe fn graphics_map_resources(
     stream: cudaStream_t,
 ) -> cudaError_t {
     let stream = to_stream(stream);
-    to_cuda(hipGraphicsMapResources(
-        count,
-        resources.cast(),
-        stream,
-    ))
+    to_cuda(hipGraphicsMapResources(count, resources.cast(), stream))
 }
 
 unsafe fn graphics_unmap_resources(
@@ -1734,11 +1322,7 @@ unsafe fn graphics_unmap_resources(
     stream: cudaStream_t,
 ) -> cudaError_t {
     let stream = to_stream(stream);
-    to_cuda(hipGraphicsUnmapResources(
-        count,
-        resources.cast(),
-        stream,
-    ))
+    to_cuda(hipGraphicsUnmapResources(count, resources.cast(), stream))
 }
 
 unsafe fn graphics_resource_get_mapped_pointer(
@@ -1767,24 +1351,15 @@ unsafe fn graphics_sub_resource_get_mapped_array(
     ))
 }
 
-unsafe fn graph_create(
-    p_graph: *mut cudaGraph_t,
-    flags: u32,
-) -> cudaError_t {
-    to_cuda(hipGraphCreate(
-        p_graph.cast(),
-        flags,
-    ))
+unsafe fn graph_create(p_graph: *mut cudaGraph_t, flags: u32) -> cudaError_t {
+    to_cuda(hipGraphCreate(p_graph.cast(), flags))
 }
 
 unsafe fn graph_kernel_node_copy_attributes(
     h_src: cudaGraphNode_t,
     h_dst: cudaGraphNode_t,
 ) -> cudaError_t {
-    to_cuda(hipGraphKernelNodeCopyAttributes(
-        h_src.cast(),
-        h_dst.cast(),
-    ))
+    to_cuda(hipGraphKernelNodeCopyAttributes(h_src.cast(), h_dst.cast()))
 }
 
 unsafe fn graph_add_memcpy_node_to_symbol(
@@ -1798,7 +1373,7 @@ unsafe fn graph_add_memcpy_node_to_symbol(
     offset: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipGraphAddMemcpyNodeToSymbol(
         p_graph_node.cast(),
         graph.cast(),
@@ -1823,7 +1398,7 @@ unsafe fn graph_add_memcpy_node_from_symbol(
     offset: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipGraphAddMemcpyNodeFromSymbol(
         p_graph_node.cast(),
         graph.cast(),
@@ -1847,7 +1422,7 @@ unsafe fn graph_add_memcpy_node_1d(
     count: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipGraphAddMemcpyNode1D(
         p_graph_node.cast(),
         graph.cast(),
@@ -1868,7 +1443,7 @@ unsafe fn graph_memcpy_node_set_params_to_symbol(
     offset: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipGraphMemcpyNodeSetParamsToSymbol(
         node.cast(),
         symbol,
@@ -1887,7 +1462,7 @@ unsafe fn graph_memcpy_node_set_params_from_symbol(
     offset: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipGraphMemcpyNodeSetParamsFromSymbol(
         node.cast(),
         dst,
@@ -1905,7 +1480,7 @@ unsafe fn graph_memcpy_node_set_params_1d(
     count: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipGraphMemcpyNodeSetParams1D(
         node.cast(),
         dst,
@@ -1935,10 +1510,7 @@ unsafe fn graph_child_graph_node_get_graph(
     node: cudaGraphNode_t,
     p_graph: *mut cudaGraph_t,
 ) -> cudaError_t {
-    to_cuda(hipGraphChildGraphNodeGetGraph(
-        node.cast(),
-        p_graph.cast(),
-    ))
+    to_cuda(hipGraphChildGraphNodeGetGraph(node.cast(), p_graph.cast()))
 }
 
 unsafe fn graph_add_empty_node(
@@ -1985,10 +1557,7 @@ unsafe fn graph_event_record_node_set_event(
     node: cudaGraphNode_t,
     event: cudaEvent_t,
 ) -> cudaError_t {
-    to_cuda(hipGraphEventRecordNodeSetEvent(
-        node.cast(),
-        event.cast(),
-    ))
+    to_cuda(hipGraphEventRecordNodeSetEvent(node.cast(), event.cast()))
 }
 
 unsafe fn graph_add_mem_free_node(
@@ -2011,10 +1580,7 @@ unsafe fn graph_mem_free_node_get_params(
     node: cudaGraphNode_t,
     dptr_out: *mut ::std::os::raw::c_void,
 ) -> cudaError_t {
-    to_cuda(hipGraphMemFreeNodeGetParams(
-        node.cast(),
-        dptr_out,
-    ))
+    to_cuda(hipGraphMemFreeNodeGetParams(node.cast(), dptr_out))
 }
 
 unsafe fn graph_add_event_wait_node(
@@ -2037,36 +1603,22 @@ unsafe fn graph_event_wait_node_get_event(
     node: cudaGraphNode_t,
     event_out: *mut cudaEvent_t,
 ) -> cudaError_t {
-    to_cuda(hipGraphEventWaitNodeGetEvent(
-        node.cast(),
-        event_out.cast(),
-    ))
+    to_cuda(hipGraphEventWaitNodeGetEvent(node.cast(), event_out.cast()))
 }
 
 unsafe fn graph_event_wait_node_set_event(
     node: cudaGraphNode_t,
     event: cudaEvent_t,
 ) -> cudaError_t {
-    to_cuda(hipGraphEventWaitNodeSetEvent(
-        node.cast(),
-        event.cast(),
-    ))
+    to_cuda(hipGraphEventWaitNodeSetEvent(node.cast(), event.cast()))
 }
 
-unsafe fn device_graph_mem_trim(
-    device: i32,
-) -> cudaError_t {
+unsafe fn device_graph_mem_trim(device: i32) -> cudaError_t {
     to_cuda(hipDeviceGraphMemTrim(device))
 }
 
-unsafe fn graph_clone(
-    p_graph_clone: *mut cudaGraph_t,
-    original_graph: cudaGraph_t,
-) -> cudaError_t {
-    to_cuda(hipGraphClone(
-        p_graph_clone.cast(),
-        original_graph.cast(),
-    ))
+unsafe fn graph_clone(p_graph_clone: *mut cudaGraph_t, original_graph: cudaGraph_t) -> cudaError_t {
+    to_cuda(hipGraphClone(p_graph_clone.cast(), original_graph.cast()))
 }
 
 unsafe fn graph_node_find_in_close(
@@ -2086,11 +1638,7 @@ unsafe fn graph_get_nodes(
     nodes: *mut cudaGraphNode_t,
     num_nodes: *mut usize,
 ) -> cudaError_t {
-    to_cuda(hipGraphGetNodes(
-        graph.cast(),
-        nodes.cast(),
-        num_nodes,
-    ))
+    to_cuda(hipGraphGetNodes(graph.cast(), nodes.cast(), num_nodes))
 }
 
 unsafe fn graph_get_root_nodes(
@@ -2195,12 +1743,8 @@ unsafe fn graph_remove_dependencies(
     ))
 }
 
-unsafe fn graph_destroy_node(
-    node: cudaGraphNode_t,
-) -> cudaError_t {
-    to_cuda(hipGraphDestroyNode(
-        node.cast(),
-    ))
+unsafe fn graph_destroy_node(node: cudaGraphNode_t) -> cudaError_t {
+    to_cuda(hipGraphDestroyNode(node.cast()))
 }
 
 unsafe fn graph_instantiate(
@@ -2240,7 +1784,7 @@ unsafe fn graph_exec_memcpy_node_set_params_to_symbol(
     offset: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipGraphExecMemcpyNodeSetParamsToSymbol(
         h_graph_exec.cast(),
         node.cast(),
@@ -2261,7 +1805,7 @@ unsafe fn graph_exec_memcpy_node_set_params_from_symbol(
     offset: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipGraphExecMemcpyNodeSetParamsFromSymbol(
         h_graph_exec.cast(),
         node.cast(),
@@ -2281,7 +1825,7 @@ unsafe fn graph_exec_memcpy_node_set_params_1d(
     count: usize,
     kind: cudaMemcpyKind,
 ) -> cudaError_t {
-    let kind = to_hip_memcpy_kind(kind);
+    let kind = memcpy_kind(kind);
     to_cuda(hipGraphExecMemcpyNodeSetParams1D(
         h_graph_exec.cast(),
         node.cast(),
@@ -2328,53 +1872,27 @@ unsafe fn graph_exec_event_wait_node_set_event(
     ))
 }
 
-unsafe fn graph_upload(
-    graph_exec: cudaGraphExec_t,
-    stream: cudaStream_t,
-) -> cudaError_t {
+unsafe fn graph_upload(graph_exec: cudaGraphExec_t, stream: cudaStream_t) -> cudaError_t {
     let stream = to_stream(stream);
-    to_cuda(hipGraphUpload(
-        graph_exec.cast(),
-        stream,
-    ))
+    to_cuda(hipGraphUpload(graph_exec.cast(), stream))
 }
 
-unsafe fn graph_launch(
-    graph_exec: cudaGraphExec_t,
-    stream: cudaStream_t,
-) -> cudaError_t {
+unsafe fn graph_launch(graph_exec: cudaGraphExec_t, stream: cudaStream_t) -> cudaError_t {
     let stream = to_stream(stream);
-    to_cuda(hipGraphLaunch(
-        graph_exec.cast(),
-        stream,
-    ))
+    to_cuda(hipGraphLaunch(graph_exec.cast(), stream))
 }
 
-unsafe fn graph_launch_ptsz(
-    graph_exec: cudaGraphExec_t,
-    stream: cudaStream_t,
-) -> cudaError_t {
+unsafe fn graph_launch_ptsz(graph_exec: cudaGraphExec_t, stream: cudaStream_t) -> cudaError_t {
     let stream = to_stream(stream);
-    to_cuda(hipGraphLaunch_spt(
-        graph_exec.cast(),
-        stream,
-    ))
+    to_cuda(hipGraphLaunch_spt(graph_exec.cast(), stream))
 }
 
-unsafe fn graph_exec_destroy(
-    graph_exec: cudaGraphExec_t,
-) -> cudaError_t {
-    to_cuda(hipGraphExecDestroy(
-        graph_exec.cast(),
-    ))
+unsafe fn graph_exec_destroy(graph_exec: cudaGraphExec_t) -> cudaError_t {
+    to_cuda(hipGraphExecDestroy(graph_exec.cast()))
 }
 
-unsafe fn graph_destroy(
-    graph: cudaGraph_t,
-) -> cudaError_t {
-    to_cuda(hipGraphDestroy(
-        graph.cast(),
-    ))
+unsafe fn graph_destroy(graph: cudaGraph_t) -> cudaError_t {
+    to_cuda(hipGraphDestroy(graph.cast()))
 }
 
 unsafe fn graph_debug_dot_print(
@@ -2382,11 +1900,7 @@ unsafe fn graph_debug_dot_print(
     path: *const ::std::os::raw::c_char,
     flags: u32,
 ) -> cudaError_t {
-    to_cuda(hipGraphDebugDotPrint(
-        graph.cast(),
-        path,
-        flags,
-    ))
+    to_cuda(hipGraphDebugDotPrint(graph.cast(), path, flags))
 }
 
 unsafe fn user_object_create(
@@ -2405,24 +1919,12 @@ unsafe fn user_object_create(
     ))
 }
 
-unsafe fn user_object_retain(
-    object: cudaUserObject_t,
-    count: u32,
-) -> cudaError_t {
-    to_cuda(hipUserObjectRetain(
-        object.cast(),
-        count,
-    ))
+unsafe fn user_object_retain(object: cudaUserObject_t, count: u32) -> cudaError_t {
+    to_cuda(hipUserObjectRetain(object.cast(), count))
 }
 
-unsafe fn user_object_release(
-    object: cudaUserObject_t,
-    count: u32,
-) -> cudaError_t {
-    to_cuda(hipUserObjectRelease(
-        object.cast(),
-        count,
-    ))
+unsafe fn user_object_release(object: cudaUserObject_t, count: u32) -> cudaError_t {
+    to_cuda(hipUserObjectRelease(object.cast(), count))
 }
 
 unsafe fn graph_retain_user_object(
