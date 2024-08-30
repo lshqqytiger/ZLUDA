@@ -6218,6 +6218,10 @@ impl<T: ArgParamsEx> ast::Instruction<T> {
                 let is_wide = d.is_wide();
                 ast::Instruction::Mul(d, a.map_generic(visitor, &inst_type, is_wide)?)
             }
+            ast::Instruction::Mul24(d, a) => {
+                let inst_type = d.get_type();
+                ast::Instruction::Mul24(d, a.map_generic(visitor, &inst_type, false)?)
+            }
             ast::Instruction::Add(d, a) => {
                 let inst_type = ast::Type::Scalar(d.get_type());
                 ast::Instruction::Add(d, a.map_generic(visitor, &inst_type, false)?)
@@ -6568,7 +6572,6 @@ impl<T: ArgParamsEx> ast::Instruction<T> {
                     &ast::Type::Scalar(ast::ScalarType::U64),
                 )?,
             ),
-
         })
     }
 }
@@ -6888,6 +6891,8 @@ impl<T: ast::ArgParams> ast::Instruction<T> {
             ast::Instruction::Add(ast::ArithDetails::Unsigned(_), _) => None,
             ast::Instruction::Mul(ast::MulDetails::Unsigned(_), _) => None,
             ast::Instruction::Mul(ast::MulDetails::Signed(_), _) => None,
+            ast::Instruction::Mul24(ast::Mul24Details::Unsigned(_), _) => None,
+            ast::Instruction::Mul24(ast::Mul24Details::Signed(_), _) => None,
             ast::Instruction::Mad(ast::MulDetails::Unsigned(_), _) => None,
             ast::Instruction::Mad(ast::MulDetails::Signed(_), _) => None,
             ast::Instruction::Min(ast::MinMaxDetails::Signed(_), _) => None,
@@ -8793,6 +8798,15 @@ impl ast::MulDetails {
             ast::MulDetails::Unsigned(d) => d.typ.into(),
             ast::MulDetails::Signed(d) => d.typ.into(),
             ast::MulDetails::Float(d) => d.typ.into(),
+        })
+    }
+}
+
+impl ast::Mul24Details {
+    fn get_type(&self) -> ast::Type {
+        ast::Type::Scalar(match self {
+            ast::Mul24Details::Unsigned(d) => d.typ.into(),
+            ast::Mul24Details::Signed(d) => d.typ.into(),
         })
     }
 }

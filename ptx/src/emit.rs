@@ -1114,6 +1114,7 @@ fn emit_instruction(
         ast::Instruction::Ld(details, args) => emit_inst_ld(ctx, details, args)?,
         ast::Instruction::Mov(details, args) => emit_inst_mov(ctx, details, args)?,
         ast::Instruction::Mul(details, args) => emit_inst_mul(ctx, details, args)?,
+        ast::Instruction::Mul24(details, args) => emit_inst_mul24(ctx, details, args)?,
         ast::Instruction::Add(details, args) => emit_inst_add(ctx, details, args)?,
         ast::Instruction::Setp(details, args) => emit_inst_setp(ctx, details, args, None)?,
         ast::Instruction::SetpBool(details, args) => emit_inst_setp_bool(ctx, details, args)?,
@@ -1730,12 +1731,8 @@ fn emit_inst_sqrt(
         (ast::ScalarType::F64, ast::RcpSqrtKind::Approx) => {
             (&b"llvm.sqrt.f64\0"[..], FastMathFlags::ApproxFunc)
         }
-        (ast::ScalarType::F32, _) => {
-            (&b"llvm.sqrt.f32\0"[..], FastMathFlags::empty())
-        },
-        (ast::ScalarType::F64, _) => {
-            (&b"llvm.sqrt.f64\0"[..], FastMathFlags::empty())
-        },
+        (ast::ScalarType::F32, _) => (&b"llvm.sqrt.f32\0"[..], FastMathFlags::empty()),
+        (ast::ScalarType::F64, _) => (&b"llvm.sqrt.f64\0"[..], FastMathFlags::empty()),
         _ => return Err(TranslateError::unreachable()),
     };
     let sqrt_result = emit_intrinsic_arg2(
@@ -2828,6 +2825,34 @@ fn emit_inst_mul(
         })
         | ast::MulDetails::Signed(ast::MulInt {
             control: ast::MulIntControl::High,
+            typ,
+        }) => {
+            emit_inst_mul_hi(ctx, *typ, args)?;
+            Ok(())
+        }
+    }
+}
+
+fn emit_inst_mul24(
+    ctx: &mut EmitContext,
+    details: &ast::Mul24Details,
+    args: &ast::Arg3<crate::translate::ExpandedArgParams>,
+) -> Result<(), TranslateError> {
+    match details {
+        ast::Mul24Details::Unsigned(ast::Mul24Int {
+            control: ast::Mul24IntControl::Low,
+            ..
+        })
+        | ast::Mul24Details::Signed(ast::Mul24Int {
+            control: ast::Mul24IntControl::Low,
+            ..
+        }) => emit_inst_mul_lo(ctx, args, LLVMBuildMul),
+        ast::Mul24Details::Unsigned(ast::Mul24Int {
+            control: ast::Mul24IntControl::High,
+            typ,
+        })
+        | ast::Mul24Details::Signed(ast::Mul24Int {
+            control: ast::Mul24IntControl::High,
             typ,
         }) => {
             emit_inst_mul_hi(ctx, *typ, args)?;
