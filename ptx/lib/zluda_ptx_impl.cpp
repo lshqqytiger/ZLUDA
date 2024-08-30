@@ -1510,6 +1510,12 @@ extern "C"
         return static_cast<int32_t>(((static_cast<int64_t>(x) * y) & 0x0000FFFFFFFFFFFF) >> 16);
     }
 
+    int32_t __ockl_mul24_i32(int32_t x, int32_t y) __attribute__((device));
+    int32_t FUNC(mul24_lo_s32)(int32_t x, int32_t y)
+    {
+        return __ockl_mul24_i32(x, y);
+    }
+
     int64_t FUNC(mad_hi_s64)(int64_t a, int64_t b, int64_t c)
     {
         int64_t temp = FUNC_CALL(mul_hi_s64)(a, b);
@@ -1525,6 +1531,12 @@ extern "C"
     uint32_t FUNC(mul24_hi_u32)(uint32_t x, uint32_t y)
     {
         return static_cast<uint32_t>(((static_cast<uint64_t>(x) * y) & 0x0000FFFFFFFFFFFF) >> 16);
+    }
+
+    uint32_t __ockl_mul24_u32(uint32_t x, uint32_t y) __attribute__((device));
+    uint32_t FUNC(mul24_lo_u32)(uint32_t x, uint32_t y)
+    {
+        return __ockl_mul24_u32(x, y);
     }
 
     uint64_t FUNC(mad_hi_u64)(uint64_t a, uint64_t b, uint64_t c)
