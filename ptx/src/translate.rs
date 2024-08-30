@@ -3002,6 +3002,34 @@ fn replace_instructions_with_builtins_impl<'input>(
                     fn_name,
                 )?);
             }
+            Statement::Instruction(ast::Instruction::Mul24(
+                ast::Mul24Details::Signed(ast::Mul24Int {
+                    control: ast::Mul24IntControl::High,
+                    typ,
+                }),
+                args,
+            ))
+            | Statement::Instruction(ast::Instruction::Mul24(
+                ast::Mul24Details::Unsigned(ast::Mul24Int {
+                    control: ast::Mul24IntControl::High,
+                    typ,
+                }),
+                args,
+            )) if typ == ast::ScalarType::U32 || typ == ast::ScalarType::S32 => {
+                let fn_name = [ZLUDA_PTX_PREFIX, "mul24_hi_", typ.to_ptx_name()].concat();
+                statements.push(instruction_to_fn_call(
+                    id_def,
+                    ptx_impl_imports,
+                    ast::Instruction::Mul24(
+                        ast::Mul24Details::Signed(ast::Mul24Int {
+                            control: ast::Mul24IntControl::High,
+                            typ,
+                        }),
+                        args,
+                    ),
+                    fn_name,
+                )?);
+            }
             Statement::Instruction(ast::Instruction::Mad(
                 ast::MulDetails::Signed(ast::MulInt {
                     control: ast::MulIntControl::High,

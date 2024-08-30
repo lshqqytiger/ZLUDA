@@ -1456,9 +1456,11 @@ extern "C"
             }
 
             // Keep scanning until we figure out the length of this specifier or if we reach the end of the string
-            while (*s != 0) {
+            while (*s != 0)
+            {
                 // "The width is not specified in the format string, but as an additional integer value argument preceding the argument that has to be formatted."
-                if (*s == '*') {
+                if (*s == '*')
+                {
                     s++;
                     uint64_t value = read_valist(valist_ptr, valist_offset, 4);
                     handle = __ockl_printf_append_args(handle, 1, value, 0, 0, 0, 0, 0, 0, 0);
@@ -1476,7 +1478,9 @@ extern "C"
                     if (specifier_with_length)
                     {
                         s += specifier_with_length;
-                    } else {
+                    }
+                    else
+                    {
                         // Assume the unknown character is a sub-specifier and move on
                         s++;
                         continue;
@@ -1501,6 +1505,11 @@ extern "C"
         return __ockl_mul_hi_i64(x, y);
     }
 
+    int32_t FUNC(mul24_hi_s32)(int32_t x, int32_t y)
+    {
+        return static_cast<int32_t>(((static_cast<int64_t>(x) * y) & 0x0000FFFFFFFFFFFF) >> 16);
+    }
+
     int64_t FUNC(mad_hi_s64)(int64_t a, int64_t b, int64_t c)
     {
         int64_t temp = FUNC_CALL(mul_hi_s64)(a, b);
@@ -1511,6 +1520,11 @@ extern "C"
     uint64_t FUNC(mul_hi_u64)(uint64_t x, uint64_t y)
     {
         return __ockl_mul_hi_u64(x, y);
+    }
+
+    uint32_t FUNC(mul24_hi_u32)(uint32_t x, uint32_t y)
+    {
+        return static_cast<uint32_t>(((static_cast<uint64_t>(x) * y) & 0x0000FFFFFFFFFFFF) >> 16);
     }
 
     uint64_t FUNC(mad_hi_u64)(uint64_t a, uint64_t b, uint64_t c)
