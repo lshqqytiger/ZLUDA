@@ -22,7 +22,7 @@ define protected amdgpu_kernel void @mul24_lo(ptr addrspace(4) byref(i64) %"18",
   %"11" = load i32, ptr %"20", align 4
   store i32 %"11", ptr addrspace(5) %"6", align 4
   %"14" = load i32, ptr addrspace(5) %"6", align 4
-  %"13" = call i32 @__zluda_ptx_impl__mul24_lo_u32(i32 %"14", i32 2)
+  %"13" = call i32 @__zluda_ptx_impl__mul24_lo_u32(i32 %"14", i32 9815513)
   store i32 %"13", ptr addrspace(5) %"7", align 4
   %"15" = load i64, ptr addrspace(5) %"5", align 8
   %"16" = load i32, ptr addrspace(5) %"7", align 4
