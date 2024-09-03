@@ -7,6 +7,7 @@ use hip_common::CompilationMode;
 use itertools::Either;
 use std::{
     borrow::Borrow,
+    env,
     ffi::{CStr, CString},
     iter, mem, ptr,
     rc::Rc,
@@ -39,7 +40,7 @@ macro_rules! call {
 
 pub type Result<T> = std::result::Result<T, sys::amd_comgr_status_t>;
 
-pub struct Comgr(LibComgr, AtomicU64);
+pub struct Comgr(LibComgr, AtomicU64, u32);
 
 static WAVE32_MODULE: &'static [u8] = include_bytes!("wave32.ll");
 static WAVE32_ON_WAVE64_MODULE: &'static [u8] = include_bytes!("wave32_on_wave64.ll");
@@ -53,7 +54,14 @@ static OS_MODULE: &'static [u8] = include_bytes!("linux.ll");
 impl Comgr {
     pub fn find_and_load() -> Result<Self> {
         match unsafe { Self::load_library() } {
-            Ok(libcomgr) => Ok(Self(libcomgr, AtomicU64::new(1))),
+            Ok(libcomgr) => Ok(Self(
+                libcomgr,
+                AtomicU64::new(1),
+                env::var("ZLUDA_COMGR_LOG_LEVEL")
+                    .unwrap_or("0".into())
+                    .parse()
+                    .expect("Unexpected value for ZLUDA_COMGR_LOG_LEVEL."),
+            )),
             Err(_) => Err(sys::amd_comgr_status_t::AMD_COMGR_STATUS_ERROR),
         }
     }
@@ -291,6 +299,9 @@ impl Comgr {
                 CStr::from_bytes_with_nul_unchecked(b"-mwavefrontsize64\0")
             }
         };
+        if self.2 == 1 {
+            eprintln!("Compiling in progress. Please wait...");
+        }
         let relocatable = self.do_action(
             sys::amd_comgr_action_kind_t::AMD_COMGR_ACTION_CODEGEN_BC_TO_RELOCATABLE,
             bc_linking_output,
