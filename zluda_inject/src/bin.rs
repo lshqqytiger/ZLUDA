@@ -81,16 +81,15 @@ struct ProgramArguments {
 pub fn main_impl() -> Result<(), Box<dyn Error>> {
     for argument in env::args_os() {
         match argument.to_str() {
-            Some(argument) =>
-                match argument {
-                    "--version" => {
-                        println!("ZLUDA 3.8.3");
-                        process::exit(0);
-                    },
-                    "--" => break,
-                    _ => {},
-                },
-            None => {},
+            Some(argument) => match argument {
+                "--version" => {
+                    println!("ZLUDA 3.8.3");
+                    process::exit(0);
+                }
+                "--" => break,
+                _ => {}
+            },
+            None => {}
         }
     }
 
@@ -202,8 +201,7 @@ struct NormalizedArguments {
 impl NormalizedArguments {
     fn new(prog_args: ProgramArguments) -> Result<Self, Box<dyn Error>> {
         let current_exe = env::current_exe()?;
-        let nccl_path =
-            Self::get_absolute_path_or_default(&current_exe, prog_args.nccl, NCCL_DLL)?;
+        let nccl_path = Self::get_absolute_path_or_default(&current_exe, prog_args.nccl, NCCL_DLL)?;
         let nvrtc_path = prog_args.nvrtc.map(Self::get_absolute_path).transpose()?;
         let nvcuda_path =
             Self::get_absolute_path_or_default(&current_exe, prog_args.nvcuda, NVCUDA_DLL)?;
