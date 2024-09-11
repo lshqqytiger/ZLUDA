@@ -2586,6 +2586,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "zluda_runtime"
+version = "0.0.0"
+dependencies = [
+ "cuda_types",
+ "hip_common",
+ "hip_runtime-sys",
+ "zluda_dark_api",
+]
+
+[[package]]
 name = "zluda_sparse"
 version = "0.0.0"
 dependencies = [

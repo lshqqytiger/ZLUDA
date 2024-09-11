@@ -196,7 +196,7 @@ macro_rules! dark_api_table {
 
 dark_api_table!(
     [0x6b, 0xd5, 0xfb, 0x6c, 0x5b, 0xf4, 0xe7, 0x4a, 0x89, 0x87, 0xd9, 0x39, 0x12, 0xfd, 0x9d, 0xf9]
-    => CUDART_INTERFACE [10] {
+    => CUDART_INTERFACE [12] {
         0 => SIZE_OF,
         #[dump]
         1 => get_module_from_cubin(
@@ -204,6 +204,8 @@ dark_api_table!(
             fatbinc_wrapper: *const FatbincWrapper
         ) -> CUresult,
         2 => get_primary_context(pctx: *mut CUcontext, dev: CUdevice) -> CUresult,
+        4 => set_device_flags(dev: CUdevice, flags: c_uint) -> CUresult,
+        5 => set_device(dev: CUdevice) -> CUresult,
         #[dump]
         6 => get_module_from_cubin_ex1(
             module: *mut CUmodule,
@@ -285,12 +287,12 @@ dark_api_table!(
     [0x19, 0x5B, 0xCB, 0xF4, 0xD6, 0x7D, 0x02, 0x4A, 0xAC, 0xC5, 0x1D, 0x29, 0xCE, 0xA6, 0x31, 0xAE]
     => HEAP_ACCESS [3] {
         0 => SIZE_OF,
-        1 => heap_alloc(
-            halloc_ptr: *mut *mut HeapAllocRecord,
-            param1: usize,
-            param2: usize
+        1 => list_add(
+            precord: *mut *mut ListRecord,
+            func: *const c_void,
+            data: usize
         ) -> CUresult,
-        2 => heap_free(halloc: *mut HeapAllocRecord, param2: *mut usize) -> CUresult
+        2 => list_remove(record: *mut ListRecord, pdata: *mut usize) -> CUresult
     },
     // This fn table is used by OptiX
     [0xB1u8, 0x05, 0x41, 0xE1, 0xF7, 0xC7, 0xC7, 0x4A, 0x9F, 0x64, 0xF2, 0x23, 0xBE, 0x99, 0xF1, 0xE2]
@@ -486,11 +488,11 @@ pub enum ContextState {}
 pub enum ContextStateManager {}
 
 #[repr(C)]
-pub struct HeapAllocRecord {
-    param1: usize,
-    param2: usize,
-    _unknown: usize,
-    global_heap: *mut c_void,
+pub struct ListRecord {
+    func: *const c_void,
+    data: usize,
+    prev: *mut ListRecord,
+    next: *mut ListRecord,
 }
 
 #[derive(Clone, Copy)]

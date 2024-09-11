@@ -216,6 +216,7 @@ match {
     "min",
     "mov",
     "mul",
+    "mul24",
     "nanosleep",
     "neg",
     "not",
@@ -299,6 +300,7 @@ ExtendedID : &'input str = {
     "min",
     "mov",
     "mul",
+    "mul24",
     "nanosleep",
     "neg",
     "not",
@@ -782,6 +784,7 @@ Instruction: ast::Instruction<ast::ParsedArgParams<'input>> = {
     InstLd,
     InstMov,
     InstMul,
+    InstMul24,
     InstAdd,
     InstAddC,
     InstAddCC,
@@ -991,6 +994,27 @@ MulIntControl: ast::MulIntControl = {
     ".hi" => ast::MulIntControl::High,
     ".lo" => ast::MulIntControl::Low,
     ".wide" => ast::MulIntControl::Wide
+};
+
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-mul24
+InstMul24: ast::Instruction<ast::ParsedArgParams<'input>> = {
+    "mul24" <d:Mul24Details> <a:Arg3> => ast::Instruction::Mul24(d, a)
+};
+
+Mul24Details: ast::Mul24Details = {
+    <ctr:Mul24IntControl> <t:UIntType> => ast::Mul24Details::Unsigned(ast::Mul24Int{
+        typ: t,
+        control: ctr
+    }),
+    <ctr:Mul24IntControl> <t:SIntType> => ast::Mul24Details::Signed(ast::Mul24Int{
+        typ: t,
+        control: ctr
+    })
+};
+
+Mul24IntControl: ast::Mul24IntControl = {
+    ".hi" => ast::Mul24IntControl::High,
+    ".lo" => ast::Mul24IntControl::Low
 };
 
 #[inline]
