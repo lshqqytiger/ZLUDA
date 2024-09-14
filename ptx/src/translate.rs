@@ -3003,58 +3003,27 @@ fn replace_instructions_with_builtins_impl<'input>(
                 )?);
             }
             Statement::Instruction(ast::Instruction::Mul24(
-                ast::Mul24Details::Signed(ast::Mul24Int {
-                    control: ast::Mul24IntControl::High,
-                    typ,
-                }),
+                ast::Mul24Details::Signed(desc),
                 args,
             ))
             | Statement::Instruction(ast::Instruction::Mul24(
-                ast::Mul24Details::Unsigned(ast::Mul24Int {
-                    control: ast::Mul24IntControl::High,
-                    typ,
-                }),
+                ast::Mul24Details::Unsigned(desc),
                 args,
-            )) if typ == ast::ScalarType::U32 || typ == ast::ScalarType::S32 => {
-                let fn_name = [ZLUDA_PTX_PREFIX, "mul24_hi_", typ.to_ptx_name()].concat();
+            )) if desc.typ == ast::ScalarType::U32 || desc.typ == ast::ScalarType::S32 => {
+                let fn_name = [
+                    ZLUDA_PTX_PREFIX,
+                    if desc.control == ast::Mul24IntControl::High {
+                        "mul24_hi_"
+                    } else {
+                        "mul24_lo_"
+                    },
+                    desc.typ.to_ptx_name(),
+                ]
+                .concat();
                 statements.push(instruction_to_fn_call(
                     id_def,
                     ptx_impl_imports,
-                    ast::Instruction::Mul24(
-                        ast::Mul24Details::Signed(ast::Mul24Int {
-                            control: ast::Mul24IntControl::High,
-                            typ,
-                        }),
-                        args,
-                    ),
-                    fn_name,
-                )?);
-            }
-            Statement::Instruction(ast::Instruction::Mul24(
-                ast::Mul24Details::Signed(ast::Mul24Int {
-                    control: ast::Mul24IntControl::Low,
-                    typ,
-                }),
-                args,
-            ))
-            | Statement::Instruction(ast::Instruction::Mul24(
-                ast::Mul24Details::Unsigned(ast::Mul24Int {
-                    control: ast::Mul24IntControl::Low,
-                    typ,
-                }),
-                args,
-            )) if typ == ast::ScalarType::U32 || typ == ast::ScalarType::S32 => {
-                let fn_name = [ZLUDA_PTX_PREFIX, "mul24_lo_", typ.to_ptx_name()].concat();
-                statements.push(instruction_to_fn_call(
-                    id_def,
-                    ptx_impl_imports,
-                    ast::Instruction::Mul24(
-                        ast::Mul24Details::Signed(ast::Mul24Int {
-                            control: ast::Mul24IntControl::Low,
-                            typ,
-                        }),
-                        args,
-                    ),
+                    ast::Instruction::Mul24(ast::Mul24Details::Signed(desc), args),
                     fn_name,
                 )?);
             }
