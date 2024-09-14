@@ -1505,15 +1505,16 @@ extern "C"
         return __ockl_mul_hi_i64(x, y);
     }
 
+    __device__ int32_t __attribute__((const)) __llvm_mulhi_i24(int32_t x, int32_t y) __asm("llvm.amdgcn.mulhi.i24");
     int32_t FUNC(mul24_hi_s32)(int32_t x, int32_t y)
     {
-        return static_cast<int32_t>(((static_cast<int64_t>(x) * y) & 0x0000FFFFFFFFFFFF) >> 16);
+        return __llvm_mulhi_i24(x, y);
     }
 
-    int32_t __ockl_mul24_i32(int32_t x, int32_t y) __attribute__((device));
+    __device__ int32_t __attribute__((const)) __llvm_mul_i24(int32_t x, int32_t y) __asm("llvm.amdgcn.mul.i24");
     int32_t FUNC(mul24_lo_s32)(int32_t x, int32_t y)
     {
-        return __ockl_mul24_i32(x, y);
+        return __llvm_mul_i24(x, y);
     }
 
     int64_t FUNC(mad_hi_s64)(int64_t a, int64_t b, int64_t c)
@@ -1528,15 +1529,16 @@ extern "C"
         return __ockl_mul_hi_u64(x, y);
     }
 
+    __device__ uint32_t __attribute__((const)) __llvm_mulhi_u24(uint32_t x, uint32_t y) __asm("llvm.amdgcn.mulhi.u24");
     uint32_t FUNC(mul24_hi_u32)(uint32_t x, uint32_t y)
     {
-        return static_cast<uint32_t>(((static_cast<uint64_t>(x) * y) & 0x0000FFFFFFFFFFFF) >> 16);
+        return __llvm_mulhi_u24(x, y);
     }
 
-    uint32_t __ockl_mul24_u32(uint32_t x, uint32_t y) __attribute__((device));
+    __device__ uint32_t __attribute__((const)) __llvm_mul_u24(uint32_t x, uint32_t y) __asm("llvm.amdgcn.mul.u24");
     uint32_t FUNC(mul24_lo_u32)(uint32_t x, uint32_t y)
     {
-        return __ockl_mul24_u32(x, y);
+        return __llvm_mul_u24(x, y);
     }
 
     uint64_t FUNC(mad_hi_u64)(uint64_t a, uint64_t b, uint64_t c)
