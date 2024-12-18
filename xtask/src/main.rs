@@ -47,7 +47,10 @@ enum Subcommand {
 
 impl Default for Subcommand {
     fn default() -> Self {
-        Subcommand::Build(BuildCommand { release: false, rocm5: false })
+        Subcommand::Build(BuildCommand {
+            release: false,
+            rocm5: false,
+        })
     }
 }
 
@@ -232,23 +235,20 @@ fn build_impl(is_debug: bool, rocm5: bool) -> Result<Workspace, DynError> {
     if !is_debug {
         command.arg("--release");
     }
-    if cfg!(windows) { // Should we allow ROCm 5 for Linux?
+    if cfg!(windows) {
+        // Should we allow ROCm 5 for Linux?
         if rocm5 {
             command.args(["--features", "rocm5"]);
         }
         if let Ok(path_default) = env::var("HIP_PATH") {
-            env::set_var("HIP_PATH",
-                env::var(
-                    if rocm5 {
-                        "HIP_PATH_57"
-                    } else {
-                        "HIP_PATH_61"
-                    }
-                )
-                .unwrap_or(path_default)
+            env::set_var(
+                "HIP_PATH",
+                env::var(if rocm5 { "HIP_PATH_57" } else { "HIP_PATH_62" }).unwrap_or(path_default),
             );
         } else {
-            return Err("Could not find HIP SDK installed. Please check if HIP_PATH is set.".into());
+            return Err(
+                "Could not find HIP SDK installed. Please check if HIP_PATH is set.".into(),
+            );
         }
     }
     let build_result = command.status()?.code().unwrap();
