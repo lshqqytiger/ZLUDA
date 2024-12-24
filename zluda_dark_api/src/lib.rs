@@ -10,7 +10,7 @@ use std::{
     ffi::c_void,
     fmt::Display,
     mem,
-    os::raw::{c_int, c_uchar, c_uint, c_ulong, c_ushort},
+    os::raw::{c_char, c_int, c_uchar, c_uint, c_ulong, c_ushort},
     ptr, slice,
 };
 
@@ -201,7 +201,7 @@ dark_api_table!(
         #[dump]
         1 => get_module_from_cubin(
             module: *mut CUmodule,
-            fatbinc_wrapper: *const FatbincWrapper
+            ptr: *const c_void
         ) -> CUresult,
         2 => get_primary_context(pctx: *mut CUcontext, dev: CUdevice) -> CUresult,
         4 => set_device_flags(dev: CUdevice, flags: c_uint) -> CUresult,
@@ -209,7 +209,7 @@ dark_api_table!(
         #[dump]
         6 => get_module_from_cubin_ex1(
             module: *mut CUmodule,
-            fatbinc_wrapper: *const FatbincWrapper,
+            ptr: *const c_void,
             arg3: *mut c_void,
             arg4: *mut c_void,
             arg5: usize
@@ -416,9 +416,50 @@ dark_api_table!(
 );
 
 pub const ELF_MAGIC: c_uint = unsafe { std::mem::transmute(*b"\x7FELF") };
+pub const OLD_STYLE_FATBINC_MAGIC: c_uint = 0x1EE55A01;
 pub const FATBINC_MAGIC: c_uint = 0x466243B1;
 pub const FATBINC_VERSION_V1: c_uint = 0x1;
 pub const FATBINC_VERSION_V2: c_uint = 0x2;
+
+#[repr(C)]
+pub struct OldFatbincWrapper {
+    magic: c_ulong,
+    version: c_ulong,
+    gpu_version: c_ulong,
+
+    key: *const c_char,
+    ident: *const c_char,
+    mode: *const c_char,
+
+    ptx: *const FatEntry,
+    cubin: *const FatEntry,
+    debug: *const FatEntry,
+    debug_info: *const c_void,
+
+    flags: c_uint,
+
+    exported: *const c_void,
+    imported: *const c_void,
+    dependents: *const c_void,
+
+    characteristics: c_uint,
+
+    elf: *const FatElfEntry,
+}
+
+#[repr(C)]
+pub struct FatEntry {
+    name: *const c_char,
+    data: *const u8,
+}
+
+#[repr(C)]
+pub struct FatElfEntry {
+    name: *const c_char,
+    elf: *const u8,
+    next: *const FatElfEntry,
+    size: c_uint,
+}
 
 #[repr(C)]
 pub struct FatbincWrapper {
@@ -545,6 +586,10 @@ impl FatbinFileKind {
 }
 
 pub enum CudaFatbin {
+    OldStyle {
+        post_link: FatbinModuleHandle,
+        pre_link: &'static [FatbinModuleHandle],
+    },
     Version1(FatbinModuleHandle),
     Version2 {
         post_link: FatbinModuleHandle,
@@ -553,26 +598,63 @@ pub enum CudaFatbin {
 }
 
 impl CudaFatbin {
+    pub unsafe fn from(ptr: *const c_void) -> Result<Self, UnexpectedFieldError> {
+        let fatbinc_wrapper = &*(ptr as *const FatbincWrapper);
+        let magic = fatbinc_wrapper.magic;
+        if magic == FATBINC_MAGIC {
+            return CudaFatbin::from_wrapper(ptr.cast());
+        }
+
+        let fatbin_header = &*(ptr as *const FatbinHeader);
+        let magic = fatbin_header.magic;
+        if magic == FATBIN_MAGIC {
+            return Ok(CudaFatbin::from_header(ptr.cast()));
+        }
+
+        let old_style = &*(ptr as *const OldFatbincWrapper);
+        let magic = old_style.magic;
+        if magic == OLD_STYLE_FATBINC_MAGIC {
+            return Ok(CudaFatbin::from_old_style(ptr.cast()));
+        }
+
+        Err(UnexpectedFieldError {
+            name: "FATBINC_MAGIC",
+            expected: vec![
+                AnyUInt::U32(FATBINC_MAGIC),
+                AnyUInt::U32(FATBIN_MAGIC),
+                AnyUInt::U32(OLD_STYLE_FATBINC_MAGIC),
+            ],
+            observed: AnyUInt::U32(magic),
+        })
+    }
+
+    pub unsafe fn from_old_style(fatbinc_wrapper: *const OldFatbincWrapper) -> Self {
+        let fatbinc_wrapper = &*fatbinc_wrapper;
+        if fatbinc_wrapper.ptx == ptr::null() {
+            todo!()
+        }
+        // name, data / name, data / ... (see FatEntry)
+        let len = slice_length(fatbinc_wrapper.ptx.cast()) << 1;
+        let pre_link = std::slice::from_raw_parts(fatbinc_wrapper.ptx.cast(), len);
+        let post_link = FatbinModuleHandle::FromEntry(fatbinc_wrapper.ptx);
+        CudaFatbin::OldStyle {
+            post_link,
+            pre_link,
+        }
+    }
+
     pub unsafe fn from_wrapper(
         fatbinc_wrapper: *const FatbincWrapper,
     ) -> Result<Self, UnexpectedFieldError> {
         let fatbinc_wrapper = &*fatbinc_wrapper;
-        let magic = fatbinc_wrapper.magic;
-        if magic != FATBINC_MAGIC {
-            return Err(UnexpectedFieldError {
-                name: "FATBINC_MAGIC",
-                expected: vec![AnyUInt::U32(FATBINC_MAGIC)],
-                observed: AnyUInt::U32(magic),
-            });
-        }
         let version = fatbinc_wrapper.version;
         Ok(match version {
-            FATBINC_VERSION_V1 => CudaFatbin::Version1(FatbinModuleHandle(fatbinc_wrapper.data)),
+            FATBINC_VERSION_V1 => CudaFatbin::from_header(fatbinc_wrapper.data),
             FATBINC_VERSION_V2 => {
                 let len = slice_length(fatbinc_wrapper.filename_or_fatbins.cast());
                 let pre_link =
                     std::slice::from_raw_parts(fatbinc_wrapper.filename_or_fatbins.cast(), len);
-                let post_link = FatbinModuleHandle(fatbinc_wrapper.data);
+                let post_link = FatbinModuleHandle::FromHeader(fatbinc_wrapper.data);
                 CudaFatbin::Version2 {
                     post_link,
                     pre_link,
@@ -592,7 +674,7 @@ impl CudaFatbin {
     }
 
     pub unsafe fn from_header(fatbin_header: *const FatbinHeader) -> Self {
-        CudaFatbin::Version1(FatbinModuleHandle(fatbin_header))
+        CudaFatbin::Version1(FatbinModuleHandle::FromHeader(fatbin_header))
     }
 }
 
@@ -605,17 +687,19 @@ pub enum CUmoduleContent {
 }
 
 impl CUmoduleContent {
-    pub unsafe fn from_ptr(ptr: *const u8) -> Result<Self, UnexpectedFieldError> {
+    pub unsafe fn from_ptr(ptr: *const c_void) -> Result<Self, UnexpectedFieldError> {
         Ok(if (ptr as usize % 4) != 0 {
-            CUmoduleContent::RawText(ptr)
+            CUmoduleContent::RawText(ptr.cast())
         } else if *(ptr as *const u32) == FATBINC_MAGIC {
             CUmoduleContent::Fatbin(CudaFatbin::from_wrapper(ptr as *const FatbincWrapper)?)
         } else if *(ptr as *const u32) == FATBIN_MAGIC {
             CUmoduleContent::Fatbin(CudaFatbin::from_header(ptr as *const FatbinHeader))
+        } else if *(ptr as *const u32) == OLD_STYLE_FATBINC_MAGIC {
+            CUmoduleContent::Fatbin(CudaFatbin::from_old_style(ptr as *const OldFatbincWrapper))
         } else if *(ptr as *const u32) == ELF_MAGIC {
-            CUmoduleContent::Elf(ptr)
+            CUmoduleContent::Elf(ptr.cast())
         } else {
-            CUmoduleContent::RawText(ptr)
+            CUmoduleContent::RawText(ptr.cast())
         })
     }
 }
@@ -628,33 +712,43 @@ unsafe fn slice_length(ptr: *const *const c_void) -> usize {
     current.offset_from(ptr) as usize
 }
 
-#[repr(transparent)]
-pub struct FatbinModuleHandle(*const FatbinHeader);
+pub enum FatbinModuleHandle {
+    FromEntry(*const FatEntry),
+    FromHeader(*const FatbinHeader),
+}
 
 impl FatbinModuleHandle {
     pub unsafe fn get(&self) -> Result<FatbinModule, UnexpectedFieldError> {
-        let fatbin_header = &*self.0;
-        let magic = fatbin_header.magic;
-        if magic == ELF_MAGIC {
-            return Ok(FatbinModule::Elf(self.0 as _));
-        } else if magic != FATBIN_MAGIC {
-            return Err(UnexpectedFieldError {
-                name: "FATBIN_MAGIC",
-                expected: vec![AnyUInt::U32(FATBIN_MAGIC), AnyUInt::U32(ELF_MAGIC)],
-                observed: AnyUInt::U32(magic),
-            });
+        match *self {
+            FatbinModuleHandle::FromEntry(ptr) => {
+                let entry = &*ptr;
+                Ok(FatbinModule::Ptx(entry.data))
+            }
+            FatbinModuleHandle::FromHeader(ptr) => {
+                let fatbin_header = &*ptr;
+                let magic = fatbin_header.magic;
+                if magic == ELF_MAGIC {
+                    return Ok(FatbinModule::Elf(ptr as _));
+                } else if magic != FATBIN_MAGIC {
+                    return Err(UnexpectedFieldError {
+                        name: "FATBIN_MAGIC",
+                        expected: vec![AnyUInt::U32(FATBIN_MAGIC), AnyUInt::U32(ELF_MAGIC)],
+                        observed: AnyUInt::U32(magic),
+                    });
+                }
+                let version = fatbin_header.version;
+                if version != FATBIN_VERSION {
+                    return Err(UnexpectedFieldError {
+                        name: "FATBIN_VERSION",
+                        expected: vec![AnyUInt::U16(FATBIN_VERSION)],
+                        observed: AnyUInt::U16(version),
+                    });
+                }
+                let current = (ptr as *const u8).add(fatbin_header.header_size as usize);
+                let end = current.add(fatbin_header.files_size as usize);
+                Ok(FatbinModule::Files(FatbinModuleFiles { current, end }))
+            }
         }
-        let version = fatbin_header.version;
-        if version != FATBIN_VERSION {
-            return Err(UnexpectedFieldError {
-                name: "FATBIN_VERSION",
-                expected: vec![AnyUInt::U16(FATBIN_VERSION)],
-                observed: AnyUInt::U16(version),
-            });
-        }
-        let current = (self.0 as *const u8).add(fatbin_header.header_size as usize);
-        let end = current.add(fatbin_header.files_size as usize);
-        Ok(FatbinModule::Files(FatbinModuleFiles { current, end }))
     }
 }
 
@@ -683,6 +777,7 @@ impl Iterator for FatbinModuleFiles {
 
 pub enum FatbinModule {
     Elf(*const u8),
+    Ptx(*const u8),
     Files(FatbinModuleFiles),
 }
 

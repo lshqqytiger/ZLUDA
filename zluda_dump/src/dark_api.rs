@@ -163,7 +163,7 @@ impl CudaDarkApiDump for CudaDarkApiDumpFns {
         guid: &[u8; 16],
         idx: usize,
         module: *mut CUmodule,
-        fatbinc_wrapper: *const zluda_dark_api::FatbincWrapper,
+        ptr: *const c_void,
     ) -> CUresult {
         let arguments_writer = Box::new(move |writer: &mut dyn std::io::Write| {
             writer.write_all(b"(")?;
@@ -172,7 +172,7 @@ impl CudaDarkApiDump for CudaDarkApiDumpFns {
             format::CudaDisplay::write(&module, "", 0, writer)?;
             writer.write_all(b", ")?;
             writer.write_all(stringify!(fatbinc_wrapper).as_bytes())?;
-            write!(writer, ": {:p})", fatbinc_wrapper)
+            write!(writer, ": {:p})", ptr)
         });
         let global_state = &mut *super::GLOBAL_STATE.lock().unwrap();
         let mut fn_logger = global_state.log_factory.get_logger_dark_api(
@@ -186,12 +186,9 @@ impl CudaDarkApiDump for CudaDarkApiDumpFns {
         let original_ptr = cuda_state.dark_api.overrides[guid].1.add(idx);
         let original_fn = mem::transmute::<
             _,
-            unsafe extern "system" fn(
-                *mut CUmodule,
-                *const zluda_dark_api::FatbincWrapper,
-            ) -> CUresult,
+            unsafe extern "system" fn(*mut CUmodule, *const c_void) -> CUresult,
         >(*original_ptr);
-        let original_result = original_fn(module, fatbinc_wrapper);
+        let original_result = original_fn(module, ptr);
         fn_logger.result = Some(original_result);
         if !matches!(
             original_result,
@@ -202,9 +199,8 @@ impl CudaDarkApiDump for CudaDarkApiDumpFns {
         ) {
             return original_result;
         }
-        let maybe_fatbin = fn_logger.log_unwrap(
-            zluda_dark_api::CudaFatbin::from_wrapper(fatbinc_wrapper).map_err(Into::into),
-        );
+        let maybe_fatbin =
+            fn_logger.log_unwrap(zluda_dark_api::CudaFatbin::from(ptr).map_err(Into::into));
         if let Some(fatbin) = maybe_fatbin {
             cuda_state.record_module(
                 &mut fn_logger,
@@ -219,7 +215,7 @@ impl CudaDarkApiDump for CudaDarkApiDumpFns {
         guid: &[u8; 16],
         idx: usize,
         module: *mut CUmodule,
-        fatbinc_wrapper: *const zluda_dark_api::FatbincWrapper,
+        ptr: *const c_void,
         arg3: *mut c_void,
         arg4: *mut c_void,
         arg5: usize,
@@ -231,7 +227,7 @@ impl CudaDarkApiDump for CudaDarkApiDumpFns {
             format::CudaDisplay::write(&module, "", 0, writer)?;
             writer.write_all(b", ")?;
             writer.write_all(stringify!(fatbinc_wrapper).as_bytes())?;
-            write!(writer, ": {:p}, ", fatbinc_wrapper)?;
+            write!(writer, ": {:p}, ", ptr)?;
             writer.write_all(stringify!(arg3).as_bytes())?;
             write!(writer, ": {:p}, ", arg3)?;
             writer.write_all(stringify!(arg4).as_bytes())?;
@@ -253,13 +249,13 @@ impl CudaDarkApiDump for CudaDarkApiDumpFns {
             _,
             unsafe extern "system" fn(
                 *mut CUmodule,
-                *const zluda_dark_api::FatbincWrapper,
+                *const c_void,
                 *mut c_void,
                 *mut c_void,
                 usize,
             ) -> CUresult,
         >(*original_ptr);
-        let original_result = original_fn(module, fatbinc_wrapper, arg3, arg4, arg5);
+        let original_result = original_fn(module, ptr, arg3, arg4, arg5);
         fn_logger.result = Some(original_result);
         if !matches!(
             original_result,
@@ -270,9 +266,8 @@ impl CudaDarkApiDump for CudaDarkApiDumpFns {
         ) {
             return original_result;
         }
-        let maybe_fatbin = fn_logger.log_unwrap(
-            zluda_dark_api::CudaFatbin::from_wrapper(fatbinc_wrapper).map_err(Into::into),
-        );
+        let maybe_fatbin =
+            fn_logger.log_unwrap(zluda_dark_api::CudaFatbin::from(ptr).map_err(Into::into));
         if let Some(fatbin) = maybe_fatbin {
             cuda_state.record_module(
                 &mut fn_logger,

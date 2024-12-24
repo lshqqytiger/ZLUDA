@@ -80,7 +80,7 @@ pub(crate) unsafe fn load_data(
     }
     load_impl(
         module,
-        CUmoduleContent::from_ptr(image.cast()).map_err(|_| CUresult::CUDA_ERROR_INVALID_VALUE)?,
+        CUmoduleContent::from_ptr(image).map_err(|_| CUresult::CUDA_ERROR_INVALID_VALUE)?,
     )
 }
 
@@ -140,7 +140,11 @@ unsafe fn link_build_or_load_cuda_module(
                 link_build_or_load_fatbin_module(global_state, compilation_mode, isa, module)
                     .map(Cow::Owned)
             }
-            zluda_dark_api::CudaFatbin::Version2 {
+            zluda_dark_api::CudaFatbin::OldStyle {
+                post_link,
+                pre_link,
+            }
+            | zluda_dark_api::CudaFatbin::Version2 {
                 post_link,
                 pre_link,
             } => {
@@ -157,6 +161,9 @@ unsafe fn link_build_or_load_cuda_module(
                         match module {
                             zluda_dark_api::FatbinModule::Elf(_) => {
                                 return Err(CUresult::CUDA_ERROR_NOT_SUPPORTED);
+                            }
+                            zluda_dark_api::FatbinModule::Ptx(ptr) => {
+                                Ok(CStr::from_ptr(ptr.cast()).to_string_lossy())
                             }
                             zluda_dark_api::FatbinModule::Files(files) => {
                                 let ptx_files = extract_ptx(files);
@@ -185,6 +192,14 @@ fn link_build_or_load_fatbin_module(
     match module {
         zluda_dark_api::FatbinModule::Elf(_) => {
             return Err(CUresult::CUDA_ERROR_NOT_SUPPORTED);
+        }
+        zluda_dark_api::FatbinModule::Ptx(ptr) => {
+            let ptx = unsafe { CStr::from_ptr(ptr.cast()) }.to_string_lossy();
+            if let Ok(binary) = link_build_zluda_module(global_state, compilation_mode, isa, &[ptx])
+            {
+                return Ok(binary);
+            }
+            Err(CUresult::CUDA_ERROR_NOT_SUPPORTED)
         }
         zluda_dark_api::FatbinModule::Files(files) => {
             let ptx_files = extract_ptx(files);

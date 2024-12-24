@@ -41,12 +41,12 @@ static mut TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE: [u8; 14] = [0; 14];
 impl CudaDarkApi for CudaDarkApiZluda {
     unsafe extern "system" fn get_module_from_cubin(
         module: *mut cuda_types::CUmodule,
-        fatbinc_wrapper: *const zluda_dark_api::FatbincWrapper,
+        ptr: *const c_void,
     ) -> CUresult {
-        if module == ptr::null_mut() || fatbinc_wrapper == ptr::null_mut() {
+        if module == ptr::null_mut() || ptr == ptr::null_mut() {
             return CUresult::CUDA_ERROR_INVALID_VALUE;
         }
-        let fatbin = match CudaFatbin::from_wrapper(fatbinc_wrapper) {
+        let fatbin = match CudaFatbin::from(ptr) {
             Ok(fatbin) => fatbin,
             Err(_) => return CUresult::CUDA_ERROR_NOT_SUPPORTED,
         };
@@ -86,16 +86,14 @@ impl CudaDarkApi for CudaDarkApiZluda {
         res
     }
 
-    unsafe extern "system" fn set_device(
-        dev: cuda_types::CUdevice,
-    ) -> CUresult {
+    unsafe extern "system" fn set_device(dev: cuda_types::CUdevice) -> CUresult {
         use hip_runtime_sys::*;
         hipSetDevice(FromCuda::from_cuda(dev)).into_cuda()
     }
 
     unsafe extern "system" fn get_module_from_cubin_ex1(
         module: *mut cuda_types::CUmodule,
-        fatbinc_wrapper: *const zluda_dark_api::FatbincWrapper,
+        ptr: *const c_void,
         arg3: *mut c_void,
         arg4: *mut c_void,
         _arg5: usize,
@@ -103,10 +101,10 @@ impl CudaDarkApi for CudaDarkApiZluda {
         if arg3 != ptr::null_mut() || arg4 != ptr::null_mut() {
             return CUresult::CUDA_ERROR_NOT_SUPPORTED;
         }
-        if module == ptr::null_mut() || fatbinc_wrapper == ptr::null_mut() {
+        if module == ptr::null_mut() || ptr == ptr::null_mut() {
             return CUresult::CUDA_ERROR_INVALID_VALUE;
         }
-        let fatbin = match CudaFatbin::from_wrapper(fatbinc_wrapper) {
+        let fatbin = match CudaFatbin::from(ptr) {
             Ok(fatbin) => fatbin,
             Err(_) => return CUresult::CUDA_ERROR_NOT_SUPPORTED,
         };

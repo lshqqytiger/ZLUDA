@@ -74,10 +74,16 @@ fn visit_cumodule_content(
         CUmoduleContent::Fatbin(zluda_dark_api::CudaFatbin::Version1(module)) => {
             visit_module(fn_logger, &module, &mut on_file, true, None);
         }
-        CUmoduleContent::Fatbin(zluda_dark_api::CudaFatbin::Version2 {
-            post_link,
-            pre_link,
-        }) => {
+        CUmoduleContent::Fatbin(
+            zluda_dark_api::CudaFatbin::OldStyle {
+                post_link,
+                pre_link,
+            }
+            | zluda_dark_api::CudaFatbin::Version2 {
+                post_link,
+                pre_link,
+            },
+        ) => {
             visit_module(fn_logger, &post_link, &mut on_file, false, None);
             for (sub_index, sub_module) in pre_link.iter().enumerate() {
                 visit_module(fn_logger, sub_module, &mut on_file, false, Some(sub_index));
@@ -141,6 +147,14 @@ fn visit_module(
                         }
                     },
                     buffer,
+                );
+            }
+            zluda_dark_api::FatbinModule::Ptx(ptr) => {
+                on_file(
+                    fn_logger,
+                    FatbinFileKind::Ptx,
+                    CUmoduleFileIndex::Single,
+                    unsafe { CStr::from_ptr(ptr.cast()) }.to_bytes(),
                 );
             }
             zluda_dark_api::FatbinModule::Files(files) => {

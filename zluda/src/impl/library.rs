@@ -57,7 +57,7 @@ pub(crate) unsafe fn load_data(
                 None,
                 device.compilation_mode,
                 &device.comgr_isa,
-                zluda_dark_api::CUmoduleContent::from_ptr(code.cast())
+                zluda_dark_api::CUmoduleContent::from_ptr(code)
                     .map_err(|_| CUresult::CUDA_ERROR_INVALID_VALUE)?,
             )?;
             Ok(ModuleData::alloc(module_data))

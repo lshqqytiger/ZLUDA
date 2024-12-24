@@ -427,8 +427,8 @@ pub(crate) fn cuModuleLoadData_Post(
     if result != CUresult::CUDA_SUCCESS {
         return;
     }
-    if let Some(module_content) =
-        fn_logger.log_unwrap(unsafe { CUmoduleContent::from_ptr(raw_image.cast()) }.map_err(LogEntry::from))
+    if let Some(module_content) = fn_logger
+        .log_unwrap(unsafe { CUmoduleContent::from_ptr(raw_image) }.map_err(LogEntry::from))
     {
         state
             .cuda_state
@@ -1071,7 +1071,7 @@ pub(crate) fn cuLibraryLoadData_Post(
         return;
     }
     if let Some(module_content) =
-        fn_logger.log_unwrap(unsafe { CUmoduleContent::from_ptr(code.cast()) }.map_err(LogEntry::from))
+        fn_logger.log_unwrap(unsafe { CUmoduleContent::from_ptr(code) }.map_err(LogEntry::from))
     {
         state
             .cuda_state
