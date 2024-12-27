@@ -8,8 +8,8 @@ use cuda_types::*;
 use nvapi::*;
 use once_cell::sync::OnceCell;
 use std::{ffi::c_void, io::Write, mem, ptr};
-use windows::Win32::Graphics::Direct3D11::*;
-use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Direct3D11;
+use windows::Win32::Graphics::Direct3D12;
 //use winapi::um::d3d12::{ID3D12Device, ID3D12GraphicsCommandList};
 
 static NVCUDA: OnceCell<libloading::Library> = OnceCell::new();
@@ -136,7 +136,7 @@ struct Shader {
 
 #[allow(non_snake_case)]
 unsafe extern "system" fn NvAPI_D3D12_IsFatbinPTXSupported(
-    _pDevice: *const ID3D12Device,
+    _pDevice: *const Direct3D12::ID3D12Device,
     pSupported: *mut bool,
 ) -> NvAPI_Status {
     *pSupported = true;
@@ -145,7 +145,7 @@ unsafe extern "system" fn NvAPI_D3D12_IsFatbinPTXSupported(
 
 #[allow(non_snake_case)]
 unsafe extern "system" fn NvAPI_D3D12_CreateCubinComputeShaderWithName(
-    pDevice: *const ID3D12Device,
+    pDevice: *const Direct3D12::ID3D12Device,
     pCubin: *const c_void,
     size: u32,
     block_x: u32,
@@ -186,7 +186,7 @@ unsafe extern "system" fn NvAPI_D3D12_CreateCubinComputeShaderWithName(
 
 #[allow(non_snake_case)]
 unsafe extern "system" fn NvAPI_D3D12_LaunchCubinShader(
-    pCommandList: *const ID3D12GraphicsCommandList,
+    pCommandList: *const Direct3D12::ID3D12GraphicsCommandList,
     hShader: NVDX_ObjectHandle,
     gridX: u32,
     gridY: u32,
@@ -199,7 +199,7 @@ unsafe extern "system" fn NvAPI_D3D12_LaunchCubinShader(
 
 #[allow(non_snake_case)]
 unsafe extern "system" fn NvAPI_D3D11_IsFatbinPTXSupported(
-    _pDevice: *const ID3D11Device,
+    _pDevice: *const Direct3D11::ID3D11Device,
     pSupported: *mut bool,
 ) -> NvAPI_Status {
     *pSupported = true;
@@ -208,7 +208,7 @@ unsafe extern "system" fn NvAPI_D3D11_IsFatbinPTXSupported(
 
 #[allow(non_snake_case)]
 unsafe extern "system" fn NvAPI_D3D11_CreateCubinComputeShaderWithName(
-    _pDevice: *const ID3D11Device,
+    _pDevice: *const Direct3D11::ID3D11Device,
     pCubin: *const c_void,
     _size: u32,
     block_x: u32,
@@ -249,7 +249,7 @@ unsafe extern "system" fn NvAPI_D3D11_CreateCubinComputeShaderWithName(
 
 #[allow(non_snake_case)]
 unsafe extern "system" fn NvAPI_D3D11_LaunchCubinShader(
-    pCommandList: *const ID3D11DeviceContext,
+    pCommandList: *const Direct3D11::ID3D11DeviceContext,
     hShader: NVDX_ObjectHandle,
     gridX: u32,
     gridY: u32,
@@ -286,9 +286,9 @@ unsafe extern "system" fn NvAPI_D3D_GetCurrentSLIState(
 
 #[allow(non_snake_case)]
 unsafe extern "system" fn NvAPI_D3D11_CreateSamplerState(
-    pDevice: *const ID3D11Device,
-    pSamplerDesc: *const D3D11_SAMPLER_DESC,
-    ppSamplerState: *mut *const ID3D11SamplerState,
+    pDevice: *const Direct3D11::ID3D11Device,
+    pSamplerDesc: *const Direct3D11::D3D11_SAMPLER_DESC,
+    ppSamplerState: *mut *const Direct3D11::ID3D11SamplerState,
     pDriverHandle: *mut u32,
 ) -> NvAPI_Status {
     let mut state = None;
