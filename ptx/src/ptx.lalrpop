@@ -1116,7 +1116,7 @@ InstAddCC: ast::Instruction<ast::ParsedArgParams<'input>> = {
 InstSetp: ast::Instruction<ast::ParsedArgParams<'input>> = {
     "setp" <d:SetpMode> <a:Arg4Setp> => ast::Instruction::Setp(d, a),
     "setp" <d:SetpBoolMode> <dst1:ExtendedID> <dst2:OptionalDst?> "," <src1:Operand> "," <src2:Operand> "," <neg_src3:"!"?> <src3:Operand> => {
-        let args = ast::Arg5Setp{
+        let args = ast::Arg5Setp {
             dst1,
             dst2,
             src1,
@@ -1131,42 +1131,25 @@ InstSetp: ast::Instruction<ast::ParsedArgParams<'input>> = {
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-comparison-instructions-set
 InstSet: ast::Instruction<ast::ParsedArgParams<'input>> = {
-    "set" <cmp_op:SetpCompareOp> <ftz:".ftz"?> ".f16x2" ".f16x2" <arg:Arg3> => {
-        let data = ast::SetData {
-            dst_type: ast::ScalarType::F16x2,
-            src_type: ast::ScalarType::F16x2,
-            flush_to_zero: ftz.is_some(),
-        cmp_op: cmp_op,
-        };
-        ast::Instruction::Set(data, arg)
-    },
-    "set" <cmp_op:SetpCompareOp> <ftz:".ftz"?> ".u32" ".f16x2" <arg:Arg3> => {
-        let data = ast::SetData {
-            dst_type: ast::ScalarType::U32,
-            src_type: ast::ScalarType::F16x2,
-            flush_to_zero: ftz.is_some(),
-            cmp_op: cmp_op,
-        };
-        ast::Instruction::Set(data, arg)
-    }
+    "set" <d:SetMode> <a:Arg3> => ast::Instruction::Set(d, a),
+    "set" <d:SetBoolMode> <dst1:ExtendedID> <dst2:OptionalDst?> "," <src1:Operand> "," <src2:Operand> "," <neg_src3:"!"?> <src3:Operand> => todo!(),
 }
 
 SetpMode: ast::SetpData = {
-    <cmp_op:SetpCompareOp> <t:SetpTypeNoF32> => ast::SetpData {
+    <cmp_op:SetCompareOp> <t:SetpTypeNoF32> => ast::SetpData {
         typ: t,
         flush_to_zero: None,
         cmp_op: cmp_op,
     },
-    <cmp_op:SetpCompareOp> <ftz:".ftz"?> ".f32" => ast::SetpData {
+    <cmp_op:SetCompareOp> <ftz:".ftz"?> ".f32" => ast::SetpData {
         typ: ast::ScalarType::F32,
         flush_to_zero: Some(ftz.is_some()),
         cmp_op: cmp_op,
     }
-
 };
 
 SetpBoolMode: ast::SetpBoolData = {
-    <cmp_op:SetpCompareOp> <bool_op:SetpBoolPostOp> <t:SetpTypeNoF32> => ast::SetpBoolData {
+    <cmp_op:SetCompareOp> <bool_op:SetBoolPostOp> <t:SetpTypeNoF32> => ast::SetpBoolData {
         base: ast::SetpData {
             typ: t,
             flush_to_zero: None,
@@ -1175,7 +1158,7 @@ SetpBoolMode: ast::SetpBoolData = {
         bool_op: bool_op,
         negate_src3: false,
     },
-    <cmp_op:SetpCompareOp> <bool_op:SetpBoolPostOp> <ftz:".ftz"?> ".f32" => ast::SetpBoolData {
+    <cmp_op:SetCompareOp> <bool_op:SetBoolPostOp> <ftz:".ftz"?> ".f32" => ast::SetpBoolData {
         base: ast::SetpData {
             typ: ast::ScalarType::F32,
             flush_to_zero: Some(ftz.is_some()),
@@ -1186,32 +1169,86 @@ SetpBoolMode: ast::SetpBoolData = {
     }
 };
 
-SetpCompareOp: ast::SetpCompareOp = {
-    ".eq" => ast::SetpCompareOp::Eq,
-    ".ne" => ast::SetpCompareOp::NotEq,
-    ".lt" => ast::SetpCompareOp::Less,
-    ".le" => ast::SetpCompareOp::LessOrEq,
-    ".gt" => ast::SetpCompareOp::Greater,
-    ".ge" => ast::SetpCompareOp::GreaterOrEq,
-    ".lo" => ast::SetpCompareOp::Less,
-    ".ls" => ast::SetpCompareOp::LessOrEq,
-    ".hi" => ast::SetpCompareOp::Greater,
-    ".hs" => ast::SetpCompareOp::GreaterOrEq,
-    ".equ" => ast::SetpCompareOp::NanEq,
-    ".neu" => ast::SetpCompareOp::NanNotEq,
-    ".ltu" => ast::SetpCompareOp::NanLess,
-    ".leu" => ast::SetpCompareOp::NanLessOrEq,
-    ".gtu" => ast::SetpCompareOp::NanGreater,
-    ".geu" => ast::SetpCompareOp::NanGreaterOrEq,
-    ".num" => ast::SetpCompareOp::IsNotNan,
-    ".nan" => ast::SetpCompareOp::IsAnyNan,
+SetMode: ast::SetData = {
+    <cmp_op:SetCompareOp> <dst:ScalarType> <src:SetTypeNoF16x2> => ast::SetData {
+        dst_type: dst,
+        src_type: src,
+        flush_to_zero: None,
+        cmp_op: cmp_op,
+    },
+    <cmp_op:SetCompareOp> <ftz:".ftz"?> <t:ScalarType> ".f16x2" => ast::SetData {
+        dst_type: t,
+        src_type: ast::ScalarType::F16x2,
+        flush_to_zero: Some(ftz.is_some()),
+        cmp_op: cmp_op,
+    }
 };
 
-SetpBoolPostOp: ast::SetpBoolPostOp = {
-    ".and" => ast::SetpBoolPostOp::And,
-    ".or" => ast::SetpBoolPostOp::Or,
-    ".xor" => ast::SetpBoolPostOp::Xor,
+SetBoolMode: ast::SetBoolData = {
+    <cmp_op:SetCompareOp> <bool_op:SetBoolPostOp> <dst:ScalarType> <src:SetTypeNoF16x2> => ast::SetBoolData {
+        base: ast::SetData {
+            dst_type: dst,
+            src_type: src,
+            flush_to_zero: None,
+            cmp_op: cmp_op,
+        },
+        bool_op: bool_op,
+        negate_src3: false,
+    },
+    // unknown
+    <cmp_op:SetCompareOp> <bool_op:SetBoolPostOp> <ftz:".ftz"?> <t:ScalarType> ".f16x2" => ast::SetBoolData {
+        base: ast::SetData {
+            dst_type: t,
+            src_type: ast::ScalarType::F16x2,
+            flush_to_zero: Some(ftz.is_some()),
+            cmp_op: cmp_op,
+        },
+        bool_op: bool_op,
+        negate_src3: false,
+    }
 };
+
+SetCompareOp: ast::SetCompareOp = {
+    ".eq" => ast::SetCompareOp::Eq,
+    ".ne" => ast::SetCompareOp::NotEq,
+    ".lt" => ast::SetCompareOp::Less,
+    ".le" => ast::SetCompareOp::LessOrEq,
+    ".gt" => ast::SetCompareOp::Greater,
+    ".ge" => ast::SetCompareOp::GreaterOrEq,
+    ".lo" => ast::SetCompareOp::Less,
+    ".ls" => ast::SetCompareOp::LessOrEq,
+    ".hi" => ast::SetCompareOp::Greater,
+    ".hs" => ast::SetCompareOp::GreaterOrEq,
+    ".equ" => ast::SetCompareOp::NanEq,
+    ".neu" => ast::SetCompareOp::NanNotEq,
+    ".ltu" => ast::SetCompareOp::NanLess,
+    ".leu" => ast::SetCompareOp::NanLessOrEq,
+    ".gtu" => ast::SetCompareOp::NanGreater,
+    ".geu" => ast::SetCompareOp::NanGreaterOrEq,
+    ".num" => ast::SetCompareOp::IsNotNan,
+    ".nan" => ast::SetCompareOp::IsAnyNan,
+};
+
+SetBoolPostOp: ast::SetBoolPostOp = {
+    ".and" => ast::SetBoolPostOp::And,
+    ".or" => ast::SetBoolPostOp::Or,
+    ".xor" => ast::SetBoolPostOp::Xor,
+};
+
+SetTypeNoF16x2: ast::ScalarType = {
+    ".b16" => ast::ScalarType::B16,
+    ".b32" => ast::ScalarType::B32,
+    ".b64" => ast::ScalarType::B64,
+    ".u16" => ast::ScalarType::U16,
+    ".u32" => ast::ScalarType::U32,
+    ".u64" => ast::ScalarType::U64,
+    ".s16" => ast::ScalarType::S16,
+    ".s32" => ast::ScalarType::S32,
+    ".s64" => ast::ScalarType::S64,
+    ".f16" => ast::ScalarType::F16,
+    ".f32" => ast::ScalarType::F32,
+    ".f64" => ast::ScalarType::F64,
+}
 
 SetpTypeNoF32: ast::ScalarType = {
     ".b16" => ast::ScalarType::B16,

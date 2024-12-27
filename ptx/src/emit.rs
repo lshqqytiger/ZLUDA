@@ -13,7 +13,6 @@ use zluda_llvm::prelude::*;
 use zluda_llvm::zluda::*;
 use zluda_llvm::*;
 
-use crate::ast::SetpData;
 use crate::translate::{
     self, Arg4CarryOut, ConstType, ConversionKind, DenormSummary, ExpandedArgParams, FPDenormMode,
     MadCCDetails, MadCDetails, TranslationModule, TypeKind, TypeParts,
@@ -1116,6 +1115,7 @@ fn emit_instruction(
         ast::Instruction::Mul(details, args) => emit_inst_mul(ctx, details, args)?,
         ast::Instruction::Mul24(details, args) => emit_inst_mul24(ctx, details, args)?,
         ast::Instruction::Add(details, args) => emit_inst_add(ctx, details, args)?,
+        ast::Instruction::Set(details, arg) => emit_inst_set(ctx, details, arg)?,
         ast::Instruction::Setp(details, args) => emit_inst_setp(ctx, details, args, None)?,
         ast::Instruction::SetpBool(details, args) => emit_inst_setp_bool(ctx, details, args)?,
         ast::Instruction::Not(type_, args) => emit_inst_not(ctx, *type_, args)?,
@@ -1161,7 +1161,6 @@ fn emit_instruction(
         ast::Instruction::Brkpt => emit_int_brkpt(ctx)?,
         ast::Instruction::BarWarp(..) => emit_inst_bar_warp(ctx)?,
         ast::Instruction::Vshr(arg) => emit_inst_vshr(ctx, arg)?,
-        ast::Instruction::Set(details, arg) => emit_inst_set(ctx, details, arg)?,
         ast::Instruction::Red(details, arg) => emit_inst_red(ctx, details, arg)?,
         ast::Instruction::Isspacep(space, arg) => emit_inst_isspacep(ctx, *space, arg)?,
         ast::Instruction::Sad(type_, arg) => emit_inst_sad(ctx, *type_, arg)?,
@@ -1255,17 +1254,14 @@ fn emit_inst_isspacep_impl(
 
 fn emit_inst_sad(
     ctx: &mut EmitContext,
-    type_: ast::ScalarType,
+    typ: ast::ScalarType,
     arg: &ast::Arg4<ExpandedArgParams>,
 ) -> Result<(), TranslateError> {
     let builder = ctx.builder.get();
     let less_than = emit_inst_setp_int(
         ctx,
-        &SetpData {
-            typ: type_,
-            flush_to_zero: None,
-            cmp_op: ast::SetpCompareOp::Greater,
-        },
+        typ.kind(),
+        ast::SetCompareOp::Greater,
         None,
         arg.src1,
         arg.src2,
@@ -1296,26 +1292,42 @@ fn emit_inst_set(
     arg: &ast::Arg3<ExpandedArgParams>,
 ) -> Result<(), TranslateError> {
     let builder = ctx.builder.get();
-    let temp_result = emit_inst_setp_float(ctx, details.cmp_op, None, arg.src1, arg.src2)?;
-    if details.src_type != ast::ScalarType::F16x2 {
+    if details.src_type.is_integer() {
+        let result = emit_inst_setp_int(
+            ctx,
+            details.src_type.kind(),
+            details.cmp_op,
+            None,
+            arg.src1,
+            arg.src2,
+        )?;
+        let typ = get_llvm_type(ctx, &ast::Type::Scalar(details.dst_type))?;
+        ctx.names.register_result(arg.dst, |dst_name| unsafe {
+            LLVMBuildZExt(builder, result, typ, dst_name)
+        });
+    } else if details.src_type != ast::ScalarType::F16x2 {
         return Err(TranslateError::todo());
-    }
-    if details.dst_type.is_integer() && details.dst_type.size_of() == mem::size_of::<u32>() as u8 {
-        let b16vec2_type = get_llvm_type(ctx, &ast::Type::Vector(ast::ScalarType::B16, 2))?;
-        let b16vec2_result =
-            unsafe { LLVMBuildSExt(builder, temp_result, b16vec2_type, LLVM_UNNAMED) };
-
-        let u32_type = get_llvm_type(ctx, &ast::Type::Scalar(ast::ScalarType::U32))?;
-        ctx.names.register_result(arg.dst, |dst_name| unsafe {
-            LLVMBuildBitCast(builder, b16vec2_result, u32_type, dst_name)
-        });
-    } else if matches!(details.dst_type, ast::ScalarType::F16x2) {
-        let f16x2_type = get_llvm_type(ctx, &ast::Type::Scalar(ast::ScalarType::F16x2))?;
-        ctx.names.register_result(arg.dst, |dst_name| unsafe {
-            LLVMBuildUIToFP(builder, temp_result, f16x2_type, dst_name)
-        });
     } else {
-        return Err(TranslateError::todo());
+        let result = emit_inst_setp_float(ctx, details.cmp_op, None, arg.src1, arg.src2)?;
+        if details.dst_type.is_integer()
+            && details.dst_type.size_of() == mem::size_of::<u32>() as u8
+        {
+            let b16vec2_type = get_llvm_type(ctx, &ast::Type::Vector(ast::ScalarType::B16, 2))?;
+            let b16vec2_result =
+                unsafe { LLVMBuildSExt(builder, result, b16vec2_type, LLVM_UNNAMED) };
+
+            let u32_type = get_llvm_type(ctx, &ast::Type::Scalar(ast::ScalarType::U32))?;
+            ctx.names.register_result(arg.dst, |dst_name| unsafe {
+                LLVMBuildBitCast(builder, b16vec2_result, u32_type, dst_name)
+            });
+        } else if matches!(details.dst_type, ast::ScalarType::F16x2) {
+            let f16x2_type = get_llvm_type(ctx, &ast::Type::Scalar(ast::ScalarType::F16x2))?;
+            ctx.names.register_result(arg.dst, |dst_name| unsafe {
+                LLVMBuildUIToFP(builder, result, f16x2_type, dst_name)
+            });
+        } else {
+            return Err(TranslateError::todo());
+        }
     }
     Ok(())
 }
@@ -1831,7 +1843,7 @@ fn emit_inst_setp(
     ctx: &mut EmitContext,
     setp: &ast::SetpData,
     args: &ast::Arg4Setp<ExpandedArgParams>,
-    bool_postprocess: Option<(bool, Id, ast::SetpBoolPostOp)>,
+    bool_postprocess: Option<(bool, Id, ast::SetBoolPostOp)>,
 ) -> Result<(), TranslateError> {
     let builder = ctx.builder.get();
     let cmp_op_dst1 = if bool_postprocess.is_none() {
@@ -1839,9 +1851,10 @@ fn emit_inst_setp(
     } else {
         None
     };
-    let cmp_result1 = match setp.typ.kind() {
+    let kind = setp.typ.kind();
+    let cmp_result1 = match kind {
         ast::ScalarKind::Signed | ast::ScalarKind::Unsigned | ast::ScalarKind::Bit => {
-            emit_inst_setp_int(ctx, setp, cmp_op_dst1, args.src1, args.src2)?
+            emit_inst_setp_int(ctx, kind, setp.cmp_op, cmp_op_dst1, args.src1, args.src2)?
         }
         ast::ScalarKind::Float => {
             emit_inst_setp_float(ctx, setp.cmp_op, cmp_op_dst1, args.src1, args.src2)?
@@ -1868,9 +1881,9 @@ fn emit_inst_setp(
             src3 = emit_inst_not_impl(ctx, ast::ScalarType::Pred, None, src3)?;
         }
         let llvm_fn = match bool_op {
-            ast::SetpBoolPostOp::And => LLVMBuildAnd,
-            ast::SetpBoolPostOp::Or => LLVMBuildOr,
-            ast::SetpBoolPostOp::Xor => LLVMBuildXor,
+            ast::SetBoolPostOp::And => LLVMBuildAnd,
+            ast::SetBoolPostOp::Or => LLVMBuildOr,
+            ast::SetBoolPostOp::Xor => LLVMBuildXor,
         };
         ctx.names.register_result(args.dst1, |dst_name| unsafe {
             llvm_fn(builder, cmp_result1, src3, dst_name)
@@ -1886,32 +1899,33 @@ fn emit_inst_setp(
 
 fn emit_inst_setp_int(
     ctx: &mut EmitContext,
-    setp: &ast::SetpData,
+    kind: ast::ScalarKind,
+    cmp_op: ast::SetCompareOp,
     dst: Option<Id>,
     src1: Id,
     src2: Id,
 ) -> Result<LLVMValueRef, TranslateError> {
     let builder = ctx.builder.get();
-    let is_signed = setp.typ.kind() == ast::ScalarKind::Signed;
-    let comparer_op = match (setp.cmp_op, is_signed) {
-        (ast::SetpCompareOp::Eq, _) => LLVMIntPredicate::LLVMIntEQ,
-        (ast::SetpCompareOp::NotEq, _) => LLVMIntPredicate::LLVMIntNE,
-        (ast::SetpCompareOp::Less, false) => LLVMIntPredicate::LLVMIntULT,
-        (ast::SetpCompareOp::Less, true) => LLVMIntPredicate::LLVMIntSLT,
-        (ast::SetpCompareOp::LessOrEq, false) => LLVMIntPredicate::LLVMIntULE,
-        (ast::SetpCompareOp::LessOrEq, true) => LLVMIntPredicate::LLVMIntSLE,
-        (ast::SetpCompareOp::Greater, false) => LLVMIntPredicate::LLVMIntUGT,
-        (ast::SetpCompareOp::Greater, true) => LLVMIntPredicate::LLVMIntSGT,
-        (ast::SetpCompareOp::GreaterOrEq, false) => LLVMIntPredicate::LLVMIntUGE,
-        (ast::SetpCompareOp::GreaterOrEq, true) => LLVMIntPredicate::LLVMIntSGE,
-        (ast::SetpCompareOp::NanEq, _)
-        | (ast::SetpCompareOp::NanNotEq, _)
-        | (ast::SetpCompareOp::NanLess, _)
-        | (ast::SetpCompareOp::NanLessOrEq, _)
-        | (ast::SetpCompareOp::NanGreater, _)
-        | (ast::SetpCompareOp::NanGreaterOrEq, _)
-        | (ast::SetpCompareOp::IsNotNan, _)
-        | (ast::SetpCompareOp::IsAnyNan, _) => return Err(TranslateError::unreachable()),
+    let is_signed = kind == ast::ScalarKind::Signed;
+    let comparer_op = match (cmp_op, is_signed) {
+        (ast::SetCompareOp::Eq, _) => LLVMIntPredicate::LLVMIntEQ,
+        (ast::SetCompareOp::NotEq, _) => LLVMIntPredicate::LLVMIntNE,
+        (ast::SetCompareOp::Less, false) => LLVMIntPredicate::LLVMIntULT,
+        (ast::SetCompareOp::Less, true) => LLVMIntPredicate::LLVMIntSLT,
+        (ast::SetCompareOp::LessOrEq, false) => LLVMIntPredicate::LLVMIntULE,
+        (ast::SetCompareOp::LessOrEq, true) => LLVMIntPredicate::LLVMIntSLE,
+        (ast::SetCompareOp::Greater, false) => LLVMIntPredicate::LLVMIntUGT,
+        (ast::SetCompareOp::Greater, true) => LLVMIntPredicate::LLVMIntSGT,
+        (ast::SetCompareOp::GreaterOrEq, false) => LLVMIntPredicate::LLVMIntUGE,
+        (ast::SetCompareOp::GreaterOrEq, true) => LLVMIntPredicate::LLVMIntSGE,
+        (ast::SetCompareOp::NanEq, _)
+        | (ast::SetCompareOp::NanNotEq, _)
+        | (ast::SetCompareOp::NanLess, _)
+        | (ast::SetCompareOp::NanLessOrEq, _)
+        | (ast::SetCompareOp::NanGreater, _)
+        | (ast::SetCompareOp::NanGreaterOrEq, _)
+        | (ast::SetCompareOp::IsNotNan, _)
+        | (ast::SetCompareOp::IsAnyNan, _) => return Err(TranslateError::unreachable()),
     };
     let src1 = ctx.names.value(src1)?;
     let src2 = ctx.names.value(src2)?;
@@ -1922,27 +1936,27 @@ fn emit_inst_setp_int(
 
 fn emit_inst_setp_float(
     ctx: &mut EmitContext,
-    cmp_op: ast::SetpCompareOp,
+    cmp_op: ast::SetCompareOp,
     dst: Option<Id>,
     src1: Id,
     src2: Id,
 ) -> Result<LLVMValueRef, TranslateError> {
     let builder = ctx.builder.get();
     let comparer_op = match cmp_op {
-        ast::SetpCompareOp::Eq => LLVMRealPredicate::LLVMRealOEQ,
-        ast::SetpCompareOp::NotEq => LLVMRealPredicate::LLVMRealONE,
-        ast::SetpCompareOp::Less => LLVMRealPredicate::LLVMRealOLT,
-        ast::SetpCompareOp::LessOrEq => LLVMRealPredicate::LLVMRealOLE,
-        ast::SetpCompareOp::Greater => LLVMRealPredicate::LLVMRealOGT,
-        ast::SetpCompareOp::GreaterOrEq => LLVMRealPredicate::LLVMRealOGE,
-        ast::SetpCompareOp::NanEq => LLVMRealPredicate::LLVMRealUEQ,
-        ast::SetpCompareOp::NanNotEq => LLVMRealPredicate::LLVMRealUNE,
-        ast::SetpCompareOp::NanLess => LLVMRealPredicate::LLVMRealULT,
-        ast::SetpCompareOp::NanLessOrEq => LLVMRealPredicate::LLVMRealULE,
-        ast::SetpCompareOp::NanGreater => LLVMRealPredicate::LLVMRealUGT,
-        ast::SetpCompareOp::NanGreaterOrEq => LLVMRealPredicate::LLVMRealUGE,
-        ast::SetpCompareOp::IsNotNan => LLVMRealPredicate::LLVMRealORD,
-        ast::SetpCompareOp::IsAnyNan => LLVMRealPredicate::LLVMRealUNO,
+        ast::SetCompareOp::Eq => LLVMRealPredicate::LLVMRealOEQ,
+        ast::SetCompareOp::NotEq => LLVMRealPredicate::LLVMRealONE,
+        ast::SetCompareOp::Less => LLVMRealPredicate::LLVMRealOLT,
+        ast::SetCompareOp::LessOrEq => LLVMRealPredicate::LLVMRealOLE,
+        ast::SetCompareOp::Greater => LLVMRealPredicate::LLVMRealOGT,
+        ast::SetCompareOp::GreaterOrEq => LLVMRealPredicate::LLVMRealOGE,
+        ast::SetCompareOp::NanEq => LLVMRealPredicate::LLVMRealUEQ,
+        ast::SetCompareOp::NanNotEq => LLVMRealPredicate::LLVMRealUNE,
+        ast::SetCompareOp::NanLess => LLVMRealPredicate::LLVMRealULT,
+        ast::SetCompareOp::NanLessOrEq => LLVMRealPredicate::LLVMRealULE,
+        ast::SetCompareOp::NanGreater => LLVMRealPredicate::LLVMRealUGT,
+        ast::SetCompareOp::NanGreaterOrEq => LLVMRealPredicate::LLVMRealUGE,
+        ast::SetCompareOp::IsNotNan => LLVMRealPredicate::LLVMRealORD,
+        ast::SetCompareOp::IsAnyNan => LLVMRealPredicate::LLVMRealUNO,
     };
     let src1 = ctx.names.value(src1)?;
     let src2 = ctx.names.value(src2)?;

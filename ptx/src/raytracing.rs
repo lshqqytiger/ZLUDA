@@ -1117,7 +1117,7 @@ fn insert_call_with_exception_propagation<'input>(
         ast::SetpData {
             typ: ast::ScalarType::B32,
             flush_to_zero: None,
-            cmp_op: ast::SetpCompareOp::GreaterOrEq,
+            cmp_op: ast::SetCompareOp::GreaterOrEq,
         },
         ast::Arg4Setp {
             dst1: early_return,
@@ -1567,7 +1567,7 @@ fn insert_attribute_call(
             ast::SetpData {
                 typ: ast::ScalarType::B64,
                 flush_to_zero: None,
-                cmp_op: ast::SetpCompareOp::Eq,
+                cmp_op: ast::SetCompareOp::Eq,
             },
             ast::Arg4Setp {
                 dst1: is_null,
@@ -1676,7 +1676,7 @@ fn insert_attribute_anyhit_check_rollback_jmp(
         ast::SetpData {
             typ: ast::ScalarType::B32,
             flush_to_zero: None,
-            cmp_op: ast::SetpCompareOp::Eq,
+            cmp_op: ast::SetCompareOp::Eq,
         },
         ast::Arg4Setp {
             dst1: anyhit_is_eq,

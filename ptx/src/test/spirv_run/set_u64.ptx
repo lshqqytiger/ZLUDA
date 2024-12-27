@@ -1,0 +1,27 @@
+.version 1.4
+.target sm_10
+.address_size 64
+
+.visible .entry set_u64(
+	.param .u64 input,
+	.param .u64 output
+)
+{
+	.reg .u64 	    in_addr;
+    .reg .u64 	    out_addr;
+    .reg .b64 	    temp0;
+    .reg .b64 	    temp1;
+    .reg .b32 	    temp2;
+    .reg .b32 	    temp3;
+
+	ld.param.u64 	in_addr, [input];
+    ld.param.u64 	out_addr, [output];
+
+    ld.u64            temp0, [in_addr];
+    ld.u64            temp1, [in_addr+8];
+    set.gt.u32.u64    temp2, temp0, temp1;
+    set.eq.u32.u64    temp3, temp1, temp0;
+    st.b32            [out_addr], temp2;
+    st.b32            [out_addr+4], temp3;
+	ret;
+}

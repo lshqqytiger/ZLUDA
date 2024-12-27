@@ -360,6 +360,7 @@ pub enum Instruction<P: ArgParams> {
     Add(ArithDetails, Arg3<P>),
     AddC(CarryInDetails, Arg3<P>),
     AddCC(ScalarType, Arg3<P>),
+    Set(SetData, Arg3<P>),
     Setp(SetpData, Arg4Setp<P>),
     SetpBool(SetpBoolData, Arg5Setp<P>),
     Not(ScalarType, Arg2<P>),
@@ -472,7 +473,6 @@ pub enum Instruction<P: ArgParams> {
     Brkpt,
     Vshr(Arg4<P>),
     Bfind(BfindDetails, Arg2<P>),
-    Set(SetData, Arg3<P>),
     Dp4a(ScalarType, Arg4<P>),
     MatchAny(Arg3<P>),
     Red(AtomDetails, Arg2St<P>),
@@ -863,21 +863,21 @@ pub struct AddIntDesc {
     pub saturate: bool,
 }
 
-pub struct SetpData {
-    pub typ: ScalarType,
-    pub flush_to_zero: Option<bool>,
-    pub cmp_op: SetpCompareOp,
-}
-
 pub struct SetData {
     pub dst_type: ScalarType,
     pub src_type: ScalarType,
-    pub flush_to_zero: bool,
-    pub cmp_op: SetpCompareOp,
+    pub flush_to_zero: Option<bool>,
+    pub cmp_op: SetCompareOp,
+}
+
+pub struct SetpData {
+    pub typ: ScalarType,
+    pub flush_to_zero: Option<bool>,
+    pub cmp_op: SetCompareOp,
 }
 
 #[derive(PartialEq, Eq, Copy, Clone)]
-pub enum SetpCompareOp {
+pub enum SetCompareOp {
     Eq,
     NotEq,
     Less,
@@ -894,14 +894,20 @@ pub enum SetpCompareOp {
     IsAnyNan,
 }
 
+pub struct SetBoolData {
+    pub base: SetData,
+    pub bool_op: SetBoolPostOp,
+    pub negate_src3: bool,
+}
+
 pub struct SetpBoolData {
     pub base: SetpData,
-    pub bool_op: SetpBoolPostOp,
+    pub bool_op: SetBoolPostOp,
     pub negate_src3: bool,
 }
 
 #[derive(Clone, Copy)]
-pub enum SetpBoolPostOp {
+pub enum SetBoolPostOp {
     And,
     Or,
     Xor,

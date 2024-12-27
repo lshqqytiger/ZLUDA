@@ -3185,7 +3185,7 @@ fn replace_shfl_with_pred<'input>(
         ast::SetpData {
             typ: ast::ScalarType::U32,
             flush_to_zero: None,
-            cmp_op: ast::SetpCompareOp::Eq,
+            cmp_op: ast::SetCompareOp::Eq,
         },
         ast::Arg4Setp {
             dst1: original_return_arguments[1].0.op,
@@ -6282,6 +6282,14 @@ impl<T: ArgParamsEx> ast::Instruction<T> {
                 let inst_type = ast::Type::Scalar(d.get_type());
                 ast::Instruction::Add(d, a.map_generic(visitor, &inst_type, false)?)
             }
+            ast::Instruction::Set(details, arg) => {
+                let arg = arg.map_different_types(
+                    visitor,
+                    &ast::Type::Scalar(details.dst_type),
+                    &ast::Type::Scalar(details.src_type),
+                )?;
+                ast::Instruction::Set(details, arg)
+            }
             ast::Instruction::Setp(d, a) => {
                 let inst_type = d.typ;
                 ast::Instruction::Setp(d, a.map(visitor, &ast::Type::Scalar(inst_type))?)
@@ -6584,14 +6592,6 @@ impl<T: ArgParamsEx> ast::Instruction<T> {
                 &ast::Type::Scalar(ast::ScalarType::U32),
                 false,
             )?),
-            ast::Instruction::Set(details, arg) => {
-                let arg = arg.map_different_types(
-                    visitor,
-                    &ast::Type::Scalar(details.dst_type),
-                    &ast::Type::Scalar(details.src_type),
-                )?;
-                ast::Instruction::Set(details, arg)
-            }
             ast::Instruction::Dp4a(type_, arg) => {
                 let arg = arg.map(visitor, &ast::Type::Scalar(type_), false)?;
                 ast::Instruction::Dp4a(type_, arg)
@@ -6991,6 +6991,9 @@ impl<T: ast::ArgParams> ast::Instruction<T> {
                 })
             }
             ast::Instruction::Fma(d, _) => d.flush_to_zero.map(|ftz| (ftz, scalar_size_of(d.typ))),
+            ast::Instruction::Set(details, _) => details
+                .flush_to_zero
+                .map(|ftz| (ftz, scalar_size_of(details.src_type))),
             ast::Instruction::Setp(details, _) => details
                 .flush_to_zero
                 .map(|ftz| (ftz, scalar_size_of(details.typ))),
@@ -7042,14 +7045,6 @@ impl<T: ast::ArgParams> ast::Instruction<T> {
             | ast::Instruction::Ex2 { flush_to_zero, .. } => {
                 Some((*flush_to_zero, mem::size_of::<f32>() as u8))
             }
-            ast::Instruction::Set(
-                ast::SetData {
-                    flush_to_zero,
-                    src_type,
-                    ..
-                },
-                _,
-            ) => Some((*flush_to_zero, scalar_size_of(*src_type))),
         }
     }
 }
