@@ -230,6 +230,7 @@ match {
     "rsqrt",
     "sad",
     "selp",
+    "slct",
     "set",
     "setp",
     "shf",
@@ -314,6 +315,7 @@ ExtendedID : &'input str = {
     "rsqrt",
     "sad",
     "selp",
+    "slct",
     "set",
     "setp",
     "shf",
@@ -812,6 +814,7 @@ Instruction: ast::Instruction<ast::ParsedArgParams<'input>> = {
     InstMax,
     InstRcp,
     InstSelp,
+    InstSlct,
     InstBar,
     InstAtom,
     InstAtomCas,
@@ -1129,10 +1132,16 @@ InstSetp: ast::Instruction<ast::ParsedArgParams<'input>> = {
     }
 };
 
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions-set
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-comparison-instructions-set
 InstSet: ast::Instruction<ast::ParsedArgParams<'input>> = {
     "set" <d:SetMode> <a:Arg3> => ast::Instruction::Set(d, a),
     "set" <d:SetBoolMode> <dst1:ExtendedID> <dst2:OptionalDst?> "," <src1:Operand> "," <src2:Operand> "," <neg_src3:"!"?> <src3:Operand> => todo!(),
+}
+
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions-slct
+InstSlct: ast::Instruction<ast::ParsedArgParams<'input>> = {
+    "slct" <d:SlctMode> <a:Arg4> => ast::Instruction::Slct(d, a),
 }
 
 SetpMode: ast::SetpData = {
@@ -1207,6 +1216,19 @@ SetBoolMode: ast::SetBoolData = {
         negate_src3: false,
     }
 };
+
+SlctMode: ast::SlctData = {
+    <t:ScalarType> ".s32" => ast::SlctData {
+        dst_type: t,
+        src_type: ast::ScalarType::S32,
+        flush_to_zero: None,
+    },
+    <ftz:".ftz"?> <t:ScalarType> ".f32" => ast::SlctData {
+        dst_type: t,
+        src_type: ast::ScalarType::F32,
+        flush_to_zero: Some(ftz.is_some()),
+    }
+}
 
 SetCompareOp: ast::SetCompareOp = {
     ".eq" => ast::SetCompareOp::Eq,

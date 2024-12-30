@@ -6361,6 +6361,18 @@ impl<T: ArgParamsEx> ast::Instruction<T> {
                 a.map_generic(visitor, &ast::Type::Scalar(t.into()), false)?,
             ),
             ast::Instruction::Selp(t, a) => ast::Instruction::Selp(t, a.map_selp(visitor, t)?),
+            ast::Instruction::Slct(d, a) => {
+                let dst_type = d.dst_type;
+                let src_type = d.src_type;
+                ast::Instruction::Slct(
+                    d,
+                    a.map_slct(
+                        visitor,
+                        &ast::Type::Scalar(dst_type),
+                        &ast::Type::Scalar(src_type),
+                    )?,
+                )
+            }
             ast::Instruction::Bar(d, a) => ast::Instruction::Bar(d, a.map(visitor)?),
             ast::Instruction::BarWarp(d, a) => ast::Instruction::BarWarp(d, a.map(visitor)?),
             ast::Instruction::Atom(d, a) => {
@@ -7001,6 +7013,9 @@ impl<T: ast::ArgParams> ast::Instruction<T> {
                 .base
                 .flush_to_zero
                 .map(|ftz| (ftz, scalar_size_of(details.base.typ))),
+            ast::Instruction::Slct(details, _) => details
+                .flush_to_zero
+                .map(|ftz| (ftz, scalar_size_of(details.src_type))),
             ast::Instruction::Abs(details, _) => details
                 .flush_to_zero
                 .map(|ftz| (ftz, scalar_size_of(details.typ))),
@@ -8358,6 +8373,60 @@ impl<T: ArgParamsEx> ast::Arg4<T> {
                 non_default_implicit_conversion: None,
             },
             &ast::Type::Scalar(ast::ScalarType::Pred),
+            ast::StateSpace::Reg,
+        )?;
+        Ok(ast::Arg4 {
+            dst,
+            src1,
+            src2,
+            src3,
+        })
+    }
+
+    fn map_slct<U: ArgParamsEx, V: ArgumentMapVisitor<T, U>>(
+        self,
+        visitor: &mut V,
+        dst_type: &ast::Type,
+        src_type: &ast::Type,
+    ) -> Result<ast::Arg4<U>, TranslateError> {
+        let dst = visitor.operand(
+            ArgumentDescriptor {
+                op: self.dst,
+                is_dst: true,
+                is_memory_access: false,
+                non_default_implicit_conversion: None,
+            },
+            dst_type,
+            ast::StateSpace::Reg,
+        )?;
+        let src1 = visitor.operand(
+            ArgumentDescriptor {
+                op: self.src1,
+                is_dst: false,
+                is_memory_access: false,
+                non_default_implicit_conversion: None,
+            },
+            dst_type,
+            ast::StateSpace::Reg,
+        )?;
+        let src2 = visitor.operand(
+            ArgumentDescriptor {
+                op: self.src2,
+                is_dst: false,
+                is_memory_access: false,
+                non_default_implicit_conversion: None,
+            },
+            dst_type,
+            ast::StateSpace::Reg,
+        )?;
+        let src3 = visitor.operand(
+            ArgumentDescriptor {
+                op: self.src3,
+                is_dst: false,
+                is_memory_access: false,
+                non_default_implicit_conversion: None,
+            },
+            src_type,
             ast::StateSpace::Reg,
         )?;
         Ok(ast::Arg4 {

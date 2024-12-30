@@ -363,6 +363,7 @@ pub enum Instruction<P: ArgParams> {
     Set(SetData, Arg3<P>),
     Setp(SetpData, Arg4Setp<P>),
     SetpBool(SetpBoolData, Arg5Setp<P>),
+    Slct(SlctData, Arg4<P>),
     Not(ScalarType, Arg2<P>),
     Bra(BraData, Arg1<P>),
     Cvt(CvtDetails, Arg2<P>),
@@ -874,6 +875,12 @@ pub struct SetpData {
     pub typ: ScalarType,
     pub flush_to_zero: Option<bool>,
     pub cmp_op: SetCompareOp,
+}
+
+pub struct SlctData {
+    pub dst_type: ScalarType,
+    pub src_type: ScalarType,
+    pub flush_to_zero: Option<bool>,
 }
 
 #[derive(PartialEq, Eq, Copy, Clone)]

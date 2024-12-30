@@ -1118,6 +1118,7 @@ fn emit_instruction(
         ast::Instruction::Set(details, arg) => emit_inst_set(ctx, details, arg)?,
         ast::Instruction::Setp(details, args) => emit_inst_setp(ctx, details, args, None)?,
         ast::Instruction::SetpBool(details, args) => emit_inst_setp_bool(ctx, details, args)?,
+        ast::Instruction::Slct(details, args) => emit_inst_slct(ctx, details, args)?,
         ast::Instruction::Not(type_, args) => emit_inst_not(ctx, *type_, args)?,
         ast::Instruction::Bra(_, args) => emit_inst_bra(ctx, args)?,
         ast::Instruction::Cvt(details, args) => emit_inst_cvt(ctx, details, args)?,
@@ -1516,6 +1517,38 @@ fn emit_inst_setp_bool(
         &base_args,
         Some((details.negate_src3, args.src3, details.bool_op)),
     )
+}
+
+fn emit_inst_slct(
+    ctx: &mut EmitContext,
+    details: &ast::SlctData,
+    args: &ast::Arg4<ExpandedArgParams>,
+) -> Result<(), TranslateError> {
+    if let Some(_) = details.flush_to_zero {
+        Err(TranslateError::todo())
+    } else {
+        let builder = ctx.builder.get();
+        let src1 = ctx.names.value(args.src1)?;
+        let src2 = ctx.names.value(args.src2)?;
+        let src3 = ctx.names.value(args.src3)?;
+
+        let llvm_type = get_llvm_type(ctx, &ast::Type::Scalar(details.src_type))?;
+        let const_0 = unsafe { LLVMConstInt(llvm_type, 0, 0) };
+        let src3 = unsafe {
+            LLVMBuildICmp(
+                builder,
+                LLVMIntPredicate::LLVMIntSGE,
+                src3,
+                const_0,
+                LLVM_UNNAMED,
+            )
+        };
+
+        ctx.names.register_result(args.dst, |dst_name| unsafe {
+            LLVMBuildSelect(builder, src3, src1, src2, dst_name)
+        });
+        Ok(())
+    }
 }
 
 fn emit_inst_abs(
