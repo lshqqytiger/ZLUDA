@@ -9033,7 +9033,13 @@ fn default_implicit_conversion(
             (instruction_space, instruction_type),
         )
     } else if instruction_type != operand_type {
-        default_implicit_conversion_type(instruction_space, operand_type, instruction_type)
+        if !operand_space.is_addressable()
+            && matches!((instruction_type, operand_type), (ast::Type::Scalar(instruction_type), ast::Type::Scalar(operand_type)) if instruction_type.size_of() < operand_type.size_of())
+        {
+            Ok(Some(ConversionKind::Default))
+        } else {
+            default_implicit_conversion_type(instruction_space, operand_type, instruction_type)
+        }
     } else {
         Ok(None)
     }
