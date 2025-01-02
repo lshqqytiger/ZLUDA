@@ -1,3 +1,3 @@
-bindgen include/nvrtc.h -o src/nvrtc.rs --allowlist-function="^nvrtc.*" --default-enum-style=newtype --no-layout-tests --no-derive-debug -- -Iinclude
+bindgen include/nvrtc.h -o src/nvrtc.rs --allowlist-function="^nvrtc.*" --default-enum-style=newtype --no-layout-tests --no-derive-debug --dynamic-loading LibNvrtc --dynamic-link-require-all -- -Iinclude
 sed -i -e 's/extern "C" {//g' -e 's/-> nvrtcResult;/-> nvrtcResult { crate::unsupported()/g' -e 's/pub fn /#[no_mangle] pub extern "system" fn /g' src/nvrtc.rs
 rustfmt src/nvrtc.rs

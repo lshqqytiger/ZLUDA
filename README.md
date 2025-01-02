@@ -239,16 +239,7 @@ Performance is currently much lower than the native HIP backend, see the discuss
   torch.backends.cuda.enable_mem_efficient_sdp(False)
   ```
 
-  If you are getting an error about nvrtc/hiprtc, insert
-
-  ```py
-  def jit_script(f, *_, **__):
-      f.graph = torch._C.Graph() # pylint: disable=protected-access
-      return f
-  torch.jit.script = jit_script
-  ```
-
-  You may have an issue while running `torch.topk`. If so, insert
+  If you have an issue while running `torch.topk`, insert the codes below
 
   ```py
   _topk = torch.topk

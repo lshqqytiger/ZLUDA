@@ -14,7 +14,6 @@ members = [
     "hipblaslt-sys",
     "hipfft-sys",
     "hiprt-sys",
-    "hiprtc-sys",
     "miopen-sys",
     "offline_compiler",
     "optix_base",
