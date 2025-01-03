@@ -8,12 +8,9 @@ edition = "2018"
 name = "nvrtc"
 crate-type = ["cdylib"]
 
-[features]
-rocm5 = ["hip_common/rocm5"]
-
 [dependencies]
-hip_common = { path = "../hip_common" }
-hiprtc-sys = { path = "../hiprtc-sys" }
+libloading = "0.8"
+lazy_static = "1.4"
 
 [package.metadata.zluda]
 linux_names = ["libnvrtc.so.10", "libnvrtc.so.11"]

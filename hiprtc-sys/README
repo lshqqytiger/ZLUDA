@@ -1,1 +1,0 @@
-bindgen $Env:HIP_PATH/include/hip/hiprtc.h -o src/hiprtc.rs --no-layout-tests --default-enum-style=newtype --no-derive-debug --allowlist-function "hiprtc.*" --must-use-type hiprtcResult_t -- -I"$Env:HIP_PATH/include" -D__HIP_PLATFORM_AMD__
