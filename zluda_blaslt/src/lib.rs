@@ -220,7 +220,6 @@ fn data_type(data_type: cudaDataType_t) -> hipDataType {
 struct VoidPointer {
     layout: Option<alloc::Layout>,
     base: *mut u8,
-    droppable: bool,
 }
 
 impl VoidPointer {
@@ -234,7 +233,6 @@ impl VoidPointer {
         VoidPointer {
             layout: Some(layout),
             base,
-            droppable: true,
         }
     }
 
@@ -242,7 +240,6 @@ impl VoidPointer {
         VoidPointer {
             layout: None,
             base: raw as *mut u8,
-            droppable: false,
         }
     }
 
@@ -251,13 +248,14 @@ impl VoidPointer {
     }
 
     fn try_drop(self) -> bool {
-        if !self.droppable {
-            return false;
+        if let Some(layout) = self.layout {
+            unsafe {
+                std::alloc::dealloc(self.base, layout);
+            }
+            true
+        } else {
+            false
         }
-        unsafe {
-            std::alloc::dealloc(self.base, self.layout.unwrap());
-        }
-        true
     }
 }
 
