@@ -83,7 +83,7 @@ pub fn main_impl() -> Result<(), Box<dyn Error>> {
         match argument.to_str() {
             Some(argument) => match argument {
                 "--version" => {
-                    println!("ZLUDA 3.8.5");
+                    println!("ZLUDA 3.8.5.pre1");
                     process::exit(0);
                 }
                 "--" => break,

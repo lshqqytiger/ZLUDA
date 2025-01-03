@@ -300,7 +300,7 @@ impl Comgr {
             }
         };
         if self.2 == 1 {
-            eprintln!("Compiling in progress. Please wait...");
+            eprintln!("Compilation is in progress. Please wait...");
         }
         let relocatable = self.do_action(
             sys::amd_comgr_action_kind_t::AMD_COMGR_ACTION_CODEGEN_BC_TO_RELOCATABLE,
