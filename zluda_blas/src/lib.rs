@@ -1,17 +1,17 @@
 #![allow(warnings)]
+mod common;
 mod cublas;
+mod cublasxt;
 
+pub use common::*;
 pub use cublas::*;
+pub use cublasxt::*;
 
 use cuda_types::*;
 use rocblas_sys::*;
 use rocsolver_sys::{
-    rocsolver_cgetrf_batched,
-    rocsolver_cgetri_outofplace_batched,
-    rocsolver_sgetrs_batched,
-    rocsolver_dgetrs_batched,
-    rocsolver_zgetrf_batched,
-    rocsolver_zgetri_outofplace_batched,
+    rocsolver_cgetrf_batched, rocsolver_cgetri_outofplace_batched, rocsolver_dgetrs_batched,
+    rocsolver_sgetrs_batched, rocsolver_zgetrf_batched, rocsolver_zgetri_outofplace_batched,
 };
 use std::{mem, ptr};
 
@@ -90,8 +90,12 @@ fn op_from_cuda(trans: cublasOperation_t) -> rocblas_operation {
 fn op_from_cuda_for_solver(trans: cublasOperation_t) -> rocsolver_sys::rocblas_operation {
     match trans {
         cublasOperation_t::CUBLAS_OP_N => rocsolver_sys::rocblas_operation::rocblas_operation_none,
-        cublasOperation_t::CUBLAS_OP_T => rocsolver_sys::rocblas_operation::rocblas_operation_transpose,
-        cublasOperation_t::CUBLAS_OP_C => rocsolver_sys::rocblas_operation::rocblas_operation_conjugate_transpose,
+        cublasOperation_t::CUBLAS_OP_T => {
+            rocsolver_sys::rocblas_operation::rocblas_operation_transpose
+        }
+        cublasOperation_t::CUBLAS_OP_C => {
+            rocsolver_sys::rocblas_operation::rocblas_operation_conjugate_transpose
+        }
         _ => panic!(),
     }
 }
@@ -279,25 +283,11 @@ unsafe fn init() -> cublasStatus_t {
     cublasStatus_t::CUBLAS_STATUS_SUCCESS
 }
 
-unsafe fn sdot(
-    n: i32,
-    x: *const f32,
-    incx: i32,
-    y: *const f32,
-    incy: i32,
-) -> f32 {
+unsafe fn sdot(n: i32, x: *const f32, incx: i32, y: *const f32, incy: i32) -> f32 {
     let mut handle = mem::zeroed();
     let mut status = rocblas_create_handle(handle);
     let mut result = 0.0;
-    status = rocblas_sdot(
-        handle.cast(),
-        n,
-        x,
-        incx,
-        y,
-        incy,
-        &mut result,
-    );
+    status = rocblas_sdot(handle.cast(), n, x, incx, y, incy, &mut result);
     status = rocblas_destroy_handle(*handle);
     result
 }
@@ -397,15 +387,7 @@ unsafe fn sdot_v2(
     incy: i32,
     result: *mut f32,
 ) -> cublasStatus_t {
-    to_cuda(rocblas_sdot(
-        handle.cast(),
-        n,
-        x,
-        incx,
-        y,
-        incy,
-        result,
-    ))
+    to_cuda(rocblas_sdot(handle.cast(), n, x, incx, y, incy, result))
 }
 
 unsafe fn idamax_v2(
