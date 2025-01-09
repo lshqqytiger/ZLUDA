@@ -49,17 +49,6 @@ use winapi::{
     um::libloaderapi::{LoadLibraryA, LoadLibraryExW, LoadLibraryW},
 };
 
-// copied from rust implementation in order to avoid rust 2024 warnings.
-// https://doc.rust-lang.org/nightly/edition-guide/rust-2024/static-mut-references.html
-macro_rules! option_as_ref {
-    ($o:expr) => {
-        match $o {
-            Some(ref x) => Some(x),
-            None => None,
-        }
-    };
-}
-
 include!("payload_guid.rs");
 
 const WIN_MAX_PATH: usize = 260;
@@ -235,6 +224,7 @@ unsafe extern "system" fn ZludaLoadLibraryW(lpLibFileName: LPCWSTR) -> HMODULE {
     (LOAD_LIBRARY_W)(library_name)
 }
 
+#[allow(static_mut_refs)]
 unsafe fn get_library_name_utf16(raw_library_name: *const u16) -> *const u16 {
     let library_name = zero_terminated(raw_library_name);
     if is_driverstore_utf16(library_name) {
@@ -249,16 +239,16 @@ unsafe fn get_library_name_utf16(raw_library_name: *const u16) -> *const u16 {
         }
     }
     if is_nvcuda_dll_utf16(library_name) {
-        return &raw const ZLUDA_PATH_UTF16 as _;
+        return ZLUDA_PATH_UTF16.as_ptr();
     } else if is_nvml_dll_utf16(library_name) {
-        return &raw const ZLUDA_ML_PATH_UTF16 as _;
+        return ZLUDA_ML_PATH_UTF16.as_ptr();
     } else {
-        if let Some(nvapi_path) = option_as_ref!(ZLUDA_API_PATH_UTF16) {
+        if let Some(nvapi_path) = ZLUDA_API_PATH_UTF16.as_ref() {
             if is_nvapi_dll_utf16(library_name) {
                 return nvapi_path.as_ptr();
             }
         }
-        if let Some(optix_path) = option_as_ref!(ZLUDA_OPTIX_PATH_UTF16) {
+        if let Some(optix_path) = ZLUDA_OPTIX_PATH_UTF16.as_ref() {
             if is_nvoptix_dll_utf16(library_name) {
                 return optix_path.as_ptr();
             }
@@ -737,7 +727,7 @@ unsafe fn continue_create_process_hook(
         ) != FALSE
         && DetourUpdateProcessWithDll(
             (*process_information).hProcess,
-            &raw mut CURRENT_MODULE_FILENAME as *mut _ as *mut _,
+            &mut &raw mut CURRENT_MODULE_FILENAME as *mut _ as *mut _,
             1,
         ) != FALSE
     {
