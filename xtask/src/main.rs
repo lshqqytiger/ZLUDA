@@ -50,6 +50,7 @@ impl Default for Subcommand {
         Subcommand::Build(BuildCommand {
             release: false,
             rocm5: false,
+            nightly: false,
         })
     }
 }
@@ -65,6 +66,10 @@ struct BuildCommand {
     /// build for ROCm 5 (Windows only)
     #[argh(switch)]
     rocm5: bool,
+
+    /// enable unstable features
+    #[argh(switch)]
+    nightly: bool,
 }
 
 #[derive(FromArgs)]
@@ -84,13 +89,17 @@ struct ZipCommand {
 fn main() -> Result<(), DynError> {
     let args: Arguments = argh::from_env();
     std::process::exit(match args.command {
-        Subcommand::Build(BuildCommand { release, rocm5 }) => build(!release, rocm5)?,
+        Subcommand::Build(BuildCommand {
+            release,
+            rocm5,
+            nightly,
+        }) => build(!release, rocm5, nightly)?,
         Subcommand::Zip(ZipCommand { release, rocm5 }) => build_and_zip(!release, rocm5),
     })
 }
 
 fn build_and_zip(is_debug: bool, rocm5: bool) -> i32 {
-    let workspace = build_impl(is_debug, rocm5).unwrap();
+    let workspace = build_impl(is_debug, rocm5, false).unwrap();
     os::zip(workspace)
 }
 
@@ -108,6 +117,8 @@ struct Project {
     target_name: String,
     #[serde(skip_deserializing)]
     kind: TargetKind,
+    #[serde(default)]
+    nightly: bool,
     #[serde(default)]
     windows_only: bool,
     #[serde(default)]
@@ -143,7 +154,7 @@ struct Workspace {
 }
 
 impl Workspace {
-    fn open(is_debug: bool) -> Result<Self, DynError> {
+    fn open(is_debug: bool, nightly: bool) -> Result<Self, DynError> {
         let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
         let project_root = Self::project_root()?;
         let mut cmd = cargo_metadata::MetadataCommand::new();
@@ -153,7 +164,7 @@ impl Workspace {
             .packages
             .into_iter()
             .filter_map(Project::new)
-            .filter(|p| !p.skip_build(is_debug))
+            .filter(|p| !p.skip_build(is_debug, nightly))
             .collect::<Vec<_>>();
         let mut target_directory = cargo_metadata.target_directory;
         target_directory.push(if is_debug { "debug" } else { "release" });
@@ -199,7 +210,7 @@ impl Project {
         Some(project)
     }
 
-    fn skip_build(&self, is_debug: bool) -> bool {
+    fn skip_build(&self, is_debug: bool, nightly: bool) -> bool {
         if self.broken {
             return true;
         }
@@ -212,17 +223,20 @@ impl Project {
         if !is_debug && self.debug_only {
             return true;
         }
+        if !nightly && self.nightly {
+            return true;
+        }
         false
     }
 }
 
-fn build(is_debug: bool, rocm5: bool) -> Result<i32, DynError> {
-    build_impl(is_debug, rocm5)?;
+fn build(is_debug: bool, rocm5: bool, nightly: bool) -> Result<i32, DynError> {
+    build_impl(is_debug, rocm5, nightly)?;
     Ok(0)
 }
 
-fn build_impl(is_debug: bool, rocm5: bool) -> Result<Workspace, DynError> {
-    let workspace = Workspace::open(is_debug)?;
+fn build_impl(is_debug: bool, rocm5: bool, nightly: bool) -> Result<Workspace, DynError> {
+    let workspace = Workspace::open(is_debug, nightly)?;
     let mut command = workspace.cargo_command();
     command.arg("build");
     command.arg("--locked");
@@ -243,7 +257,12 @@ fn build_impl(is_debug: bool, rocm5: bool) -> Result<Workspace, DynError> {
         if let Ok(path_default) = env::var("HIP_PATH") {
             env::set_var(
                 "HIP_PATH",
-                env::var(if rocm5 { "HIP_PATH_57" } else { "HIP_PATH_62" }).unwrap_or(path_default),
+                if rocm5 {
+                    env::var("HIP_PATH_57").or(env::var("HIP_PATH_55"))
+                } else {
+                    env::var("HIP_PATH_62").or(env::var("HIP_PATH_61"))
+                }
+                .unwrap_or(path_default),
             );
         } else {
             return Err(
