@@ -18,6 +18,6 @@ hip_common = { path = "../hip_common" }
 zluda_dark_api = { path = "../zluda_dark_api" }
 
 [package.metadata.zluda]
-nightly = true
+windows_nightly = true
 linux_names = ["libcublasLt.so.11"]
 dump_names = ["libcublasLt.so"]

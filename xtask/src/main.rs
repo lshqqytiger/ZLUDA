@@ -118,7 +118,7 @@ struct Project {
     #[serde(skip_deserializing)]
     kind: TargetKind,
     #[serde(default)]
-    nightly: bool,
+    windows_nightly: bool,
     #[serde(default)]
     windows_only: bool,
     #[serde(default)]
@@ -223,7 +223,7 @@ impl Project {
         if !is_debug && self.debug_only {
             return true;
         }
-        if !nightly && self.nightly {
+        if cfg!(windows) && !nightly && self.windows_nightly {
             return true;
         }
         false
