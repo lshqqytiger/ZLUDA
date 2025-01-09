@@ -104,6 +104,42 @@ unsafe fn destroy(handle: cublasHandle_t) -> cublasStatus_t {
     to_cuda(rocblas_destroy_handle(handle as _))
 }
 
+unsafe fn hgemm(
+    handle: cublasHandle_t,
+    transa: cublasOperation_t,
+    transb: cublasOperation_t,
+    m: i32,
+    n: i32,
+    k: i32,
+    alpha: *const __half,
+    a: *const __half,
+    lda: i32,
+    b: *const __half,
+    ldb: i32,
+    beta: *const __half,
+    c: *mut __half,
+    ldc: i32,
+) -> cublasStatus_t {
+    let transa = op_from_cuda(transa);
+    let transb = op_from_cuda(transb);
+    to_cuda(rocblas_hgemm(
+        handle.cast(),
+        transa,
+        transb,
+        m,
+        n,
+        k,
+        alpha.cast(),
+        a.cast(),
+        lda,
+        b.cast(),
+        ldb,
+        beta.cast(),
+        c.cast(),
+        ldc,
+    ))
+}
+
 unsafe fn sgemm_ex(
     handle: cublasHandle_t,
     transa: cublasOperation_t,
@@ -864,6 +900,44 @@ unsafe fn dtrmm_v2(
         b,
         ldb,
         c,
+        ldc,
+    ))
+}
+
+unsafe fn ztrmm_v2(
+    handle: cublasHandle_t,
+    side: cublasSideMode_t,
+    uplo: cublasFillMode_t,
+    trans: cublasOperation_t,
+    diag: cublasDiagType_t,
+    m: i32,
+    n: i32,
+    alpha: *const cuDoubleComplex,
+    a: *const cuDoubleComplex,
+    lda: i32,
+    b: *const cuDoubleComplex,
+    ldb: i32,
+    c: *mut cuDoubleComplex,
+    ldc: i32,
+) -> cublasStatus_t {
+    let side = to_side(side);
+    let uplo = to_fill(uplo);
+    let trans = op_from_cuda(trans);
+    let diag = to_diag(diag);
+    to_cuda(rocblas_ztrmm(
+        handle.cast(),
+        side,
+        uplo,
+        trans,
+        diag,
+        m,
+        n,
+        alpha.cast(),
+        a.cast(),
+        lda,
+        b.cast(),
+        ldb,
+        c.cast(),
         ldc,
     ))
 }
