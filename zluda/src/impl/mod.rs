@@ -141,7 +141,7 @@ impl<T: ZludaObject> LiveCheck<T> {
         outer_ptr as *mut Self
     }
 
-    pub unsafe fn as_ref_unchecked(&self) -> & T {
+    pub unsafe fn as_ref_unchecked(&self) -> &T {
         &self.data
     }
 
