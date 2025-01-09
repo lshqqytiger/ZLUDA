@@ -35,8 +35,12 @@ static CUDA_DARK_API_TABLE: CudaDarkApiTable = zluda_dark_api::init_dark_api::<C
 
 struct CudaDarkApiZluda;
 
-static mut TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE: [usize; 1024] = [0; 1024];
-static mut TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE: [u8; 14] = [0; 14];
+static TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE_SIZE: usize = 1024;
+static mut TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE: [usize;
+    TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE_SIZE] = [0; TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE_SIZE];
+static TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE_SIZE: usize = 14;
+static mut TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE: [u8;
+    TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE_SIZE] = [0; TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE_SIZE];
 
 impl CudaDarkApi for CudaDarkApiZluda {
     unsafe extern "system" fn get_module_from_cubin(
@@ -86,9 +90,7 @@ impl CudaDarkApi for CudaDarkApiZluda {
         res
     }
 
-    unsafe extern "system" fn set_device(
-        dev: cuda_types::CUdevice,
-    ) -> CUresult {
+    unsafe extern "system" fn set_device(dev: cuda_types::CUdevice) -> CUresult {
         use hip_runtime_sys::*;
         hipSetDevice(FromCuda::from_cuda(dev)).into_cuda()
     }
@@ -134,16 +136,16 @@ impl CudaDarkApi for CudaDarkApiZluda {
         ptr: *mut *mut usize,
         size: *mut usize,
     ) -> () {
-        *ptr = TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE.as_mut_ptr();
-        *size = TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE.len();
+        *ptr = &raw mut TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE as _;
+        *size = TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE_SIZE;
     }
 
     unsafe extern "system" fn tools_runtime_callback_hooks_fn6(
         ptr: *mut *mut u8,
         size: *mut usize,
     ) -> () {
-        *ptr = TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE.as_mut_ptr();
-        *size = TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE.len();
+        *ptr = &raw mut TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE as _;
+        *size = TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE_SIZE;
     }
 
     unsafe extern "system" fn context_local_storage_insert(
