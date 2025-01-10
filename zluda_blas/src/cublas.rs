@@ -3097,7 +3097,7 @@ pub extern "system" fn cublasZgemm3m(
 }
 
 #[no_mangle]
-pub extern "system" fn cublasHgemm(
+pub unsafe extern "system" fn cublasHgemm(
     handle: cublasHandle_t,
     transa: cublasOperation_t,
     transb: cublasOperation_t,
@@ -3113,7 +3113,9 @@ pub extern "system" fn cublasHgemm(
     C: *mut __half,
     ldc: ::std::os::raw::c_int,
 ) -> cublasStatus_t {
-    crate::unsupported()
+    crate::hgemm(
+        handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc,
+    )
 }
 
 #[no_mangle]
@@ -3904,9 +3906,7 @@ pub unsafe extern "system" fn cublasZtrmm_v2(
     C: *mut cuDoubleComplex,
     ldc: ::std::os::raw::c_int,
 ) -> cublasStatus_t {
-    crate::ztrmm_v2(
-        handle, side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb, C, ldc,
-    )
+    crate::unsupported()
 }
 
 #[no_mangle]
