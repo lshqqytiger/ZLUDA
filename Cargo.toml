@@ -1,5 +1,7 @@
 [workspace]
 
+resolver = "2"
+
 # Remember to also update the project's Cargo.toml
 # if it's a top-level project
 members = [

@@ -3,7 +3,7 @@
 extern crate detours_sys;
 extern crate winapi;
 
-use std::{ffi::c_void, mem, path::PathBuf, ptr::{self, addr_of, addr_of_mut}, slice, usize};
+use std::{ffi::c_void, mem, path::PathBuf, ptr, slice, usize};
 
 use detours_sys::{
     DetourAttach, DetourRestoreAfterWith, DetourTransactionAbort, DetourTransactionBegin,
@@ -224,6 +224,7 @@ unsafe extern "system" fn ZludaLoadLibraryW(lpLibFileName: LPCWSTR) -> HMODULE {
     (LOAD_LIBRARY_W)(library_name)
 }
 
+#[allow(static_mut_refs)]
 unsafe fn get_library_name_utf16(raw_library_name: *const u16) -> *const u16 {
     let library_name = zero_terminated(raw_library_name);
     if is_driverstore_utf16(library_name) {
@@ -306,11 +307,19 @@ unsafe fn zero_terminated<T: Default + PartialEq>(t: *const T) -> &'static [T] {
 }
 
 unsafe fn is_driverstore_utf8(lib: &[u8]) -> bool {
-    starts_with_ignore_case(lib, addr_of!(DRIVERSTORE_UTF8).as_ref().unwrap(), utf8_to_ascii_uppercase)
+    starts_with_ignore_case(
+        lib,
+        (&raw const DRIVERSTORE_UTF8).as_ref().unwrap_unchecked(),
+        utf8_to_ascii_uppercase,
+    )
 }
 
 unsafe fn is_driverstore_utf16(lib: &[u16]) -> bool {
-    starts_with_ignore_case(lib, addr_of!(DRIVERSTORE_UTF16).as_ref().unwrap(), utf16_to_ascii_uppercase)
+    starts_with_ignore_case(
+        lib,
+        (&raw const DRIVERSTORE_UTF16).as_ref().unwrap_unchecked(),
+        utf16_to_ascii_uppercase,
+    )
 }
 
 fn is_nvcuda_dll_utf8(lib: &[u8]) -> bool {
@@ -578,36 +587,24 @@ impl DetourDetachGuard {
         }
         result.overriden_non_cuda_fns.extend_from_slice(&[
             (
-                addr_of_mut!(LOAD_LIBRARY_A) as *mut *mut c_void,
+                &raw mut LOAD_LIBRARY_A as *mut *mut c_void,
                 ZludaLoadLibraryA as *mut c_void,
             ),
-            (addr_of_mut!(LOAD_LIBRARY_W) as _, ZludaLoadLibraryW as _),
+            (&raw mut LOAD_LIBRARY_W as _, ZludaLoadLibraryW as _),
+            (&raw mut LOAD_LIBRARY_EX_A as _, ZludaLoadLibraryExA as _),
+            (&raw mut LOAD_LIBRARY_EX_W as _, ZludaLoadLibraryExW as _),
+            (&raw mut CREATE_PROCESS_A as _, ZludaCreateProcessA as _),
+            (&raw mut CREATE_PROCESS_W as _, ZludaCreateProcessW as _),
             (
-                addr_of_mut!(LOAD_LIBRARY_EX_A) as _,
-                ZludaLoadLibraryExA as _,
-            ),
-            (
-                addr_of_mut!(LOAD_LIBRARY_EX_W) as _,
-                ZludaLoadLibraryExW as _,
-            ),
-            (
-                addr_of_mut!(CREATE_PROCESS_A) as _,
-                ZludaCreateProcessA as _,
-            ),
-            (
-                addr_of_mut!(CREATE_PROCESS_W) as _,
-                ZludaCreateProcessW as _,
-            ),
-            (
-                addr_of_mut!(CREATE_PROCESS_AS_USER_W) as _,
+                &raw mut CREATE_PROCESS_AS_USER_W as _,
                 ZludaCreateProcessAsUserW as _,
             ),
             (
-                addr_of_mut!(CREATE_PROCESS_WITH_LOGON_W) as _,
+                &raw mut CREATE_PROCESS_WITH_LOGON_W as _,
                 ZludaCreateProcessWithLogonW as _,
             ),
             (
-                addr_of_mut!(CREATE_PROCESS_WITH_TOKEN_W) as _,
+                &raw mut CREATE_PROCESS_WITH_TOKEN_W as _,
                 ZludaCreateProcessWithTokenW as _,
             ),
         ]);
@@ -707,6 +704,7 @@ enum DetourUndoState {
     DetachDetours,
 }
 
+#[allow(static_mut_refs)]
 unsafe fn continue_create_process_hook(
     create_proc_result: BOOL,
     original_creation_flags: DWORD,
@@ -789,30 +787,34 @@ unsafe fn continue_create_process_hook(
 #[allow(non_snake_case)]
 #[no_mangle]
 unsafe extern "system" fn DllMain(instDLL: HINSTANCE, dwReason: u32, _: *const u8) -> i32 {
-    if dwReason == DLL_PROCESS_ATTACH {
-        if DetourRestoreAfterWith() == FALSE {
-            return FALSE;
-        }
-        if !initialize_globals(instDLL) {
-            return FALSE;
-        }
-        match DetourDetachGuard::new() {
-            Some(g) => {
-                DETOUR_STATE = Some(g);
-                TRUE
+    match dwReason {
+        DLL_PROCESS_ATTACH => {
+            if DetourRestoreAfterWith() == FALSE {
+                return FALSE;
             }
-            None => FALSE,
+            if !initialize_globals(instDLL) {
+                return FALSE;
+            }
+            match DetourDetachGuard::new() {
+                Some(g) => {
+                    DETOUR_STATE = Some(g);
+                    TRUE
+                }
+                None => FALSE,
+            }
         }
-    } else if dwReason == DLL_PROCESS_DETACH {
-        match DETOUR_STATE.take() {
-            Some(_) => TRUE,
-            None => FALSE,
+        DLL_PROCESS_DETACH => {
+            if matches!(DETOUR_STATE, Some(_)) {
+                TRUE
+            } else {
+                FALSE
+            }
         }
-    } else {
-        TRUE
+        _ => TRUE,
     }
 }
 
+#[allow(static_mut_refs)]
 unsafe fn initialize_globals(current_module: HINSTANCE) -> bool {
     let mut module_name = vec![0; 128 as usize];
     loop {
@@ -845,22 +847,30 @@ unsafe fn initialize_globals(current_module: HINSTANCE) -> bool {
     let driver_store_string = driver_store.to_str().unwrap().to_ascii_uppercase();
     DRIVERSTORE_UTF16 = driver_store_string.encode_utf16().collect::<Vec<_>>();
     DRIVERSTORE_UTF8 = driver_store_string.into_bytes();
-    if !load_global_string(&PAYLOAD_NVCUDA_GUID, addr_of_mut!(ZLUDA_PATH_UTF8).as_mut().unwrap(), || {
-        addr_of_mut!(ZLUDA_PATH_UTF16).as_mut().unwrap()
-    }) {
+    if !load_global_string(
+        &PAYLOAD_NVCUDA_GUID,
+        (&raw mut ZLUDA_PATH_UTF8).as_mut().unwrap_unchecked(),
+        || (&raw mut ZLUDA_PATH_UTF16).as_mut().unwrap_unchecked(),
+    ) {
         return false;
     }
-    if !load_global_string(&PAYLOAD_NVML_GUID, addr_of_mut!(ZLUDA_ML_PATH_UTF8).as_mut().unwrap(), || {
-        addr_of_mut!(ZLUDA_ML_PATH_UTF16).as_mut().unwrap()
-    }) {
+    if !load_global_string(
+        &PAYLOAD_NVML_GUID,
+        (&raw mut ZLUDA_ML_PATH_UTF8).as_mut().unwrap_unchecked(),
+        || (&raw mut ZLUDA_ML_PATH_UTF16).as_mut().unwrap_unchecked(),
+    ) {
         return false;
     }
-    load_global_string(&PAYLOAD_NVAPI_GUID, addr_of_mut!(ZLUDA_API_PATH_UTF8).as_mut().unwrap(), || {
-        ZLUDA_API_PATH_UTF16.get_or_insert(Vec::new())
-    });
-    load_global_string(&PAYLOAD_NVOPTIX_GUID, addr_of_mut!(ZLUDA_OPTIX_PATH_UTF8).as_mut().unwrap(), || {
-        ZLUDA_OPTIX_PATH_UTF16.get_or_insert(Vec::new())
-    });
+    load_global_string(
+        &PAYLOAD_NVAPI_GUID,
+        (&raw mut ZLUDA_API_PATH_UTF8).as_mut().unwrap_unchecked(),
+        || ZLUDA_API_PATH_UTF16.get_or_insert(Vec::new()),
+    );
+    load_global_string(
+        &PAYLOAD_NVOPTIX_GUID,
+        (&raw mut ZLUDA_OPTIX_PATH_UTF8).as_mut().unwrap_unchecked(),
+        || ZLUDA_OPTIX_PATH_UTF16.get_or_insert(Vec::new()),
+    );
     true
 }
 

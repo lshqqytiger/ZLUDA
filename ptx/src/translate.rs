@@ -90,7 +90,7 @@ impl<'input> Module<'input> {
 
     pub fn get_bitcode_all<'a>(
         &'a self,
-    ) -> impl Iterator<Item = (llvm::MemoryBuffer, &'a CStr)> + '_ {
+    ) -> impl Iterator<Item = (llvm::MemoryBuffer, &'a CStr)> + 'a {
         unsafe {
             let main_bc = llvm::MemoryBuffer::from_ffi(LLVMWriteBitcodeToMemoryBuffer(
                 self.llvm_module.get(),
@@ -3278,7 +3278,7 @@ pub(crate) struct DenormSummary {
 pub fn to_llvm_module<'input>(
     compilation_mode: CompilationMode,
     ast: Vec<ast::Module<'input>>,
-) -> Result<Module, TranslateError> {
+) -> Result<Module<'input>, TranslateError> {
     to_llvm_module_impl2(compilation_mode, ast, None)
 }
 

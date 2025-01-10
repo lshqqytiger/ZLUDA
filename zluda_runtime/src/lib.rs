@@ -15,6 +15,175 @@ fn unsupported() -> cudaError_t {
     cudaError_t::cudaErrorNotSupported
 }
 
+#[no_mangle]
+pub extern "system" fn cudaProfilerInitialize(
+    configFile: *const ::std::os::raw::c_char,
+    outputFile: *const ::std::os::raw::c_char,
+    outputMode: cudaOutputMode_t,
+) -> cudaError_t {
+    unsupported()
+}
+
+#[no_mangle]
+pub unsafe extern "system" fn cudaProfilerStart() -> cudaError_t {
+    unsupported()
+}
+
+#[no_mangle]
+pub unsafe extern "system" fn cudaProfilerStop() -> cudaError_t {
+    unsupported()
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct uint3([::std::os::raw::c_uint; 3]);
+
+#[no_mangle]
+pub extern "system" fn __cudaInitModule(
+    fatCubinHandle: *mut *mut ::std::os::raw::c_void,
+) -> ::std::os::raw::c_char {
+    unimplemented!()
+}
+
+#[no_mangle]
+pub extern "system" fn __cudaPopCallConfiguration(
+    gridDim: *mut cudart::dim3,
+    blockDim: *mut cudart::dim3,
+    sharedMem: *mut usize,
+    stream: *mut cudaStream_t,
+) -> cudaError_t {
+    unsupported()
+}
+
+#[no_mangle]
+pub extern "system" fn __cudaPushCallConfiguration(
+    gridDim: cudart::dim3,
+    blockDim: cudart::dim3,
+    sharedMem: usize,
+    stream: cudaStream_t,
+) -> ::std::os::raw::c_uint {
+    unimplemented!()
+}
+
+#[no_mangle]
+pub unsafe extern "system" fn __cudaRegisterFatBinary(
+    fatCubin: *mut ::std::os::raw::c_void,
+) -> *mut *mut ::std::os::raw::c_void {
+    let lib = hip_common::zluda_ext::get_cuda_library().unwrap();
+    let cu_module_load_data = lib
+        .get::<unsafe extern "C" fn(
+            module: *mut *mut ::std::os::raw::c_void,
+            image: *const ::std::os::raw::c_void,
+        ) -> cuda_types::CUresult>(b"cuModuleLoadData\0")
+        .unwrap();
+    let mut module = {
+        let ptr = Box::<*mut ::std::os::raw::c_void>::new_uninit();
+        let ptr = ptr.assume_init();
+        Box::into_raw(ptr)
+    };
+    cu_module_load_data(module, fatCubin);
+    module
+}
+
+#[no_mangle]
+pub extern "system" fn __cudaRegisterFatBinaryEnd(
+    fatCubinHandle: *mut *mut ::std::os::raw::c_void,
+) -> () {
+}
+
+#[no_mangle]
+pub unsafe extern "system" fn __cudaRegisterFunction(
+    fatCubinHandle: *mut *mut ::std::os::raw::c_void,
+    hostFun: *const ::std::os::raw::c_char,
+    deviceFun: *mut ::std::os::raw::c_char,
+    deviceName: *const ::std::os::raw::c_char,
+    thread_limit: ::std::os::raw::c_int,
+    tid: *mut uint3,
+    bid: *mut uint3,
+    bDim: *mut cudart::dim3,
+    gDim: *mut cudart::dim3,
+    wSize: *mut ::std::os::raw::c_int,
+) -> () {
+    // TODO?
+}
+
+#[no_mangle]
+pub extern "system" fn __cudaRegisterHostVar(
+    fatCubinHandle: *mut *mut ::std::os::raw::c_void,
+    deviceName: *const ::std::os::raw::c_char,
+    hostVar: *mut ::std::os::raw::c_char,
+    size: usize,
+) -> () {
+    unimplemented!()
+}
+
+#[no_mangle]
+pub extern "system" fn __cudaRegisterManagedVar(
+    fatCubinHandle: *mut *mut ::std::os::raw::c_void,
+    hostVarPtrAddress: *mut *mut ::std::os::raw::c_void,
+    deviceAddress: *mut ::std::os::raw::c_char,
+    deviceName: *const ::std::os::raw::c_char,
+    ext: ::std::os::raw::c_int,
+    size: usize,
+    constant: ::std::os::raw::c_int,
+    global: ::std::os::raw::c_int,
+) -> () {
+    unimplemented!()
+}
+
+#[no_mangle]
+pub extern "system" fn __cudaRegisterSurface(
+    fatCubinHandle: *mut *mut ::std::os::raw::c_void,
+    hostVar: *const ::std::os::raw::c_void,
+    deviceAddress: *const *mut ::std::os::raw::c_void,
+    deviceName: *const ::std::os::raw::c_char,
+    dim: ::std::os::raw::c_int,
+    ext: ::std::os::raw::c_int,
+) -> () {
+    unimplemented!()
+}
+
+#[no_mangle]
+pub extern "system" fn __cudaRegisterTexture(
+    fatCubinHandle: *mut *mut ::std::os::raw::c_void,
+    hostVar: *const ::std::os::raw::c_void,
+    deviceAddress: *const *mut ::std::os::raw::c_void,
+    deviceName: *const ::std::os::raw::c_char,
+    dim: ::std::os::raw::c_int,
+    norm: ::std::os::raw::c_int,
+    ext: ::std::os::raw::c_int,
+) -> () {
+    unimplemented!()
+}
+
+#[no_mangle]
+pub unsafe extern "system" fn __cudaRegisterVar(
+    fatCubinHandle: *mut *mut ::std::os::raw::c_void,
+    hostVar: *mut ::std::os::raw::c_char,
+    deviceAddress: *mut ::std::os::raw::c_char,
+    deviceName: *const ::std::os::raw::c_char,
+    ext: ::std::os::raw::c_int,
+    size: usize,
+    constant: ::std::os::raw::c_int,
+    global: ::std::os::raw::c_int,
+) -> () {
+    // TODO?
+}
+
+#[no_mangle]
+pub unsafe extern "system" fn __cudaUnregisterFatBinary(
+    fatCubinHandle: *mut *mut ::std::os::raw::c_void,
+) -> () {
+    let lib = hip_common::zluda_ext::get_cuda_library().unwrap();
+    let cu_module_unload = lib
+        .get::<unsafe extern "C" fn(hmod: *mut ::std::os::raw::c_void) -> cuda_types::CUresult>(
+            b"cuModuleUnload\0",
+        )
+        .unwrap();
+    let module = Box::from_raw(fatCubinHandle);
+    cu_module_unload(*module);
+}
+
 fn to_cuda(status: hipError_t) -> cudaError_t {
     match status {
         hipError_t::hipSuccess => cudaError_t::cudaSuccess,
@@ -69,66 +238,6 @@ fn to_cuda_stream_capture_status(status: hipStreamCaptureStatus) -> cudaStreamCa
     }
 }
 
-unsafe fn register_fat_binary(
-    fat_cubin: *mut ::std::os::raw::c_void,
-) -> *mut *mut ::std::os::raw::c_void {
-    __hipRegisterFatBinary(fat_cubin)
-}
-
-unsafe fn register_function(
-    fat_cubin_handle: *mut *mut ::std::os::raw::c_void,
-    host_fun: *const ::std::os::raw::c_char,
-    device_fun: *mut ::std::os::raw::c_char,
-    device_name: *const ::std::os::raw::c_char,
-    thread_limit: i32,
-    tid: *mut uint3,
-    bid: *mut uint3,
-    b_dim: *mut cudart::dim3,
-    g_dim: *mut cudart::dim3,
-    w_size: *mut i32,
-) -> ::std::os::raw::c_void {
-    __hipRegisterFunction(
-        fat_cubin_handle,
-        host_fun.cast(),
-        device_fun,
-        device_name,
-        thread_limit as _,
-        tid.cast(),
-        bid.cast(),
-        b_dim.cast(),
-        g_dim.cast(),
-        w_size,
-    )
-}
-
-unsafe fn register_var(
-    fat_cubin_handle: *mut *mut ::std::os::raw::c_void,
-    host_var: *mut ::std::os::raw::c_char,
-    device_address: *mut ::std::os::raw::c_char,
-    device_name: *const ::std::os::raw::c_char,
-    ext: i32,
-    size: usize,
-    constant: i32,
-    global: i32,
-) -> ::std::os::raw::c_void {
-    __hipRegisterVar(
-        fat_cubin_handle,
-        device_address.cast(),
-        host_var,
-        device_name.cast_mut(),
-        ext,
-        size,
-        constant,
-        global,
-    )
-}
-
-unsafe fn unregister_fat_binary(
-    fat_cubin_handle: *mut *mut ::std::os::raw::c_void,
-) -> ::std::os::raw::c_void {
-    __hipUnregisterFatBinary(fat_cubin_handle)
-}
-
 unsafe fn device_get_stream_priority_range(
     least_priority: *mut i32,
     greatest_priority: *mut i32,
@@ -164,7 +273,7 @@ unsafe fn stream_create_with_priority(
             priority: ::std::os::raw::c_int,
         ) -> cuda_types::CUresult>(b"cuStreamCreateWithPriority\0")
         .unwrap();
-    cudaError_t((cu_stream_create_with_priority)(p_stream.cast(), flags, priority).0)
+    cudaError_t(cu_stream_create_with_priority(p_stream.cast(), flags, priority).0)
 }
 
 unsafe fn stream_synchronize(stream: cudaStream_t) -> cudaError_t {
