@@ -69,7 +69,20 @@ pub extern "system" fn __cudaPushCallConfiguration(
 pub unsafe extern "system" fn __cudaRegisterFatBinary(
     fatCubin: *mut ::std::os::raw::c_void,
 ) -> *mut *mut ::std::os::raw::c_void {
-    __hipRegisterFatBinary(fatCubin)
+    let lib = hip_common::zluda_ext::get_cuda_library().unwrap();
+    let cu_module_load_data = lib
+        .get::<unsafe extern "C" fn(
+            module: *mut *mut ::std::os::raw::c_void,
+            image: *const ::std::os::raw::c_void,
+        ) -> cuda_types::CUresult>(b"cuModuleLoadData\0")
+        .unwrap();
+    let mut module = {
+        let ptr = Box::<*mut ::std::os::raw::c_void>::new_uninit();
+        let ptr = ptr.assume_init();
+        Box::into_raw(ptr)
+    };
+    cu_module_load_data(module, fatCubin);
+    module
 }
 
 #[no_mangle]
@@ -90,19 +103,8 @@ pub unsafe extern "system" fn __cudaRegisterFunction(
     bDim: *mut cudart::dim3,
     gDim: *mut cudart::dim3,
     wSize: *mut ::std::os::raw::c_int,
-) -> ::std::os::raw::c_void {
-    __hipRegisterFunction(
-        fatCubinHandle,
-        hostFun.cast(),
-        deviceFun,
-        deviceName,
-        thread_limit as _,
-        tid.cast(),
-        bid.cast(),
-        bDim.cast(),
-        gDim.cast(),
-        wSize,
-    )
+) -> () {
+    // TODO?
 }
 
 #[no_mangle]
@@ -111,7 +113,7 @@ pub extern "system" fn __cudaRegisterHostVar(
     deviceName: *const ::std::os::raw::c_char,
     hostVar: *mut ::std::os::raw::c_char,
     size: usize,
-) -> ::std::os::raw::c_void {
+) -> () {
     unimplemented!()
 }
 
@@ -125,7 +127,7 @@ pub extern "system" fn __cudaRegisterManagedVar(
     size: usize,
     constant: ::std::os::raw::c_int,
     global: ::std::os::raw::c_int,
-) -> ::std::os::raw::c_void {
+) -> () {
     unimplemented!()
 }
 
@@ -137,7 +139,7 @@ pub extern "system" fn __cudaRegisterSurface(
     deviceName: *const ::std::os::raw::c_char,
     dim: ::std::os::raw::c_int,
     ext: ::std::os::raw::c_int,
-) -> ::std::os::raw::c_void {
+) -> () {
     unimplemented!()
 }
 
@@ -150,7 +152,7 @@ pub extern "system" fn __cudaRegisterTexture(
     dim: ::std::os::raw::c_int,
     norm: ::std::os::raw::c_int,
     ext: ::std::os::raw::c_int,
-) -> ::std::os::raw::c_void {
+) -> () {
     unimplemented!()
 }
 
@@ -164,24 +166,22 @@ pub unsafe extern "system" fn __cudaRegisterVar(
     size: usize,
     constant: ::std::os::raw::c_int,
     global: ::std::os::raw::c_int,
-) -> ::std::os::raw::c_void {
-    __hipRegisterVar(
-        fatCubinHandle,
-        deviceAddress.cast(),
-        hostVar,
-        deviceName.cast_mut(),
-        ext,
-        size,
-        constant,
-        global,
-    )
+) -> () {
+    // TODO?
 }
 
 #[no_mangle]
 pub unsafe extern "system" fn __cudaUnregisterFatBinary(
     fatCubinHandle: *mut *mut ::std::os::raw::c_void,
-) -> ::std::os::raw::c_void {
-    __hipUnregisterFatBinary(fatCubinHandle)
+) -> () {
+    let lib = hip_common::zluda_ext::get_cuda_library().unwrap();
+    let cu_module_unload = lib
+        .get::<unsafe extern "C" fn(hmod: *mut ::std::os::raw::c_void) -> cuda_types::CUresult>(
+            b"cuModuleUnload\0",
+        )
+        .unwrap();
+    let module = Box::from_raw(fatCubinHandle);
+    cu_module_unload(*module);
 }
 
 fn to_cuda(status: hipError_t) -> cudaError_t {
@@ -273,7 +273,7 @@ unsafe fn stream_create_with_priority(
             priority: ::std::os::raw::c_int,
         ) -> cuda_types::CUresult>(b"cuStreamCreateWithPriority\0")
         .unwrap();
-    cudaError_t((cu_stream_create_with_priority)(p_stream.cast(), flags, priority).0)
+    cudaError_t(cu_stream_create_with_priority(p_stream.cast(), flags, priority).0)
 }
 
 unsafe fn stream_synchronize(stream: cudaStream_t) -> cudaError_t {

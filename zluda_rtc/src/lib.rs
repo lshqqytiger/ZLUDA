@@ -136,8 +136,8 @@ fn unsupported() -> nvrtcResult {
     nvrtcResult::NVRTC_ERROR_INTERNAL_ERROR
 }
 
-const NVRTC_VERSION_MAJOR: i32 = 11;
-const NVRTC_VERSION_MINOR: i32 = 7;
+const NVRTC_VERSION_MAJOR: i32 = 12;
+const NVRTC_VERSION_MINOR: i32 = 2;
 
 #[repr(C)]
 struct Program {
