@@ -258,9 +258,9 @@ fn build_impl(is_debug: bool, rocm5: bool, nightly: bool) -> Result<Workspace, D
             env::set_var(
                 "HIP_PATH",
                 if rocm5 {
-                    env::var("HIP_PATH_57").or(env::var("HIP_PATH_55"))
+                    env::var("HIP_PATH_57").or_else(|_| env::var("HIP_PATH_55"))
                 } else {
-                    env::var("HIP_PATH_62").or(env::var("HIP_PATH_61"))
+                    env::var("HIP_PATH_62").or_else(|_| env::var("HIP_PATH_61"))
                 }
                 .unwrap_or(path_default),
             );
