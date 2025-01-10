@@ -704,6 +704,7 @@ enum DetourUndoState {
     DetachDetours,
 }
 
+#[allow(static_mut_refs)]
 unsafe fn continue_create_process_hook(
     create_proc_result: BOOL,
     original_creation_flags: DWORD,
@@ -727,7 +728,7 @@ unsafe fn continue_create_process_hook(
         ) != FALSE
         && DetourUpdateProcessWithDll(
             (*process_information).hProcess,
-            &mut &raw mut CURRENT_MODULE_FILENAME as *mut _ as *mut _,
+            &mut CURRENT_MODULE_FILENAME.as_ptr() as *mut _ as *mut _,
             1,
         ) != FALSE
     {
