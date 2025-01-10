@@ -1,11 +1,10 @@
 #![allow(warnings)]
 mod cublaslt;
 mod trap;
-use std::{alloc, ptr};
 
 pub use cublaslt::*;
-
 use hipblaslt_sys::*;
+use std::{alloc, ptr};
 
 #[cfg(debug_assertions)]
 pub(crate) fn unsupported() -> cublasStatus_t {
