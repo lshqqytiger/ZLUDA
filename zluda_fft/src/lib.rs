@@ -22,6 +22,18 @@ pub(crate) fn unsupported() -> cufftResult {
     cufftResult::CUFFT_NOT_SUPPORTED
 }
 
+#[no_mangle]
+pub extern "system" fn cufftLeaveCS() {}
+
+#[no_mangle]
+pub extern "system" fn cufftEnterCS() {}
+
+#[no_mangle]
+pub extern "system" fn cufftMakePlanGuru64() {}
+
+#[no_mangle]
+pub extern "system" fn cufftXtMakePlanGuru64() {}
+
 lazy_static! {
     static ref PLANS: Mutex<Slab<Plan>> = Mutex::new(Slab::new());
 }

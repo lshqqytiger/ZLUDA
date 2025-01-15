@@ -1,0 +1,2 @@
+bindgen /usr/local/cuda/targets/x86_64-linux/include/cufftw.h -o src/cufftw.rs --allowlist-function="^fftw.*" --default-enum-style=newtype --no-layout-tests --no-derive-debug -- -I/usr/local/cuda/targets/x86_64-linux/include
+sed -i -e 's/extern "C" {//g' -e 's/-> fftw_plan;/-> fftw_plan { unimplemented!()/g' -e 's/-> fftwf_plan;/-> fftwf_plan { unimplemented!()/g' -e 's/pub fn /#[no_mangle] pub extern "system" fn /g' src/cufftw.rs

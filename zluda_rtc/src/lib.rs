@@ -1,4 +1,4 @@
-#![allow(warnings)]
+#[allow(warnings)]
 mod nvrtc;
 use std::{env, ffi::c_char, ptr, result, sync::Mutex};
 
