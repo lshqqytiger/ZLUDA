@@ -22,11 +22,34 @@ pub(crate) fn unsupported() -> cufftResult {
     cufftResult::CUFFT_NOT_SUPPORTED
 }
 
+#[no_mangle]
+pub extern "system" fn cufftLeaveCS() {
+    unimplemented!()
+}
+
+#[no_mangle]
+pub extern "system" fn cufftEnterCS() {
+    unimplemented!()
+}
+
+#[no_mangle]
+pub extern "system" fn cufftMakePlanGuru64() {
+    unimplemented!()
+}
+
+#[no_mangle]
+pub extern "system" fn cufftXtMakePlanGuru64() {
+    unimplemented!()
+}
+
 lazy_static! {
     static ref PLANS: Mutex<Slab<Plan>> = Mutex::new(Slab::new());
 }
 
-struct Plan(hipfftHandle);
+struct Plan {
+    handle: hipfftHandle,
+    xt_typ: Option<cufftType_t>,
+}
 unsafe impl Send for Plan {}
 
 unsafe fn create(handle: *mut cufftHandle) -> cufftResult {
@@ -37,7 +60,10 @@ unsafe fn create(handle: *mut cufftHandle) -> cufftResult {
     }
     let plan_key = {
         let mut plans = PLANS.lock().unwrap();
-        plans.insert(Plan(hip_handle))
+        plans.insert(Plan {
+            handle: hip_handle,
+            xt_typ: None,
+        })
     };
     *handle = plan_key as i32;
     cufftResult::CUFFT_SUCCESS
@@ -86,11 +112,23 @@ fn cuda_type(type_: cufftType) -> hipfftType_t {
     }
 }
 
+fn xt_type(input: cudaDataType, output: cudaDataType) -> cufftType {
+    match (input, output) {
+        (cudaDataType::CUDA_R_32F, cudaDataType::CUDA_C_32F) => cufftType::CUFFT_R2C,
+        (cudaDataType::CUDA_C_32F, cudaDataType::CUDA_R_32F) => cufftType::CUFFT_C2R,
+        (cudaDataType::CUDA_C_32F, cudaDataType::CUDA_C_32F) => cufftType::CUFFT_C2C,
+        _ => panic!(
+            "[ZLUDA] Unknown type combination: ({}, {})",
+            input.0, output.0
+        ),
+    }
+}
+
 fn get_hip_plan(plan: cufftHandle) -> Result<hipfftHandle, cufftResult_t> {
     let plans = PLANS.lock().unwrap();
     plans
         .get(plan as usize)
-        .map(|p| p.0)
+        .map(|p| p.handle)
         .ok_or(cufftResult_t::CUFFT_INVALID_PLAN)
 }
 
@@ -159,7 +197,10 @@ unsafe fn plan_many(
     }
     let plan_key = {
         let mut plans = PLANS.lock().unwrap();
-        plans.insert(Plan(hip_plan))
+        plans.insert(Plan {
+            handle: hip_plan,
+            xt_typ: None,
+        })
     };
     *plan = plan_key as i32;
     result
@@ -183,6 +224,22 @@ unsafe fn set_stream(plan: i32, stream: *mut cufft::CUstream_st) -> cufftResult_
     let zluda_ext = zluda_dark_api::ZludaExt::new(export_table);
     let stream: Result<_, _> = zluda_ext.get_hip_stream(stream as _).into();
     to_cuda(hipfftSetStream(hip_plan, stream.unwrap() as _))
+}
+
+unsafe fn set_work_area(plan: i32, work_area: *mut ::std::os::raw::c_void) -> cufftResult_t {
+    let plan = match get_hip_plan(plan) {
+        Ok(p) => p,
+        Err(e) => return e,
+    };
+    to_cuda(hipfftSetWorkArea(plan, work_area))
+}
+
+unsafe fn set_auto_allocation(plan: i32, auto_allocate: i32) -> cufftResult_t {
+    let plan = match get_hip_plan(plan) {
+        Ok(p) => p,
+        Err(e) => return e,
+    };
+    to_cuda(hipfftSetAutoAllocation(plan, auto_allocate))
 }
 
 unsafe fn exec_c2c(
@@ -246,8 +303,79 @@ unsafe fn plan_3d(plan: *mut i32, nx: i32, ny: i32, nz: i32, type_: cufftType) -
     }
     let plan_key = {
         let mut plans = PLANS.lock().unwrap();
-        plans.insert(Plan(hip_plan))
+        plans.insert(Plan {
+            handle: hip_plan,
+            xt_typ: None,
+        })
     };
     *plan = plan_key as i32;
     result
+}
+
+fn set_xt_type(plan: cufftHandle, typ: cufftType_t) -> Result<(), cufftResult_t> {
+    let mut plans = PLANS.lock().unwrap();
+    plans
+        .get_mut(plan as usize)
+        .map(|x| {
+            x.xt_typ = Some(typ);
+        })
+        .ok_or(cufftResult_t::CUFFT_INVALID_PLAN)
+}
+
+fn get_xt_type(plan: cufftHandle) -> Result<cufftType_t, cufftResult_t> {
+    let plans = PLANS.lock().unwrap();
+    plans
+        .get(plan as usize)
+        .map(|x| x.xt_typ)
+        .flatten()
+        .ok_or(cufftResult_t::CUFFT_INVALID_PLAN)
+}
+
+unsafe fn xt_make_plan_many(
+    plan: i32,
+    rank: i32,
+    n: *mut i64,
+    inembed: *mut i64,
+    istride: i64,
+    idist: i64,
+    inputtype: cudaDataType,
+    onembed: *mut i64,
+    ostride: i64,
+    odist: i64,
+    outputtype: cudaDataType,
+    batch: i64,
+    work_size: *mut usize,
+    _executiontype: cudaDataType,
+) -> cufftResult_t {
+    let typ = xt_type(inputtype, outputtype);
+    if let Err(result) = set_xt_type(plan, typ) {
+        return result;
+    }
+    let plan = match get_hip_plan(plan) {
+        Ok(p) => p,
+        Err(e) => return e,
+    };
+    let typ = cuda_type(typ);
+    to_cuda(hipfftMakePlanMany64(
+        plan, rank, n, inembed, istride, idist, onembed, ostride, odist, typ, batch, work_size,
+    ))
+}
+
+unsafe fn xt_exec(
+    plan: i32,
+    input: *mut ::std::os::raw::c_void,
+    output: *mut ::std::os::raw::c_void,
+    direction: i32,
+) -> cufftResult_t {
+    let typ = match get_xt_type(plan) {
+        Ok(t) => t,
+        Err(e) => return e,
+    };
+    match typ {
+        cufftType_t::CUFFT_R2C => exec_r2c(plan, input.cast(), output.cast()),
+        cufftType_t::CUFFT_C2R => exec_c2r(plan, input.cast(), output.cast()),
+        cufftType_t::CUFFT_C2C => exec_c2c(plan, input.cast(), output.cast(), direction),
+        cufftType_t::CUFFT_Z2Z => exec_z2z(plan, input.cast(), output.cast(), direction),
+        _ => unimplemented!(),
+    }
 }

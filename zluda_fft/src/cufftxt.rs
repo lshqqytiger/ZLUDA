@@ -376,7 +376,22 @@ pub unsafe extern "system" fn cufftXtMakePlanMany(
     workSize: *mut usize,
     executiontype: cudaDataType,
 ) -> cufftResult {
-    crate::unsupported()
+    crate::xt_make_plan_many(
+        plan,
+        rank,
+        n,
+        inembed,
+        istride,
+        idist,
+        inputtype,
+        onembed,
+        ostride,
+        odist,
+        outputtype,
+        batch,
+        workSize,
+        executiontype,
+    )
 }
 
 #[no_mangle]
@@ -406,7 +421,7 @@ pub unsafe extern "system" fn cufftXtExec(
     output: *mut ::std::os::raw::c_void,
     direction: ::std::os::raw::c_int,
 ) -> cufftResult {
-    crate::unsupported()
+    crate::xt_exec(plan, input, output, direction)
 }
 
 #[no_mangle]
