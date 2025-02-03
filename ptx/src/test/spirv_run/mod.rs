@@ -108,6 +108,8 @@ test_ptx!(ld_st_implicit, [0.5f32, 0.25f32], [0.5f32]);
 test_ptx!(mov, [1u64], [1u64]);
 test_ptx!(mul_lo, [1u64], [2u64]);
 test_ptx!(mul_hi, [u64::max_value()], [1u64]);
+test_ptx!(mul24_lo, [0xEA129Bu32], [0xBAF20C63u32]);
+test_ptx!(mul24_hi, [0xEA129Bu32], [0x88F1BAF2u32]);
 test_ptx!(add, [1u64], [2u64]);
 test_ptx!(add_global, [1f32], [0x408487EEu32]);
 test_ptx!(amdgpu_unnamed, [2u64], [3u64]);
@@ -671,7 +673,7 @@ fn run_hip<Input: From<u8> + Copy + Debug, Output: From<u8> + Copy + Debug + Def
         let mut stream = ptr::null_mut();
         hip_call! { hipStreamCreateWithFlags(&mut stream, hipStreamNonBlocking) };
         let mut dev_props = unsafe { mem::zeroed() };
-        hip_call! { hipGetDevicePropertiesR0600(&mut dev_props, dev) };
+        hip_call! { hipGetDeviceProperties!(&mut dev_props, dev) };
         let mut module = ptr::null_mut();
         hip_call! { hipModuleLoadData(&mut module, compiled.as_ptr() as _) };
         let mut kernel = ptr::null_mut();

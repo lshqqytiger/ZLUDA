@@ -1,3 +1,4 @@
+#![allow(static_mut_refs)]
 use crate::{common, nvml::*};
 use atiadlxx_sys::*;
 use std::borrow::Cow;
@@ -135,22 +136,6 @@ pub(crate) unsafe fn init() -> Result<(), nvmlReturn_t> {
 
 pub(crate) unsafe fn init_with_flags(_flags: ::std::os::raw::c_uint) -> Result<(), nvmlReturn_t> {
     init()
-}
-
-struct CountingWriter<T: std::io::Write> {
-    pub base: T,
-    pub len: usize,
-}
-
-impl<T: std::io::Write> std::io::Write for CountingWriter<T> {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.len += buf.len();
-        self.base.write(buf)
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        self.base.flush()
-    }
 }
 
 pub(crate) unsafe fn device_get_handle_by_index(

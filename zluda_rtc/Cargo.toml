@@ -9,8 +9,8 @@ name = "nvrtc"
 crate-type = ["cdylib"]
 
 [dependencies]
-hip_common = { path = "../hip_common" }
-hiprtc-sys = { path = "../hiprtc-sys" }
+libloading = "0.8"
+lazy_static = "1.4"
 
 [package.metadata.zluda]
 linux_names = ["libnvrtc.so.10", "libnvrtc.so.11"]

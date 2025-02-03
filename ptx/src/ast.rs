@@ -356,6 +356,7 @@ pub enum Instruction<P: ArgParams> {
     Ld(LdDetails, Arg2Ld<P>),
     Mov(MovDetails, Arg2Mov<P>),
     Mul(MulDetails, Arg3<P>),
+    Mul24(Mul24Details, Arg3<P>),
     Add(ArithDetails, Arg3<P>),
     AddC(CarryInDetails, Arg3<P>),
     AddCC(ScalarType, Arg3<P>),
@@ -830,11 +831,23 @@ pub struct MulIntDesc {
     pub control: MulIntControl,
 }
 
+#[derive(Copy, Clone)]
+pub struct Mul24IntDesc {
+    pub typ: ScalarType,
+    pub control: Mul24IntControl,
+}
+
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum MulIntControl {
     Low,
     High,
     Wide,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum Mul24IntControl {
+    Low,
+    High,
 }
 
 #[derive(PartialEq, Eq, Copy, Clone)]
@@ -1025,6 +1038,18 @@ pub enum MulDetails {
 pub struct MulInt {
     pub typ: ScalarType,
     pub control: MulIntControl,
+}
+
+#[derive(Copy, Clone)]
+pub enum Mul24Details {
+    Unsigned(Mul24Int),
+    Signed(Mul24Int),
+}
+
+#[derive(Copy, Clone)]
+pub struct Mul24Int {
+    pub typ: ScalarType,
+    pub control: Mul24IntControl,
 }
 
 #[derive(Copy, Clone)]

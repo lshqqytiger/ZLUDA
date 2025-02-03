@@ -2,11 +2,14 @@
 name = "zluda_blas"
 version = "0.0.0"
 authors = ["Andrzej Janik <vosen@vosen.pl>"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 name = "cublas"
 crate-type = ["cdylib"]
+
+[features]
+rocm5 = ["hip_common/rocm5", "zluda_dark_api/rocm5"]
 
 [dependencies]
 rocblas-sys = { path = "../rocblas-sys" }

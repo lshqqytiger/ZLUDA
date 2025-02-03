@@ -380,7 +380,7 @@ pub unsafe extern "system" fn cufftSetWorkArea(
     plan: cufftHandle,
     workArea: *mut ::std::os::raw::c_void,
 ) -> cufftResult {
-    crate::unsupported()
+    crate::set_work_area(plan, workArea)
 }
 
 #[no_mangle]
@@ -388,7 +388,7 @@ pub unsafe extern "system" fn cufftSetAutoAllocation(
     plan: cufftHandle,
     autoAllocate: ::std::os::raw::c_int,
 ) -> cufftResult {
-    crate::unsupported()
+    crate::set_auto_allocation(plan, autoAllocate)
 }
 
 #[no_mangle]

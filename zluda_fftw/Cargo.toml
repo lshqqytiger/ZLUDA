@@ -1,0 +1,15 @@
+[package]
+name = "zluda_fftw"
+version = "0.0.0"
+authors = ["Seunghoon Lee <op@lsh.sh>"]
+edition = "2021"
+
+[lib]
+name = "cufftw"
+crate-type = ["cdylib"]
+
+[dependencies]
+
+[package.metadata.zluda]
+linux_names = ["libcufftw.so.10"]
+dump_names = ["libcufftw.so"]

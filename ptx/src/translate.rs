@@ -90,7 +90,7 @@ impl<'input> Module<'input> {
 
     pub fn get_bitcode_all<'a>(
         &'a self,
-    ) -> impl Iterator<Item = (llvm::MemoryBuffer, &'a CStr)> + '_ {
+    ) -> impl Iterator<Item = (llvm::MemoryBuffer, &'a CStr)> + 'a {
         unsafe {
             let main_bc = llvm::MemoryBuffer::from_ffi(LLVMWriteBitcodeToMemoryBuffer(
                 self.llvm_module.get(),
@@ -3002,6 +3002,62 @@ fn replace_instructions_with_builtins_impl<'input>(
                     fn_name,
                 )?);
             }
+            Statement::Instruction(ast::Instruction::Mul24(
+                ast::Mul24Details::Signed(ast::Mul24Int {
+                    control: ast::Mul24IntControl::High,
+                    typ,
+                }),
+                args,
+            ))
+            | Statement::Instruction(ast::Instruction::Mul24(
+                ast::Mul24Details::Unsigned(ast::Mul24Int {
+                    control: ast::Mul24IntControl::High,
+                    typ,
+                }),
+                args,
+            )) if typ == ast::ScalarType::U32 || typ == ast::ScalarType::S32 => {
+                let fn_name = [ZLUDA_PTX_PREFIX, "mul24_hi_", typ.to_ptx_name()].concat();
+                statements.push(instruction_to_fn_call(
+                    id_def,
+                    ptx_impl_imports,
+                    ast::Instruction::Mul24(
+                        ast::Mul24Details::Signed(ast::Mul24Int {
+                            control: ast::Mul24IntControl::High,
+                            typ,
+                        }),
+                        args,
+                    ),
+                    fn_name,
+                )?);
+            }
+            Statement::Instruction(ast::Instruction::Mul24(
+                ast::Mul24Details::Signed(ast::Mul24Int {
+                    control: ast::Mul24IntControl::Low,
+                    typ,
+                }),
+                args,
+            ))
+            | Statement::Instruction(ast::Instruction::Mul24(
+                ast::Mul24Details::Unsigned(ast::Mul24Int {
+                    control: ast::Mul24IntControl::Low,
+                    typ,
+                }),
+                args,
+            )) if typ == ast::ScalarType::U32 || typ == ast::ScalarType::S32 => {
+                let fn_name = [ZLUDA_PTX_PREFIX, "mul24_lo_", typ.to_ptx_name()].concat();
+                statements.push(instruction_to_fn_call(
+                    id_def,
+                    ptx_impl_imports,
+                    ast::Instruction::Mul24(
+                        ast::Mul24Details::Signed(ast::Mul24Int {
+                            control: ast::Mul24IntControl::Low,
+                            typ,
+                        }),
+                        args,
+                    ),
+                    fn_name,
+                )?);
+            }
             Statement::Instruction(ast::Instruction::Mad(
                 ast::MulDetails::Signed(ast::MulInt {
                     control: ast::MulIntControl::High,
@@ -3222,7 +3278,7 @@ pub(crate) struct DenormSummary {
 pub fn to_llvm_module<'input>(
     compilation_mode: CompilationMode,
     ast: Vec<ast::Module<'input>>,
-) -> Result<Module, TranslateError> {
+) -> Result<Module<'input>, TranslateError> {
     to_llvm_module_impl2(compilation_mode, ast, None)
 }
 
@@ -6218,6 +6274,10 @@ impl<T: ArgParamsEx> ast::Instruction<T> {
                 let is_wide = d.is_wide();
                 ast::Instruction::Mul(d, a.map_generic(visitor, &inst_type, is_wide)?)
             }
+            ast::Instruction::Mul24(d, a) => {
+                let inst_type = d.get_type();
+                ast::Instruction::Mul24(d, a.map_generic(visitor, &inst_type, false)?)
+            }
             ast::Instruction::Add(d, a) => {
                 let inst_type = ast::Type::Scalar(d.get_type());
                 ast::Instruction::Add(d, a.map_generic(visitor, &inst_type, false)?)
@@ -6568,7 +6628,6 @@ impl<T: ArgParamsEx> ast::Instruction<T> {
                     &ast::Type::Scalar(ast::ScalarType::U64),
                 )?,
             ),
-
         })
     }
 }
@@ -6888,6 +6947,8 @@ impl<T: ast::ArgParams> ast::Instruction<T> {
             ast::Instruction::Add(ast::ArithDetails::Unsigned(_), _) => None,
             ast::Instruction::Mul(ast::MulDetails::Unsigned(_), _) => None,
             ast::Instruction::Mul(ast::MulDetails::Signed(_), _) => None,
+            ast::Instruction::Mul24(ast::Mul24Details::Unsigned(_), _) => None,
+            ast::Instruction::Mul24(ast::Mul24Details::Signed(_), _) => None,
             ast::Instruction::Mad(ast::MulDetails::Unsigned(_), _) => None,
             ast::Instruction::Mad(ast::MulDetails::Signed(_), _) => None,
             ast::Instruction::Min(ast::MinMaxDetails::Signed(_), _) => None,
@@ -8793,6 +8854,15 @@ impl ast::MulDetails {
             ast::MulDetails::Unsigned(d) => d.typ.into(),
             ast::MulDetails::Signed(d) => d.typ.into(),
             ast::MulDetails::Float(d) => d.typ.into(),
+        })
+    }
+}
+
+impl ast::Mul24Details {
+    fn get_type(&self) -> ast::Type {
+        ast::Type::Scalar(match self {
+            ast::Mul24Details::Unsigned(d) => d.typ.into(),
+            ast::Mul24Details::Signed(d) => d.typ.into(),
         })
     }
 }

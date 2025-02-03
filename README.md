@@ -11,18 +11,24 @@ If you want to give it a try, download it from Release page to the right and rea
 ## Usage
 
 ### Windows
+
 Using command line:
+
 ```
 <ZLUDA_DIRECTORY>\zluda.exe -- <APPLICATION> <APPLICATION_ARGUMENTS>
 ```
+
 If you downloaded a ZIP file with the release and unpacked it, then `<ZLUDA_DIRECTORY>` is the `zluda` directory you have just unpacked.\
 If you are building from source, then `<ZLUDA_DIRECTORY>` is subdirectory `target\release`.
 
 ### Linux
+
 Using command line:
+
 ```
 LD_LIBRARY_PATH="<ZLUDA_DIRECTORY>:$LD_LIBRARY_PATH" <APPLICATION> <APPLICATION_ARGUMENTS>
 ```
+
 If you downloaded a ZIP file with the release and unpacked it, then `<ZLUDA_DIRECTORY>` is the `zluda` directory you have just unpacked.\
 If you are building from source, then `<ZLUDA_DIRECTORY>` is subdirectory `target\release`.
 
@@ -31,25 +37,28 @@ If you are building from source, then `<ZLUDA_DIRECTORY>` is subdirectory `targe
 ### Prerequisites
 
 Make sure you have the following installed:
-* Git
-* CMake
-* Python 3
-* Rust (1.66.1 or newer)
-* C++ compiler
-* (Linux only) ROCm 5.7+ (_not ROCm 6_) (https://rocm.docs.amd.com/en/latest/deploy/linux/install_overview.html)
-* (Windows only) Recent [AMD Radeon Software Adrenalin](https://www.amd.com/en/technologies/software)
-* (Recommended, optional) Ninja (https://ninja-build.org/)
+
+- Git
+- CMake
+- Python 3
+- Rust (1.7x or newer)
+- C++ compiler
+- [ROCm](https://rocm.docs.amd.com/en/latest/deploy/linux/install_overview.html) 6.0+ (or [HIP SDK](https://rocm.docs.amd.com/projects/install-on-windows/en/latest/) on Windows)
+- (Windows only) Recent [AMD Radeon Software Adrenalin](https://www.amd.com/en/technologies/software)
+- (Recommended, optional) [Ninja](https://ninja-build.org/)
 
 Alternatively, if you are building for Linux, [.devcontainer](.devcontainer) directory contains various developer Dockerfiles with all the required dependencies
 
 ### Checkout
 
 Checkout ZLUDA code with:
+
 ```
 git clone --recurse-submodules https://github.com/vosen/zluda.git
 ```
 
 ### Build
+
 Build by running:
 
 ```
@@ -79,17 +88,18 @@ If an application fails to start under ZLUDA or crashes please check [Known Issu
 - ZLUDA can use AMD server GPUs (as tested with Instinct MI200) with a caveat.
 
   On Server GPUs, ZLUDA can compile CUDA GPU code to run in one of two modes:
+
   - Fast mode, which is faster, but can make exotic (but correct) GPU code hang.
   - Slow mode, which should make GPU code more stable, but can prevent some applications from running on ZLUDA.
 
   By default, ZLUDA uses fast mode. That's because:
+
   - There's a huge performance difference, fast mode can be twice as fast.
   - The code patterns that can trip fast mode were not encountered across multiple projects (SPECFEM3D, QUDA, CHroma, MILC, Kokkos, LAMMPS, OpenFOAM, XGBoost, NAMD, LAMMPS).
 
   You can use environment variable `ZLUDA_WAVE64_SLOW_MODE=1` to force compilation in slow mode.
 
   Nothing of that applies to desktop and integrated GPUs (RDNA family).
-
 
 ### Software
 
@@ -103,14 +113,17 @@ If an application fails to start under ZLUDA or crashes please check [Known Issu
   Firstly, ZLUDA ignores some of the floating point denormal and rounding mode information present in the kernels. Secondly, for certain approximate (not IEEE 754) NVIDIA floating point operations in CUDA, ZLUDA blindly uses approximate AMD floating point operations. The two might have a different precision.
 
 #### CUDA 12+
-- Application built with CUDA 12 and using Thrust crashes with `LLVM ERROR: unsupported libcall legalization`. 
-  
+
+- Application built with CUDA 12 and using Thrust crashes with `LLVM ERROR: unsupported libcall legalization`.
+
   This is a ROCm/HIP bug. Currently, CUDA applications built with CUDA versions pre-12 work the best. Building with CUDA 12 and a pre-CUDA 12 Thrust might also work.
 
 #### OptiX
+
 - ZLUDA has a bare-minimum OptiX implementation for Arnold. See details in [Arnold](#arnold) section.
 
 #### Windows
+
 - Antivirus flags ZLUDA as malware.
 
   ZLUDA launcher (`zluda.exe`) uses some of the techniques used by malware, but for good. `zluda.exe` hijacks the process and redirects all uses of the original NVIDIA's CUDA libraries to use ZLUDA's CUDA instead.
@@ -139,51 +152,53 @@ Meshroom works only with on Windows due to an underlying ROCm/HIP issue.
 
 Meshroom 2023.3.0 might not work, it's recommended to use Meshroom freshly built from develop branch. See #79 and alicevision/Meshroom#595. Please open an issue here if you run into problems.
 
-
 #### llama.cpp
 
 If you are building llama.cpp with cmake and don't want it to crash on ZLUDA then you should use `CUDA_DOCKER_ARCH=compute_61` like this:
+
 ```
-make CUDA_DOCKER_ARCH=compute_61 
+make CUDA_DOCKER_ARCH=compute_61
 ```
+
 Alternatively, building with cmake should work with no changes.
 
 Performance is currently much lower than the native HIP backend, see the discussion in #102.
 
 #### Arnold
 
-* ZLUDA implements minimum of OptiX framework to support Arnold. ZLUDA's OptiX is buggy, unoptimized and incomplete. It's been tested with Arnold 7.1.4.1 command line rendering on Linux.
+- ZLUDA implements minimum of OptiX framework to support Arnold. ZLUDA's OptiX is buggy, unoptimized and incomplete. It's been tested with Arnold 7.1.4.1 command line rendering on Linux.
 
   ZLUDA-OptiX is not built by default or redistributed in the release. To use it follow those steps:
- 
-  * Firstly build a newer version of ROCm LLVM. Version shipped with 5.7.1 is known to miscompile Arnold code. Get it here: https://github.com/ROCm/llvm-project. Switch to a known good commit: `0c7fd5b6d1bbf471d2c068c2b6172d9cfd76b08d` and build it.
 
-  * Then build amd_comgr: https://github.com/ROCm/ROCm-CompilerSupport with the LLVM built in the previous step. I'm using the last commit from https://github.com/ROCm/ROCm-CompilerSupport (`8276083301409001ec7643e68f5ad58b057c21fd`).
+  - Firstly build a newer version of ROCm LLVM. Version shipped with 5.7.1 is known to miscompile Arnold code. Get it here: https://github.com/ROCm/llvm-project. Switch to a known good commit: `0c7fd5b6d1bbf471d2c068c2b6172d9cfd76b08d` and build it.
 
-  * Now build ZLUDA-OptiX:
+  - Then build amd_comgr: https://github.com/ROCm/ROCm-CompilerSupport with the LLVM built in the previous step. I'm using the last commit from https://github.com/ROCm/ROCm-CompilerSupport (`8276083301409001ec7643e68f5ad58b057c21fd`).
+
+  - Now build ZLUDA-OptiX:
+
     ```
     cargo ctask --release
     cargo build -p zluda_rt --release
     cd target/release
-    ln -s libnvoptix.so liboptix.so.6.6.0 
+    ln -s libnvoptix.so liboptix.so.6.6.0
     cp ../../hiprt-sys/lib/libhiprt64.so .
     ```
 
-  * After those quick and easy steps you can use it with the command line Arnold renderer:
+  - After those quick and easy steps you can use it with the command line Arnold renderer:
+
     ```
     LD_LIBRARY_PATH=<PATH_TO_ZLUDA>/target/release/ LD_PRELOAD="<PATH_TO_COMGR>/build/libamd_comgr.so.2 <PATH_TO_ZLUDA>/liboptix.so.6.6.0" /usr/autodesk/arnold/maya2023/bin/kick attic.ass  -device gpu -o /tmp/attic.jpg -v 6 -sl
     ```
 
-  * Keep in mind that ZLUDA-OptiX can only successfully render the simplest Arnold scene (and possibly one more):
-     
-     * Cornell box (from [here](https://help.autodesk.com/view/ARNOL/ENU/?guid=arnold_user_guide_ac_scene_source_ac_ass_examples_html)):\
-     [![cornell](https://imgur.com/4Vv3GO8s.jpg)](https://imgur.com/4Vv3GO8)
-     * (used to work, broken now) Attic scene (from [here](https://github.com/wahn/export_multi/tree/master/17_attic)):\
-     [![cornell](https://imgur.com/Sut2YMys.jpg)](https://imgur.com/a/2jF9Kb5)
+  - Keep in mind that ZLUDA-OptiX can only successfully render the simplest Arnold scene (and possibly one more):
+    - Cornell box (from [here](https://help.autodesk.com/view/ARNOL/ENU/?guid=arnold_user_guide_ac_scene_source_ac_ass_examples_html)):\
+      [![cornell](https://imgur.com/4Vv3GO8s.jpg)](https://imgur.com/4Vv3GO8)
+    - (used to work, broken now) Attic scene (from [here](https://github.com/wahn/export_multi/tree/master/17_attic)):\
+      [![cornell](https://imgur.com/Sut2YMys.jpg)](https://imgur.com/a/2jF9Kb5)
 
 #### PyTorch
 
-* PyTorch received very little testing. ZLUDA's coverage of cuDNN APIs is very minimal (just enough to run ResNet-50) and realistically you won't get much running.\
+- PyTorch received very little testing. ZLUDA's coverage of cuDNN APIs is very minimal (just enough to run ResNet-50) and realistically you won't get much running.\
   However if you are interested in trying it out you need to build it from sources with the settings below. Default PyTorch does not ship PTX and uses bundled NCCL which also builds without PTX:
 
   ```
@@ -196,7 +211,9 @@ Performance is currently much lower than the native HIP backend, see the discuss
   export NCCL_LIB_DIR=/usr/lib/x86_64-linux-gnu
   export USE_EXPERIMENTAL_CUDNN_V8_API=OFF
   ```
+
   or (untested):
+
   ```
   export TORCH_CUDA_ARCH_LIST="6.1+PTX"
   export CUDAARCHS=61
@@ -207,17 +224,40 @@ Performance is currently much lower than the native HIP backend, see the discuss
   ```
 
   When running use the following environment variable:
+
   ```
   DISABLE_ADDMM_CUDA_LT=1
   ```
 
+- On Windows, you don't have to build PyTorch from sources. Instead, just replace dll files of official CUDA release of PyTorch.
+  After that, insert these codes into the application.
+
+  ```py
+  torch.backends.cudnn.enabled = False
+  torch.backends.cuda.enable_flash_sdp(False)
+  torch.backends.cuda.enable_math_sdp(True)
+  torch.backends.cuda.enable_mem_efficient_sdp(False)
+  ```
+
+  If you have an issue while running `torch.topk`, insert the codes below
+
+  ```py
+  _topk = torch.topk
+  def topk(tensor: torch.Tensor, *args, **kwargs):
+      device = tensor.device
+      values, indices = _topk(tensor.cpu(), *args, **kwargs)
+      return torch.return_types.topk((values.to(device), indices.to(device),))
+  torch.topk = topk
+  ```
 
 #### 3DF Zephyr
+
 - ZLUDA is much slower than CUDA.
 
   3DF Zephyr is triggering an underlying ROCm/HIP performance issue.
 
 #### Reality Capture
+
 - ZLUDA is much slower than CUDA.
 
   Reality Capture is triggering an underlying ROCm/HIP performance issue.
@@ -225,7 +265,7 @@ Performance is currently much lower than the native HIP backend, see the discuss
 #### CompuBench
 
 - When running multiple tests, first test passes and the subsequent tests fail with `CUDA_ERROR_UNKNOWN`.
-  
+
   This is a ROCm/HIP bug. Currently, CompuBench tests have to be run one at a time.
 
 #### V-Ray Benchmark
@@ -249,7 +289,6 @@ Performance is currently much lower than the native HIP backend, see the discuss
   Shortly thereafter I got in contact with AMD and in early 2022 I have left Intel and signed a ZLUDA development contract with AMD. Once again I was asked for a far-reaching discretion: not to advertise the fact that AMD is evaluating ZLUDA and definitely not to make any commits to the public ZLUDA repo. After two years of development and some deliberation, AMD decided that there is no business case for running CUDA applications on AMD GPUs.
 
   One of the terms of my contract with AMD was that if AMD did not find it fit for further development, I could release it. Which brings us to today.
-
 
 * What's the future of the project?
 

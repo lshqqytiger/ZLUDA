@@ -8,6 +8,9 @@ edition = "2018"
 name = "cudnn"
 crate-type = ["cdylib"]
 
+[features]
+rocm5 = ["hip_runtime-sys/rocm5"]
+
 [dependencies]
 cuda_types = { path = "../cuda_types" }
 hip_common = { path = "../hip_common" }

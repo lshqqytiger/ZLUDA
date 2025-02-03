@@ -35,8 +35,13 @@ static CUDA_DARK_API_TABLE: CudaDarkApiTable = zluda_dark_api::init_dark_api::<C
 
 struct CudaDarkApiZluda;
 
-static mut TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE: [usize; 1024] = [0; 1024];
-static mut TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE: [u8; 14] = [0; 14];
+const TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE_SIZE: usize = 1024;
+const TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE_SIZE: usize = 14;
+
+static mut TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE: [usize;
+    TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE_SIZE] = [0; TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE_SIZE];
+static mut TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE: [u8;
+    TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE_SIZE] = [0; TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE_SIZE];
 
 impl CudaDarkApi for CudaDarkApiZluda {
     unsafe extern "system" fn get_module_from_cubin(
@@ -60,6 +65,35 @@ impl CudaDarkApi for CudaDarkApiZluda {
         let pctx: *mut *mut context::Context = FromCuda::from_cuda(pctx);
         let hip_dev = FromCuda::from_cuda(dev);
         device::primary_ctx_get(pctx, hip_dev).into_cuda()
+    }
+
+    unsafe extern "system" fn set_device_flags(
+        dev: cuda_types::CUdevice,
+        flags: c_uint,
+    ) -> CUresult {
+        use hip_runtime_sys::*;
+        let hip_dev = FromCuda::from_cuda(dev);
+        let mut active_dev = 0i32;
+        let res = hipGetDevice(&mut active_dev as _).into_cuda();
+        if res != CUresult::CUDA_SUCCESS {
+            return res;
+        }
+        if hip_dev != active_dev {
+            let res = hipSetDevice(hip_dev).into_cuda();
+            if res != CUresult::CUDA_SUCCESS {
+                return res;
+            }
+        }
+        let res = hipSetDeviceFlags(flags).into_cuda();
+        if hip_dev != active_dev {
+            let _ = hipSetDevice(active_dev);
+        }
+        res
+    }
+
+    unsafe extern "system" fn set_device(dev: cuda_types::CUdevice) -> CUresult {
+        use hip_runtime_sys::*;
+        hipSetDevice(FromCuda::from_cuda(dev)).into_cuda()
     }
 
     unsafe extern "system" fn get_module_from_cubin_ex1(
@@ -103,16 +137,16 @@ impl CudaDarkApi for CudaDarkApiZluda {
         ptr: *mut *mut usize,
         size: *mut usize,
     ) -> () {
-        *ptr = TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE.as_mut_ptr();
-        *size = TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE.len();
+        *ptr = &raw mut TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE as _;
+        *size = TOOLS_RUNTIME_CALLBACK_HOOKS_FN2_SPACE_SIZE;
     }
 
     unsafe extern "system" fn tools_runtime_callback_hooks_fn6(
         ptr: *mut *mut u8,
         size: *mut usize,
     ) -> () {
-        *ptr = TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE.as_mut_ptr();
-        *size = TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE.len();
+        *ptr = &raw mut TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE as _;
+        *size = TOOLS_RUNTIME_CALLBACK_HOOKS_FN6_SPACE_SIZE;
     }
 
     unsafe extern "system" fn context_local_storage_insert(
@@ -187,19 +221,24 @@ impl CudaDarkApi for CudaDarkApiZluda {
         context::create(pctx, flags, dev).into_cuda()
     }
 
-    unsafe extern "system" fn heap_alloc(
-        _halloc_ptr: *mut *mut zluda_dark_api::HeapAllocRecord,
-        _param1: usize,
-        _param2: usize,
+    // These two functions are stubs that only implement add/remove functionality and nothing else
+    unsafe extern "system" fn list_add(
+        precord: *mut *mut zluda_dark_api::ListRecord,
+        _func: *const c_void,
+        data: usize,
     ) -> CUresult {
-        super::unimplemented()
+        *(precord as *mut usize) = data;
+        CUresult::CUDA_SUCCESS
     }
 
-    unsafe extern "system" fn heap_free(
-        _halloc: *mut zluda_dark_api::HeapAllocRecord,
-        _param2: *mut usize,
+    unsafe extern "system" fn list_remove(
+        record: *mut zluda_dark_api::ListRecord,
+        pdata: *mut usize,
     ) -> CUresult {
-        super::unimplemented()
+        if pdata != ptr::null_mut() {
+            *pdata = record as usize;
+        }
+        CUresult::CUDA_SUCCESS
     }
 
     unsafe extern "system" fn device_get_attribute_ex(

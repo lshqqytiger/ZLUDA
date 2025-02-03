@@ -8,6 +8,9 @@ edition = "2018"
 name = "nvoptix"
 crate-type = ["cdylib"]
 
+[features]
+rocm5 = ["comgr/rocm5", "hip_common/rocm5", "hip_runtime-sys/rocm5", "ptx/rocm5"]
+
 [dependencies]
 comgr = { path = "../comgr" }
 hip_common = { path = "../hip_common" }
@@ -38,9 +41,6 @@ float-cmp = "0.9.0"
 
 [build-dependencies]
 vergen = { version = "7.5.1", default-features = false, features = ["git"] }
-# We don't use time crate, but this coerces vergen to not use newer version that requires 
-# higher minimum rust version
-time = "=0.3.23"
 
 [package.metadata.zluda]
 broken = true

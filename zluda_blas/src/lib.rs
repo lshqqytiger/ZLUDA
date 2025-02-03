@@ -1,19 +1,21 @@
-#![allow(warnings)]
+#[allow(warnings)]
+mod common;
+#[allow(warnings)]
 mod cublas;
+#[allow(warnings)]
+mod cublasxt;
 
+pub use common::*;
 pub use cublas::*;
+pub use cublasxt::*;
 
 use cuda_types::*;
 use rocblas_sys::*;
 use rocsolver_sys::{
-    rocsolver_cgetrf_batched,
-    rocsolver_cgetri_outofplace_batched,
-    rocsolver_sgetrs_batched,
-    rocsolver_dgetrs_batched,
-    rocsolver_zgetrf_batched,
-    rocsolver_zgetri_outofplace_batched,
+    rocsolver_cgetrf_batched, rocsolver_cgetri_outofplace_batched, rocsolver_dgetrs_batched,
+    rocsolver_sgetrs_batched, rocsolver_zgetrf_batched, rocsolver_zgetri_outofplace_batched,
 };
-use std::{mem, ptr};
+use std::ptr;
 
 #[cfg(debug_assertions)]
 pub(crate) fn unsupported() -> cublasStatus_t {
@@ -90,14 +92,54 @@ fn op_from_cuda(trans: cublasOperation_t) -> rocblas_operation {
 fn op_from_cuda_for_solver(trans: cublasOperation_t) -> rocsolver_sys::rocblas_operation {
     match trans {
         cublasOperation_t::CUBLAS_OP_N => rocsolver_sys::rocblas_operation::rocblas_operation_none,
-        cublasOperation_t::CUBLAS_OP_T => rocsolver_sys::rocblas_operation::rocblas_operation_transpose,
-        cublasOperation_t::CUBLAS_OP_C => rocsolver_sys::rocblas_operation::rocblas_operation_conjugate_transpose,
+        cublasOperation_t::CUBLAS_OP_T => {
+            rocsolver_sys::rocblas_operation::rocblas_operation_transpose
+        }
+        cublasOperation_t::CUBLAS_OP_C => {
+            rocsolver_sys::rocblas_operation::rocblas_operation_conjugate_transpose
+        }
         _ => panic!(),
     }
 }
 
 unsafe fn destroy(handle: cublasHandle_t) -> cublasStatus_t {
     to_cuda(rocblas_destroy_handle(handle as _))
+}
+
+unsafe fn hgemm(
+    handle: cublasHandle_t,
+    transa: cublasOperation_t,
+    transb: cublasOperation_t,
+    m: i32,
+    n: i32,
+    k: i32,
+    alpha: *const __half,
+    a: *const __half,
+    lda: i32,
+    b: *const __half,
+    ldb: i32,
+    beta: *const __half,
+    c: *mut __half,
+    ldc: i32,
+) -> cublasStatus_t {
+    let transa = op_from_cuda(transa);
+    let transb = op_from_cuda(transb);
+    to_cuda(rocblas_hgemm(
+        handle.cast(),
+        transa,
+        transb,
+        m,
+        n,
+        k,
+        alpha.cast(),
+        a.cast(),
+        lda,
+        b.cast(),
+        ldb,
+        beta.cast(),
+        c.cast(),
+        ldc,
+    ))
 }
 
 unsafe fn sgemm_ex(
@@ -183,59 +225,18 @@ unsafe fn set_stream(handle: cublasHandle_t, stream_id: cudaStream_t) -> cublasS
         ) -> CUresult>(b"cuGetExportTable\0")
         .unwrap();
     let mut export_table = ptr::null();
-    (cu_get_export_table)(&mut export_table, &zluda_dark_api::ZludaExt::GUID);
+    assert_eq!(
+        (cu_get_export_table)(&mut export_table, &zluda_dark_api::ZludaExt::GUID),
+        CUresult::CUDA_SUCCESS
+    );
     let zluda_ext = zluda_dark_api::ZludaExt::new(export_table);
     let stream: Result<_, _> = zluda_ext.get_hip_stream(stream_id as _).into();
     to_cuda(rocblas_set_stream(handle as _, stream.unwrap() as _))
 }
 
-fn set_math_mode(handle: cublasHandle_t, mode: cublasMath_t) -> cublasStatus_t {
+fn set_math_mode(_handle: cublasHandle_t, _mode: cublasMath_t) -> cublasStatus_t {
     // llama.cpp uses CUBLAS_TF32_TENSOR_OP_MATH
     cublasStatus_t::CUBLAS_STATUS_SUCCESS
-}
-
-unsafe fn sgemm(
-    transa: std::ffi::c_char,
-    transb: std::ffi::c_char,
-    m: i32,
-    n: i32,
-    k: i32,
-    alpha: f32,
-    a: *const f32,
-    lda: i32,
-    b: *const f32,
-    ldb: i32,
-    beta: f32,
-    c: *mut f32,
-    ldc: i32,
-) -> cublasStatus_t {
-    let mut handle = mem::zeroed();
-    let mut status = to_cuda(rocblas_create_handle(handle));
-    if status != cublasStatus_t::CUBLAS_STATUS_SUCCESS {
-        return status;
-    }
-    let transa = op_from_cuda(cublasOperation_t(transa as _));
-    let transb = op_from_cuda(cublasOperation_t(transb as _));
-    status = to_cuda(rocblas_sgemm(
-        handle.cast(),
-        transa,
-        transb,
-        m,
-        n,
-        k,
-        &alpha,
-        a,
-        lda,
-        b,
-        ldb,
-        &beta,
-        c,
-        ldc,
-    ));
-    if status != cublasStatus_t::CUBLAS_STATUS_SUCCESS {
-        return status;
-    }
-    to_cuda(rocblas_destroy_handle(*handle))
 }
 
 unsafe fn sgemm_v2(
@@ -277,29 +278,6 @@ unsafe fn sgemm_v2(
 unsafe fn init() -> cublasStatus_t {
     rocblas_initialize();
     cublasStatus_t::CUBLAS_STATUS_SUCCESS
-}
-
-unsafe fn sdot(
-    n: i32,
-    x: *const f32,
-    incx: i32,
-    y: *const f32,
-    incy: i32,
-) -> f32 {
-    let mut handle = mem::zeroed();
-    let mut status = rocblas_create_handle(handle);
-    let mut result = 0.0;
-    status = rocblas_sdot(
-        handle.cast(),
-        n,
-        x,
-        incx,
-        y,
-        incy,
-        &mut result,
-    );
-    status = rocblas_destroy_handle(*handle);
-    result
 }
 
 unsafe fn dasum_v2(
@@ -397,15 +375,7 @@ unsafe fn sdot_v2(
     incy: i32,
     result: *mut f32,
 ) -> cublasStatus_t {
-    to_cuda(rocblas_sdot(
-        handle.cast(),
-        n,
-        x,
-        incx,
-        y,
-        incy,
-        result,
-    ))
+    to_cuda(rocblas_sdot(handle.cast(), n, x, incx, y, incy, result))
 }
 
 unsafe fn idamax_v2(
@@ -486,7 +456,7 @@ unsafe fn gemm_ex(
     ))
 }
 
-fn to_algo(algo: cublasGemmAlgo_t) -> rocblas_gemm_algo_ {
+fn to_algo(_algo: cublasGemmAlgo_t) -> rocblas_gemm_algo_ {
     // only option
     rocblas_gemm_algo::rocblas_gemm_algo_standard
 }
@@ -798,7 +768,7 @@ unsafe fn sgetrs_batched(
     dev_ipiv: *const i32,
     b: *const *mut f32,
     ldb: i32,
-    info: *mut i32,
+    _info: *mut i32,
     batch_size: i32,
 ) -> cublasStatus_t {
     let trans = op_from_cuda_for_solver(trans);
@@ -828,7 +798,7 @@ unsafe fn dgetrs_batched(
     dev_ipiv: *const i32,
     b: *const *mut f64,
     ldb: i32,
-    info: *mut i32,
+    _info: *mut i32,
     batch_size: i32,
 ) -> cublasStatus_t {
     let trans = op_from_cuda_for_solver(trans);
@@ -1037,50 +1007,6 @@ unsafe fn dger(
         a,
         lda,
     ))
-}
-
-unsafe fn dgemm(
-    transa: std::ffi::c_char,
-    transb: std::ffi::c_char,
-    m: i32,
-    n: i32,
-    k: i32,
-    alpha: f64,
-    a: *const f64,
-    lda: i32,
-    b: *const f64,
-    ldb: i32,
-    beta: f64,
-    c: *mut f64,
-    ldc: i32,
-) -> cublasStatus_t {
-    let mut handle = mem::zeroed();
-    let mut status = to_cuda(rocblas_create_handle(handle));
-    if status != cublasStatus_t::CUBLAS_STATUS_SUCCESS {
-        return status;
-    }
-    let transa = op_from_cuda(cublasOperation_t(transa as _));
-    let transb = op_from_cuda(cublasOperation_t(transb as _));
-    status = to_cuda(rocblas_dgemm(
-        handle.cast(),
-        transa,
-        transb,
-        m,
-        n,
-        k,
-        &alpha,
-        a,
-        lda,
-        b,
-        ldb,
-        &beta,
-        c,
-        ldc,
-    ));
-    if status != cublasStatus_t::CUBLAS_STATUS_SUCCESS {
-        return status;
-    }
-    to_cuda(rocblas_destroy_handle(*handle))
 }
 
 unsafe fn dgemm_v2(

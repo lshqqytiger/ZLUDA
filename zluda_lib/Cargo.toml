@@ -8,6 +8,9 @@ edition = "2018"
 name = "nvcuda"
 crate-type = ["cdylib"]
 
+[features]
+rocm5 = ["zluda/rocm5"]
+
 [dependencies]
 zluda = { path = "../zluda" }
 

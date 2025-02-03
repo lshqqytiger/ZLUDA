@@ -1,5 +1,7 @@
 [workspace]
 
+resolver = "2"
+
 # Remember to also update the project's Cargo.toml
 # if it's a top-level project
 members = [
@@ -14,7 +16,6 @@ members = [
     "hipblaslt-sys",
     "hipfft-sys",
     "hiprt-sys",
-    "hiprtc-sys",
     "miopen-sys",
     "offline_compiler",
     "optix_base",
@@ -34,6 +35,7 @@ members = [
     "zluda_dnn",
     "zluda_dump",
     "zluda_fft",
+    "zluda_fftw",
     "zluda_inject",
     "zluda_lib",
     "zluda_llvm",
@@ -41,6 +43,7 @@ members = [
     "zluda_redirect",
     "zluda_rt",
     "zluda_rtc",
+    "zluda_runtime",
     "zluda_sparse",
 ]
 

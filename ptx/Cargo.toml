@@ -2,14 +2,16 @@
 name = "ptx"
 version = "0.0.0"
 authors = ["Andrzej Janik <vosen@vosen.pl>"]
-edition = "2018"
+edition = "2021"
 
 [lib]
+
+[features]
+rocm5 = ["hip_common/rocm5", "hip_runtime-sys/rocm5", "comgr/rocm5"]
 
 [dependencies]
 hip_common = { path = "../hip_common" }
 zluda_llvm = { path = "../zluda_llvm" }
-lalrpop-util = "0.20"
 regex = "1"
 thiserror = "1.0"
 num-traits = "0.2"
@@ -23,6 +25,10 @@ either = "1.9"
 version = "1.8"
 features = ["num-traits"]
 
+[dependencies.lalrpop-util]
+version = "0.22"
+features = ["lexer"]
+
 [dev-dependencies]
 cuda_base = { path = "../cuda_base" }
 cuda_types = { path = "../cuda_types" }
@@ -34,5 +40,5 @@ libloading = "0.8"
 lazy_static = "1.4.0"
 
 [build-dependencies.lalrpop]
-version = "0.20"
+version = "0.22"
 features = ["lexer"]
