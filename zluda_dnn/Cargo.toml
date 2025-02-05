@@ -2,7 +2,7 @@
 name = "zluda_dnn"
 version = "0.0.0"
 authors = ["Andrzej Janik <vosen@vosen.pl>"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 name = "cudnn"
@@ -17,7 +17,9 @@ hip_common = { path = "../hip_common" }
 miopen-sys = { path = "../miopen-sys" }
 hip_runtime-sys = { path = "../hip_runtime-sys" }
 zluda_dark_api = { path = "../zluda_dark_api" }
+lazy_static = "1.4.0"
 
 [package.metadata.zluda]
+windows_nightly = true
 linux_names = ["libcudnn.so.7", "libcudnn.so.8"]
 dump_names = ["libcudnn.so"]
