@@ -249,10 +249,12 @@ fn build_impl(is_debug: bool, rocm5: bool, nightly: bool) -> Result<Workspace, D
     if !is_debug {
         command.arg("--release");
     }
+
+    let mut features = Vec::new();
     if cfg!(windows) {
         // Should we allow ROCm 5 for Linux?
         if rocm5 {
-            command.args(["--features", "rocm5"]);
+            features.push("rocm5");
         }
         if let Ok(path_default) = env::var("HIP_PATH") {
             env::set_var(
@@ -269,7 +271,15 @@ fn build_impl(is_debug: bool, rocm5: bool, nightly: bool) -> Result<Workspace, D
                 "Could not find HIP SDK installed. Please check if HIP_PATH is set.".into(),
             );
         }
+
+        if nightly {
+            features.push("nightly");
+        }
     }
+    if !features.is_empty() {
+        command.args([vec!["--features"], features].concat());
+    }
+
     let build_result = command.status()?.code().unwrap();
     if build_result != 0 {
         return Err(format!("{command:?} failed with exit code {build_result}").into());
