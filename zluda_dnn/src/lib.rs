@@ -49,11 +49,65 @@ impl miopenBackendHeurMode_t {
 #[derive(Copy, Clone, Hash, PartialEq, Eq)]
 pub struct miopenBackendHeurMode_t(pub ::std::os::raw::c_uint);
 
+#[derive(PartialEq, Eq)]
+enum BackendDescriptorKind {
+    /// Created by ZLUDA
+    Owned,
+    /// Created by MIOpen internally
+    System,
+    /// Persisting descriptor  
+    /// This kind of descriptors will never be destroyed.  
+    /// Used for hacking reasons.
+    Persisting,
+}
+
 const ZLUDA_DESCRIPTOR_MAGIC: c_uint = 0x1B950F42;
 #[repr(C)]
 struct BackendDescriptor {
     magic: c_uint,
+    kind: BackendDescriptorKind,
     internal: miopenBackendDescriptor_t,
+}
+
+impl BackendDescriptor {
+    fn new(internal: miopenBackendDescriptor_t) -> BackendDescriptor {
+        BackendDescriptor {
+            magic: ZLUDA_DESCRIPTOR_MAGIC,
+            kind: BackendDescriptorKind::Owned,
+            internal,
+        }
+    }
+
+    fn dummy() -> BackendDescriptor {
+        BackendDescriptor::persisting(ptr::null_mut())
+    }
+
+    fn persisting(internal: miopenBackendDescriptor_t) -> BackendDescriptor {
+        BackendDescriptor {
+            magic: ZLUDA_DESCRIPTOR_MAGIC,
+            kind: BackendDescriptorKind::Persisting,
+            internal,
+        }
+    }
+
+    fn release(self) -> *mut BackendDescriptor {
+        Box::into_raw(Box::new(self))
+    }
+
+    unsafe fn try_retrieve(raw: *mut BackendDescriptor) -> Option<Box<BackendDescriptor>> {
+        if (*raw).magic != ZLUDA_DESCRIPTOR_MAGIC {
+            return None;
+        }
+        Some(Box::from_raw(raw))
+    }
+
+    unsafe fn try_from<'a>(raw: miopenBackendDescriptor_t) -> Option<&'a mut BackendDescriptor> {
+        let raw = raw as *mut BackendDescriptor;
+        if (*raw).magic != ZLUDA_DESCRIPTOR_MAGIC {
+            return None;
+        }
+        raw.as_mut()
+    }
 }
 
 lazy_static! {
@@ -1180,6 +1234,9 @@ fn to_backend_descriptor_type(
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_EXECUTION_PLAN_DESCRIPTOR => {
             miopenBackendDescriptorType_t::MIOPEN_BACKEND_EXECUTION_PLAN_DESCRIPTOR
         }
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_KNOB_CHOICE_DESCRIPTOR => {
+            miopenBackendDescriptorType_t::MIOPEN_BACKEND_KNOB_CHOICE_DESCRIPTOR
+        }
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR => {
             miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR
         }
@@ -1201,35 +1258,61 @@ unsafe fn backend_create_descriptor(
     descriptor: *mut cudnnBackendDescriptor_t,
 ) -> cudnnStatus_t {
     let descriptor_type = to_backend_descriptor_type(descriptor_type);
+
+    if descriptor_type == miopenBackendDescriptorType_t::MIOPEN_BACKEND_KNOB_CHOICE_DESCRIPTOR {
+        *descriptor = BackendDescriptor::dummy().release() as _;
+        return cudnnStatus_t::CUDNN_STATUS_SUCCESS;
+    }
+
     let result = call!(miopenBackendCreateDescriptor(
         descriptor_type,
         descriptor.cast(),
     ));
-    // HACK for cuDNN frontend.
-    // (see backend_get_attribute)
-    if matches!(
-        descriptor_type,
-        miopenBackendDescriptorType_t::MIOPEN_BACKEND_ENGINECFG_DESCRIPTOR
-            | miopenBackendDescriptorType_t::MIOPEN_BACKEND_ENGINE_DESCRIPTOR
-    ) {
-        *descriptor = Box::into_raw(Box::new(BackendDescriptor {
-            magic: ZLUDA_DESCRIPTOR_MAGIC,
-            internal: (*descriptor).cast(),
-        })) as _;
+
+    if descriptor_type == miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATIONGRAPH_DESCRIPTOR {
+        // We cannot destroy OperationGraph descriptor.
+        // Once OperationGraph descriptor is destroyed,
+        // the vectors that contains the information of
+        // the convolution to be forwarded is unloaded
+        // simultaneously from the memory.
+        // Indeed, this will lead to memory leak.
+        // However, there is no other clear way to
+        // make this work.
+        *descriptor = BackendDescriptor::persisting((*descriptor).cast()).release() as _;
+    } else {
+        // MIOpen behaves differently from cuDNN.
+        // cuDNN "updates" the contents (members in C) of the descriptors.
+        // However, MIOpen "replaces" the descriptors with their internal descriptors.
+        // Therefore, we wrap MIOpen backend descriptor inside our own BackendDescriptor
+        // to get full control and distinction of the descriptor.
+        // e.g.
+        // https://github.com/NVIDIA/cudnn-frontend/blob/5040925e9450c399a66240b485b38564226e1212/include/cudnn_frontend_Heuristics.h#L95
+        *descriptor = BackendDescriptor::new((*descriptor).cast()).release() as _;
     }
+
     result
 }
 
 unsafe fn backend_destroy_descriptor(descriptor: cudnnBackendDescriptor_t) -> cudnnStatus_t {
-    if (*(descriptor as *mut BackendDescriptor)).magic == ZLUDA_DESCRIPTOR_MAGIC {
-        let descriptor = Box::from_raw(descriptor as *mut BackendDescriptor);
+    if let Some(descriptor) = BackendDescriptor::try_retrieve(descriptor.cast()) {
+        if matches!(
+            descriptor.kind,
+            BackendDescriptorKind::System | BackendDescriptorKind::Persisting
+        ) {
+            // Cannot destroy the descriptor as it is created from MIOpen internally.
+            // Persisting descriptors will not be destroyed. (it may be dummy or OperationGraph descriptor)
+            return cudnnStatus_t::CUDNN_STATUS_SUCCESS;
+        }
         return call!(miopenBackendDestroyDescriptor(descriptor.internal));
     }
-    call!(miopenBackendDestroyDescriptor(descriptor.cast()))
+    cudnnStatus_t::CUDNN_STATUS_BAD_PARAM
 }
 
 unsafe fn backend_finalize(descriptor: cudnnBackendDescriptor_t) -> cudnnStatus_t {
-    call!(miopenBackendFinalize(descriptor.cast()))
+    if let Some(descriptor) = BackendDescriptor::try_from(descriptor.cast()) {
+        return call!(miopenBackendFinalize(descriptor.internal));
+    }
+    cudnnStatus_t::CUDNN_STATUS_BAD_PARAM
 }
 
 fn to_backend_attribute_name(name: cudnnBackendAttributeName_t) -> miopenBackendAttributeName_t {
@@ -1267,8 +1350,17 @@ fn to_backend_attribute_name(name: cudnnBackendAttributeName_t) -> miopenBackend
         cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINECFG_ENGINE => {
             miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINECFG_ENGINE
         }
+        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINECFG_KNOB_CHOICES => {
+            miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINECFG_KNOB_CHOICES
+        }
+        cudnnBackendAttributeName_t::CUDNN_ATTR_EXECUTION_PLAN_HANDLE => {
+            miopenBackendAttributeName_t::MIOPEN_ATTR_EXECUTION_PLAN_HANDLE
+        }
         cudnnBackendAttributeName_t::CUDNN_ATTR_EXECUTION_PLAN_ENGINE_CONFIG => {
             miopenBackendAttributeName_t::MIOPEN_ATTR_EXECUTION_PLAN_ENGINE_CONFIG
+        }
+        cudnnBackendAttributeName_t::CUDNN_ATTR_EXECUTION_PLAN_WORKSPACE_SIZE => {
+            miopenBackendAttributeName_t::MIOPEN_ATTR_EXECUTION_PLAN_WORKSPACE_SIZE
         }
         cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_ALPHA => {
             miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_ALPHA
@@ -1324,17 +1416,16 @@ fn to_backend_attribute_name(name: cudnnBackendAttributeName_t) -> miopenBackend
         cudnnBackendAttributeName_t::CUDNN_ATTR_VARIANT_PACK_WORKSPACE => {
             miopenBackendAttributeName_t::MIOPEN_ATTR_VARIANT_PACK_WORKSPACE
         }
+        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINE_GLOBAL_INDEX => {
+            miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINE_GLOBAL_INDEX
+        }
         cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINE_NUMERICAL_NOTE => {
             miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINE_NUMERICAL_NOTE
         }
+        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINE_BEHAVIOR_NOTE => {
+            miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINE_BEHAVIOR_NOTE
+        }
         _ => panic!("[ZLUDA] Unknown attribute name: {}", name.0),
-    }
-}
-
-fn is_unsupported_attribute_name(name: cudnnBackendAttributeName_t) -> bool {
-    match name {
-        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_BYTE_ALIGNMENT => true,
-        _ => false,
     }
 }
 
@@ -1375,46 +1466,98 @@ fn to_backend_attribute_type(
         cudnnBackendAttributeType_t::CUDNN_TYPE_BACKEND_DESCRIPTOR => {
             miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR
         }
+        cudnnBackendAttributeType_t::CUDNN_TYPE_BEHAVIOR_NOTE => {
+            miopenBackendAttributeType_t::MIOPEN_TYPE_BEHAVIOR_NOTE
+        }
         _ => panic!("[ZLUDA] Unknown attribute type: {}", attribute_type.0),
     }
 }
 
-unsafe fn backend_cudnn_to_miopen(
-    elements_type: miopenBackendAttributeType_t,
+unsafe fn backend_set_attribute_impl(
+    descriptor: miopenBackendDescriptor_t,
+    attribute_name: miopenBackendAttributeName_t,
+    attribute_type: miopenBackendAttributeType_t,
     element_count: i64,
     array_of_elements: *mut ::std::os::raw::c_void,
-) -> () {
-    match elements_type {
-        miopenBackendAttributeType_t::MIOPEN_TYPE_HANDLE => (),
+) -> miopenStatus_t {
+    if attribute_name == miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_BYTE_ALIGNMENT {
+        return miopenStatus_t::miopenStatusSuccess;
+    }
+
+    match attribute_type {
         miopenBackendAttributeType_t::MIOPEN_TYPE_DATA_TYPE => {
             if element_count != 1 {
                 panic!("[ZLUDA] Unexpected value: element_count={}", element_count)
             }
-            let p_data_type: *mut miopenDataType_t = array_of_elements.cast();
-            *p_data_type = to_data_type(*(p_data_type as *mut cudnnDataType_t));
+            let data_type = to_data_type(*array_of_elements.cast());
+            miopenBackendSetAttribute(
+                descriptor,
+                attribute_name,
+                attribute_type,
+                element_count,
+                &raw const data_type as _,
+            )
         }
-        miopenBackendAttributeType_t::MIOPEN_TYPE_INT64 => (),
-        miopenBackendAttributeType_t::MIOPEN_TYPE_FLOAT => (),
-        miopenBackendAttributeType_t::MIOPEN_TYPE_DOUBLE => (),
-        miopenBackendAttributeType_t::MIOPEN_TYPE_VOID_PTR => (),
         miopenBackendAttributeType_t::MIOPEN_TYPE_CONVOLUTION_MODE => {
             if element_count != 1 {
                 panic!("[ZLUDA] Unexpected value: element_count={}", element_count)
             }
-            let p_conv_mode: *mut miopenConvolutionMode_t = array_of_elements.cast();
-            *p_conv_mode = to_conv_mode(*(p_conv_mode as *mut cudnnConvolutionMode_t));
+            let conv_type = to_conv_mode(*array_of_elements.cast());
+            miopenBackendSetAttribute(
+                descriptor,
+                attribute_name,
+                attribute_type,
+                element_count,
+                &raw const conv_type as _,
+            )
         }
         miopenBackendAttributeType_t::MIOPEN_TYPE_HEUR_MODE => {
             if element_count != 1 {
                 panic!("[ZLUDA] Unexpected value: element_count={}", element_count)
             }
-            let p_heur_mode: *mut miopenBackendHeurMode_t = array_of_elements.cast();
-            *p_heur_mode = to_heur_mode(*(p_heur_mode as *mut cudnnBackendHeurMode_t));
+            let heur_type = to_heur_mode(*array_of_elements.cast());
+            miopenBackendSetAttribute(
+                descriptor,
+                attribute_name,
+                attribute_type,
+                element_count,
+                &raw const heur_type as _,
+            )
         }
-        miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR => (),
-        _ => println!(
-            "[ZLUDA] Warning: found unknown backend attribute type: {}",
-            elements_type.0
+        miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR => {
+            let count = element_count as usize;
+            let mut elements = Vec::with_capacity(count);
+            for i in 0..count {
+                if let Some(descriptor) = BackendDescriptor::try_from(
+                    *(array_of_elements as *mut miopenBackendDescriptor_t).add(i),
+                ) {
+                    elements.push(descriptor.internal);
+                } else {
+                    return miopenStatus_t::miopenStatusBadParm;
+                }
+            }
+            miopenBackendSetAttribute(
+                descriptor,
+                attribute_name,
+                attribute_type,
+                element_count,
+                elements.as_mut_ptr() as _,
+            )
+        }
+        miopenBackendAttributeType_t::MIOPEN_TYPE_HANDLE
+        | miopenBackendAttributeType_t::MIOPEN_TYPE_INT64
+        | miopenBackendAttributeType_t::MIOPEN_TYPE_FLOAT
+        | miopenBackendAttributeType_t::MIOPEN_TYPE_DOUBLE
+        | miopenBackendAttributeType_t::MIOPEN_TYPE_VOID_PTR => miopenBackendSetAttribute(
+            descriptor,
+            attribute_name,
+            attribute_type,
+            element_count,
+            array_of_elements,
+        ),
+        _ => panic!(
+            "[ZLUDA] Unknown backend attribute type: {}",
+            attribute_type.0
         ),
     }
 }
@@ -1426,30 +1569,18 @@ unsafe fn backend_set_attribute(
     element_count: i64,
     array_of_elements: *const ::std::os::raw::c_void,
 ) -> cudnnStatus_t {
-    if is_unsupported_attribute_name(attribute_name) {
-        // temporary skip unimplemented attribute names
-        return cudnnStatus_t::CUDNN_STATUS_SUCCESS;
+    if let Some(descriptor) = BackendDescriptor::try_from(descriptor.cast()) {
+        let attribute_name = to_backend_attribute_name(attribute_name);
+        let attribute_type = to_backend_attribute_type(attribute_type);
+        return call!(backend_set_attribute_impl(
+            descriptor.internal,
+            attribute_name,
+            attribute_type,
+            element_count,
+            array_of_elements.cast_mut()
+        ));
     }
-
-    let attribute_name = to_backend_attribute_name(attribute_name);
-    let attribute_type = to_backend_attribute_type(attribute_type);
-    if matches!(
-        attribute_name,
-        miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINECFG_ENGINE
-            | miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINECFG_KNOB_CHOICES
-    ) {
-        todo!()
-    }
-
-    let elements = array_of_elements.clone();
-    backend_cudnn_to_miopen(attribute_type, element_count, elements.cast_mut());
-    call!(miopenBackendSetAttribute(
-        descriptor.cast(),
-        attribute_name,
-        attribute_type,
-        element_count,
-        array_of_elements.cast_mut()
-    ))
+    cudnnStatus_t::CUDNN_STATUS_BAD_PARAM
 }
 
 unsafe fn backend_get_attribute(
@@ -1463,34 +1594,32 @@ unsafe fn backend_get_attribute(
     let attribute_name = to_backend_attribute_name(attribute_name);
     let attribute_type = to_backend_attribute_type(attribute_type);
 
-    // https://github.com/NVIDIA/cudnn-frontend/blob/5040925e9450c399a66240b485b38564226e1212/include/cudnn_frontend_Heuristics.h#L95
-    // cuDNN frontend takes very strange behavior.
-    // It does not return 'heuristic_results_' which is updated.
-    // However, it returns 'm_heuristic_results' which is not updated.
-    // I don't know how cuDNN backend is implemented,
-    // so I manually implemented this "as it just works"
+    if let Some(descriptor) = BackendDescriptor::try_from(descriptor.cast()) {
+        // cuDNN frontend
+        if requested_element_count == 0
+            && attribute_name == miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINEHEUR_RESULTS
+        {
+            assert_eq!(
+                attribute_type,
+                miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR
+            );
 
-    // Input: EngineHeurDescriptor
-    // Output: [BackendDescriptor(EngineCfgDescriptor)]
-    if attribute_type == miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR {
-        if attribute_name == miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINEHEUR_RESULTS {
-            // cuDNN frontend
-            if requested_element_count == 0 {
-                let mut array_of_elements = mem::zeroed::<miopenBackendDescriptor_t>();
-                return call!(miopenBackendGetAttribute(
-                    descriptor.cast(),
-                    attribute_name,
-                    attribute_type,
-                    1,
-                    element_count,
-                    &raw mut array_of_elements as _,
-                ));
-            }
+            let mut array_of_elements = mem::zeroed::<miopenBackendDescriptor_t>();
+            return call!(miopenBackendGetAttribute(
+                descriptor.internal,
+                attribute_name,
+                attribute_type,
+                1,
+                element_count,
+                &raw mut array_of_elements as _,
+            ));
+        }
 
+        if attribute_type == miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR {
             let mut descriptors =
                 vec![mem::zeroed::<miopenBackendDescriptor_t>(); requested_element_count as usize];
             asserted_call!(miopenBackendGetAttribute(
-                descriptor.cast(),
+                descriptor.internal,
                 attribute_name,
                 attribute_type,
                 requested_element_count,
@@ -1499,57 +1628,64 @@ unsafe fn backend_get_attribute(
             ));
 
             for i in 0..(*element_count as usize) {
-                let descriptor = *(array_of_elements as *mut miopenBackendDescriptor_t).add(i)
-                    as *mut BackendDescriptor;
-                if (*descriptor).magic != ZLUDA_DESCRIPTOR_MAGIC {
-                    panic!("[ZLUDA] Invalid descriptor")
+                if let Some(descriptor) = BackendDescriptor::try_from(
+                    *(array_of_elements as *mut miopenBackendDescriptor_t).add(i),
+                ) {
+                    asserted_call!(miopenBackendDestroyDescriptor(descriptor.internal));
+                    descriptor.kind = BackendDescriptorKind::System;
+                    descriptor.internal = descriptors[i];
+                    continue;
                 }
-                asserted_call!(miopenBackendDestroyDescriptor((*descriptor).internal));
-                (*descriptor).internal = descriptors[i];
+
+                return cudnnStatus_t::CUDNN_STATUS_BAD_PARAM;
             }
 
             return cudnnStatus_t::CUDNN_STATUS_SUCCESS;
         }
 
-        let descriptor = descriptor as *mut BackendDescriptor;
-        if (*descriptor).magic != ZLUDA_DESCRIPTOR_MAGIC {
-            panic!("[ZLUDA] Invalid descriptor")
-        }
-
-        // Input: BackendDescriptor(EngineCfgDescriptor)
-        // Output: BackendDescriptor(EngineDescriptor)
-        if attribute_name == miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINECFG_ENGINE {
+        // cuDNN frontend
+        if element_count == ptr::null_mut()
+            && attribute_name
+                == miopenBackendAttributeName_t::MIOPEN_ATTR_EXECUTION_PLAN_WORKSPACE_SIZE
+        {
+            assert_eq!(
+                attribute_type,
+                miopenBackendAttributeType_t::MIOPEN_TYPE_INT64
+            );
             assert_eq!(requested_element_count, 1);
 
-            let mut internal = mem::zeroed::<miopenBackendDescriptor_t>();
-            asserted_call!(miopenBackendGetAttribute(
-                (*descriptor).internal,
+            let mut element_count = 0i64;
+            return call!(miopenBackendGetAttribute(
+                descriptor.internal,
+                attribute_name,
+                attribute_type,
+                requested_element_count,
+                &mut element_count,
+                array_of_elements
+            ));
+        }
+
+        // cuDNN frontend
+        if array_of_elements == ptr::null_mut()
+            && matches!(
+                attribute_type,
+                miopenBackendAttributeType_t::MIOPEN_TYPE_NUMERICAL_NOTE
+                    | miopenBackendAttributeType_t::MIOPEN_TYPE_BEHAVIOR_NOTE
+            )
+        {
+            let mut array_of_elements = mem::zeroed::<*mut ::std::os::raw::c_void>();
+            return call!(miopenBackendGetAttribute(
+                descriptor.internal,
                 attribute_name,
                 attribute_type,
                 1,
                 element_count,
-                &raw mut internal as _,
+                &raw mut array_of_elements as _,
             ));
-
-            let descriptor =
-                *(array_of_elements as *mut miopenBackendDescriptor_t) as *mut BackendDescriptor;
-            if (*descriptor).magic != ZLUDA_DESCRIPTOR_MAGIC {
-                panic!("[ZLUDA] Invalid descriptor")
-            }
-            asserted_call!(miopenBackendDestroyDescriptor((*descriptor).internal));
-            (*descriptor).internal = internal;
-
-            return cudnnStatus_t::CUDNN_STATUS_SUCCESS;
         }
-    }
 
-    if (*(descriptor as *mut BackendDescriptor)).magic == ZLUDA_DESCRIPTOR_MAGIC {
-        let descriptor = descriptor as *mut BackendDescriptor;
-        if (*descriptor).magic != ZLUDA_DESCRIPTOR_MAGIC {
-            panic!("[ZLUDA] Invalid descriptor")
-        }
         return call!(miopenBackendGetAttribute(
-            (*descriptor).internal,
+            descriptor.internal,
             attribute_name,
             attribute_type,
             requested_element_count,
@@ -1558,14 +1694,7 @@ unsafe fn backend_get_attribute(
         ));
     }
 
-    call!(miopenBackendGetAttribute(
-        descriptor.cast(),
-        attribute_name,
-        attribute_type,
-        requested_element_count,
-        element_count,
-        array_of_elements,
-    ))
+    cudnnStatus_t::CUDNN_STATUS_BAD_PARAM
 }
 
 unsafe fn backend_execute(
@@ -1573,9 +1702,14 @@ unsafe fn backend_execute(
     execution_plan: cudnnBackendDescriptor_t,
     variant_pack: cudnnBackendDescriptor_t,
 ) -> cudnnStatus_t {
+    let execution_plan = BackendDescriptor::try_from(execution_plan.cast());
+    let variant_pack = BackendDescriptor::try_from(variant_pack.cast());
+    if execution_plan.is_none() || variant_pack.is_none() {
+        return cudnnStatus_t::CUDNN_STATUS_BAD_PARAM;
+    }
     call!(miopenBackendExecute(
         handle.cast(),
-        execution_plan.cast(),
-        variant_pack.cast(),
+        execution_plan.unwrap().internal,
+        variant_pack.unwrap().internal,
     ))
 }
