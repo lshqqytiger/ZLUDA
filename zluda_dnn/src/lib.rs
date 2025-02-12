@@ -1413,6 +1413,7 @@ unsafe fn backend_set_attribute(
     if let Some(descriptor) = BackendDescriptor::try_from(descriptor.cast()) {
         let attribute_name = miopenBackendAttributeName_t::from_cuda(attribute_name);
         let attribute_type = miopenBackendAttributeType_t::from_cuda(attribute_type);
+
         return call!(backend_set_attribute_impl(
             descriptor.internal,
             attribute_name,
@@ -1421,6 +1422,7 @@ unsafe fn backend_set_attribute(
             array_of_elements.cast_mut()
         ));
     }
+
     cudnnStatus_t::CUDNN_STATUS_BAD_PARAM
 }
 
@@ -1432,10 +1434,10 @@ unsafe fn backend_get_attribute(
     element_count: *mut i64,
     array_of_elements: *mut ::std::os::raw::c_void,
 ) -> cudnnStatus_t {
-    let attribute_name = miopenBackendAttributeName_t::from_cuda(attribute_name);
-    let attribute_type = miopenBackendAttributeType_t::from_cuda(attribute_type);
-
     if let Some(descriptor) = BackendDescriptor::try_from(descriptor.cast()) {
+        let attribute_name = miopenBackendAttributeName_t::from_cuda(attribute_name);
+        let attribute_type = miopenBackendAttributeType_t::from_cuda(attribute_type);
+
         // cuDNN frontend
         if requested_element_count == 0
             && attribute_name == miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINEHEUR_RESULTS
