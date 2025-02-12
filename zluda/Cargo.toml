@@ -9,6 +9,7 @@ name = "zluda"
 
 [features]
 rocm5 = ["comgr/rocm5", "hip_common/rocm5", "hip_runtime-sys/rocm5", "ptx/rocm5", "zluda_dark_api/rocm5"]
+nightly = []
 
 [dependencies]
 comgr = { path = "../comgr" }

@@ -2,11 +2,9 @@
 
 ZLUDA lets you run unmodified CUDA applications with near-native performance on ~~Intel~~ AMD GPUs.
 
-ZLUDA is currently alpha quality, but it has been confirmed to work with a variety of native CUDA applications: Geekbench, 3DF Zephyr, Blender, Reality Capture, LAMMPS, NAMD, waifu2x, OpenFOAM, Arnold (proof of concept) and more.
+ZLUDA is currently alpha quality, but it has been confirmed to work with a variety of native CUDA applications: Geekbench, 3DF Zephyr, Blender, PyTorch on Windows, Reality Capture, LAMMPS, NAMD, waifu2x, OpenFOAM, Arnold (proof of concept) and more.
 
 If you want to give it a try, download it from Release page to the right and read [Usage](#usage) and [Known Issues](#known-issues) sections below. If you are interested in its history and future read [FAQ](#faq) section further below.
-
-![geekbench.svg](geekbench.svg)
 
 ## Usage
 
@@ -41,7 +39,7 @@ Make sure you have the following installed:
 - Git
 - CMake
 - Python 3
-- Rust (1.7x or newer)
+- Rust (1.81 or newer)
 - C++ compiler
 - [ROCm](https://rocm.docs.amd.com/en/latest/deploy/linux/install_overview.html) 6.0+ (or [HIP SDK](https://rocm.docs.amd.com/projects/install-on-windows/en/latest/) on Windows)
 - (Windows only) Recent [AMD Radeon Software Adrenalin](https://www.amd.com/en/technologies/software)
@@ -64,6 +62,38 @@ Build by running:
 ```
 cargo xtask --release
 ```
+
+### Nightly Build (Windows-only)
+
+You can enable unstable features by turning `--nightly` flag on.
+
+```
+cargo xtask --nightly
+```
+
+This will enable the following modules.
+
+`--nightly` flag can be combined with `--release`.
+
+※ Nightly builds receive very limited amount of tests. You'd like to just disable the unsupported features rather than using nightly build if possible.
+
+#### cuBLASLt
+
+In Windows, cuBLASLt support is disabled by default because AMD haven't released hipBLASLt on Windows yet.
+
+Even though, nightly ZLUDA has cuBLASLt support with unofficial build of hipBLASLt.
+
+#### cuDNN
+
+In Windows, cuDNN support is disabled by default because AMD haven't released MIOpen on Windows yet.
+
+Even though, nightly ZLUDA has cuDNN support with unofficial build of MIOpen.
+
+However, because MIOpen itself is very unstable and incomplete, there are some limitations as described below.
+
+- Custom build of MIOpen without rocMLIR and composable kernel is only tested.
+- Only FP32 is supported for Conv2d in gfx1100.
+- There is small memory leak issue due to technical difficulties.
 
 ## Unknown issues
 
@@ -112,11 +142,15 @@ If an application fails to start under ZLUDA or crashes please check [Known Issu
 
   Firstly, ZLUDA ignores some of the floating point denormal and rounding mode information present in the kernels. Secondly, for certain approximate (not IEEE 754) NVIDIA floating point operations in CUDA, ZLUDA blindly uses approximate AMD floating point operations. The two might have a different precision.
 
+- PyTorch: `torch.stft` does not always return correct result.
+
 #### CUDA 12+
 
 - Application built with CUDA 12 and using Thrust crashes with `LLVM ERROR: unsupported libcall legalization`.
 
   This is a ROCm/HIP bug. Currently, CUDA applications built with CUDA versions pre-12 work the best. Building with CUDA 12 and a pre-CUDA 12 Thrust might also work.
+
+- PyTorch built for CUDA 12+ will not work.
 
 #### OptiX
 
@@ -237,6 +271,12 @@ Performance is currently much lower than the native HIP backend, see the discuss
   torch.backends.cuda.enable_flash_sdp(False)
   torch.backends.cuda.enable_math_sdp(True)
   torch.backends.cuda.enable_mem_efficient_sdp(False)
+  ```
+
+  If you have PyTorch version >2.4 and are not using nightly build, set the following environment variable.
+
+  ```
+  DISABLE_ADDMM_CUDA_LT=1
   ```
 
   If you have an issue while running `torch.topk`, insert the codes below

@@ -38,3 +38,11 @@ pub unsafe extern "C" fn zluda_get_hip_object(
     }
     zluda_get_hip_object_impl(cuda_object, kind).into()
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn zluda_get_nightly_flag() -> std::os::raw::c_int {
+    #[cfg(feature = "nightly")]
+    return 1;
+    #[cfg(not(feature = "nightly"))]
+    return 0;
+}

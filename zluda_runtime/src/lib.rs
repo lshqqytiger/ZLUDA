@@ -174,6 +174,7 @@ pub unsafe extern "system" fn __cudaRegisterVar(
 pub unsafe extern "system" fn __cudaUnregisterFatBinary(
     fatCubinHandle: *mut *mut ::std::os::raw::c_void,
 ) -> () {
+    /*
     let lib = hip_common::zluda_ext::get_cuda_library().unwrap();
     let cu_module_unload = lib
         .get::<unsafe extern "C" fn(hmod: *mut ::std::os::raw::c_void) -> cuda_types::CUresult>(
@@ -182,6 +183,7 @@ pub unsafe extern "system" fn __cudaUnregisterFatBinary(
         .unwrap();
     let module = Box::from_raw(fatCubinHandle);
     cu_module_unload(*module);
+    */
 }
 
 fn to_cuda(status: hipError_t) -> cudaError_t {
@@ -192,6 +194,18 @@ fn to_cuda(status: hipError_t) -> cudaError_t {
         hipError_t::hipErrorInvalidContext => cudaError_t::cudaErrorDeviceUninitialized,
         hipError_t::hipErrorInvalidResourceHandle => cudaError_t::cudaErrorInvalidResourceHandle,
         hipError_t::hipErrorNotSupported => cudaError_t::cudaErrorNotSupported,
+        err => panic!("[ZLUDA] HIP Runtime failed: {}", err.0),
+    }
+}
+
+fn to_hip(status: cudaError_t) -> hipError_t {
+    match status {
+        cudaError_t::cudaSuccess => hipError_t::hipSuccess,
+        cudaError_t::cudaErrorInvalidValue => hipError_t::hipErrorInvalidValue,
+        cudaError_t::cudaErrorMemoryAllocation => hipError_t::hipErrorOutOfMemory,
+        cudaError_t::cudaErrorDeviceUninitialized => hipError_t::hipErrorInvalidContext,
+        cudaError_t::cudaErrorInvalidResourceHandle => hipError_t::hipErrorInvalidResourceHandle,
+        cudaError_t::cudaErrorNotSupported => hipError_t::hipErrorNotSupported,
         err => panic!("[ZLUDA] HIP Runtime failed: {}", err.0),
     }
 }
@@ -238,6 +252,10 @@ fn to_cuda_stream_capture_status(status: hipStreamCaptureStatus) -> cudaStreamCa
     }
 }
 
+unsafe fn device_synchronize() -> cudaError_t {
+    to_cuda(hipDeviceSynchronize())
+}
+
 unsafe fn device_get_stream_priority_range(
     least_priority: *mut i32,
     greatest_priority: *mut i32,
@@ -250,6 +268,10 @@ unsafe fn device_get_stream_priority_range(
 
 unsafe fn get_last_error() -> cudaError_t {
     to_cuda(hipGetLastError())
+}
+
+unsafe fn get_error_string(error: cudaError_t) -> *const ::std::os::raw::c_char {
+    hipGetErrorString(to_hip(error))
 }
 
 unsafe fn get_device_count(count: *mut i32) -> cudaError_t {
