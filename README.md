@@ -233,10 +233,21 @@ Performance is currently much lower than the native HIP backend, see the discuss
   After that, insert these codes into the application.
 
   ```py
-  torch.backends.cudnn.enabled = False
   torch.backends.cuda.enable_flash_sdp(False)
   torch.backends.cuda.enable_math_sdp(True)
   torch.backends.cuda.enable_mem_efficient_sdp(False)
+  ```
+
+  If you have PyTorch version >2.4 and are not using nightly build, set the following environment variable.
+
+  ```
+  DISABLE_ADDMM_CUDA_LT=1
+  ```
+
+  If you are not using nightly build, insert following line.
+
+  ```py
+  torch.backends.cudnn.enabled = False
   ```
 
   If you have an issue while running `torch.topk`, insert the codes below

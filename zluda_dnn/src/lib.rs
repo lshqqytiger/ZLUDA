@@ -7,108 +7,7 @@ use cuda_types::{CUresult, CUuuid};
 use hip_runtime_sys::*;
 use lazy_static::lazy_static;
 use miopen_sys::*;
-use std::{ffi::c_uint, mem, ptr, sync::Mutex};
-
-impl cudnnBackendHeurMode_t {
-    pub const CUDNN_HEUR_MODE_INSTANT: cudnnBackendHeurMode_t = cudnnBackendHeurMode_t(0);
-}
-impl cudnnBackendHeurMode_t {
-    pub const CUDNN_HEUR_MODE_B: cudnnBackendHeurMode_t = cudnnBackendHeurMode_t(1);
-}
-impl cudnnBackendHeurMode_t {
-    pub const CUDNN_HEUR_MODE_FALLBACK: cudnnBackendHeurMode_t = cudnnBackendHeurMode_t(2);
-}
-impl cudnnBackendHeurMode_t {
-    pub const CUDNN_HEUR_MODE_A: cudnnBackendHeurMode_t = cudnnBackendHeurMode_t(3);
-}
-impl cudnnBackendHeurMode_t {
-    pub const CUDNN_HEUR_MODES_COUNT: cudnnBackendHeurMode_t = cudnnBackendHeurMode_t(4);
-}
-#[allow(non_camel_case_types)]
-#[repr(transparent)]
-#[derive(Copy, Clone, Hash, PartialEq, Eq)]
-pub struct cudnnBackendHeurMode_t(pub ::std::os::raw::c_uint);
-
-impl miopenBackendHeurMode_t {
-    pub const MIOPEN_HEUR_MODE_INSTANT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(0);
-}
-impl miopenBackendHeurMode_t {
-    pub const MIOPEN_HEUR_MODE_B: miopenBackendHeurMode_t = miopenBackendHeurMode_t(1);
-}
-impl miopenBackendHeurMode_t {
-    pub const MIOPEN_HEUR_MODE_FALLBACK: miopenBackendHeurMode_t = miopenBackendHeurMode_t(2);
-}
-impl miopenBackendHeurMode_t {
-    pub const MIOPEN_HEUR_MODE_A: miopenBackendHeurMode_t = miopenBackendHeurMode_t(3);
-}
-impl miopenBackendHeurMode_t {
-    pub const MIOPEN_HEUR_MODES_COUNT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(4);
-}
-#[allow(non_camel_case_types)]
-#[repr(transparent)]
-#[derive(Copy, Clone, Hash, PartialEq, Eq)]
-pub struct miopenBackendHeurMode_t(pub ::std::os::raw::c_uint);
-
-#[derive(PartialEq, Eq)]
-enum BackendDescriptorKind {
-    /// Created by ZLUDA
-    Owned,
-    /// Created by MIOpen internally
-    System,
-    /// Persisting descriptor  
-    /// This kind of descriptors will never be destroyed.  
-    /// Used for hacking reasons.
-    Persisting,
-}
-
-const ZLUDA_DESCRIPTOR_MAGIC: c_uint = 0x1B950F42;
-#[repr(C)]
-struct BackendDescriptor {
-    magic: c_uint,
-    kind: BackendDescriptorKind,
-    internal: miopenBackendDescriptor_t,
-}
-
-impl BackendDescriptor {
-    fn new(internal: miopenBackendDescriptor_t) -> BackendDescriptor {
-        BackendDescriptor {
-            magic: ZLUDA_DESCRIPTOR_MAGIC,
-            kind: BackendDescriptorKind::Owned,
-            internal,
-        }
-    }
-
-    fn dummy() -> BackendDescriptor {
-        BackendDescriptor::persisting(ptr::null_mut())
-    }
-
-    fn persisting(internal: miopenBackendDescriptor_t) -> BackendDescriptor {
-        BackendDescriptor {
-            magic: ZLUDA_DESCRIPTOR_MAGIC,
-            kind: BackendDescriptorKind::Persisting,
-            internal,
-        }
-    }
-
-    fn release(self) -> *mut BackendDescriptor {
-        Box::into_raw(Box::new(self))
-    }
-
-    unsafe fn try_retrieve(raw: *mut BackendDescriptor) -> Option<Box<BackendDescriptor>> {
-        if (*raw).magic != ZLUDA_DESCRIPTOR_MAGIC {
-            return None;
-        }
-        Some(Box::from_raw(raw))
-    }
-
-    unsafe fn try_from<'a>(raw: miopenBackendDescriptor_t) -> Option<&'a mut BackendDescriptor> {
-        let raw = raw as *mut BackendDescriptor;
-        if (*raw).magic != ZLUDA_DESCRIPTOR_MAGIC {
-            return None;
-        }
-        raw.as_mut()
-    }
-}
+use std::{mem, ptr, sync::Mutex};
 
 lazy_static! {
     static ref LAST_ERROR: Mutex<Option<miopenStatus_t>> = Mutex::new(None);
@@ -330,18 +229,6 @@ fn to_conv_mode(mode: cudnnConvolutionMode_t) -> miopenConvolutionMode_t {
             miopenConvolutionMode_t::miopenConvolution
         }
         _ => panic!(),
-    }
-}
-
-fn to_heur_mode(mode: cudnnBackendHeurMode_t) -> miopenBackendHeurMode_t {
-    match mode {
-        cudnnBackendHeurMode_t::CUDNN_HEUR_MODE_INSTANT => {
-            miopenBackendHeurMode_t::MIOPEN_HEUR_MODE_INSTANT
-        }
-        cudnnBackendHeurMode_t::CUDNN_HEUR_MODE_FALLBACK => {
-            miopenBackendHeurMode_t::MIOPEN_HEUR_MODE_FALLBACK
-        }
-        _ => panic!("[ZLUDA] Unknown heuristic mode: {}", mode.0),
     }
 }
 
@@ -1215,6 +1102,118 @@ unsafe fn get_stream(handle: *mut cudnnContext, stream_id: *mut cudaStream_t) ->
     call!(miopenGetStream(handle as _, stream_id as _))
 }
 
+impl cudnnBackendHeurMode_t {
+    pub const CUDNN_HEUR_MODE_INSTANT: cudnnBackendHeurMode_t = cudnnBackendHeurMode_t(0);
+}
+impl cudnnBackendHeurMode_t {
+    pub const CUDNN_HEUR_MODE_B: cudnnBackendHeurMode_t = cudnnBackendHeurMode_t(1);
+}
+impl cudnnBackendHeurMode_t {
+    pub const CUDNN_HEUR_MODE_FALLBACK: cudnnBackendHeurMode_t = cudnnBackendHeurMode_t(2);
+}
+impl cudnnBackendHeurMode_t {
+    pub const CUDNN_HEUR_MODE_A: cudnnBackendHeurMode_t = cudnnBackendHeurMode_t(3);
+}
+impl cudnnBackendHeurMode_t {
+    pub const CUDNN_HEUR_MODES_COUNT: cudnnBackendHeurMode_t = cudnnBackendHeurMode_t(4);
+}
+#[allow(non_camel_case_types)]
+#[repr(transparent)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq)]
+pub struct cudnnBackendHeurMode_t(pub ::std::os::raw::c_uint);
+
+impl miopenBackendHeurMode_t {
+    pub const MIOPEN_HEUR_MODE_INSTANT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(0);
+}
+impl miopenBackendHeurMode_t {
+    pub const MIOPEN_HEUR_MODE_B: miopenBackendHeurMode_t = miopenBackendHeurMode_t(1);
+}
+impl miopenBackendHeurMode_t {
+    pub const MIOPEN_HEUR_MODE_FALLBACK: miopenBackendHeurMode_t = miopenBackendHeurMode_t(2);
+}
+impl miopenBackendHeurMode_t {
+    pub const MIOPEN_HEUR_MODE_A: miopenBackendHeurMode_t = miopenBackendHeurMode_t(3);
+}
+impl miopenBackendHeurMode_t {
+    pub const MIOPEN_HEUR_MODES_COUNT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(4);
+}
+#[allow(non_camel_case_types)]
+#[repr(transparent)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq)]
+pub struct miopenBackendHeurMode_t(pub ::std::os::raw::c_uint);
+
+trait FromCuda<T: Sized>: Sized {
+    fn from_cuda(t: T) -> Self {
+        unsafe { mem::transmute_copy(&t) }
+    }
+}
+
+impl FromCuda<cudnnBackendHeurMode_t> for miopenBackendHeurMode_t {}
+impl FromCuda<cudnnBackendAttributeName_t> for miopenBackendAttributeName_t {}
+impl FromCuda<cudnnBackendAttributeType_t> for miopenBackendAttributeType_t {}
+
+#[derive(PartialEq, Eq)]
+#[repr(u8)]
+enum BackendDescriptorKind {
+    /// Created by ZLUDA
+    Owned = 0,
+    /// Created by MIOpen internally
+    System = 1,
+    /// Persisting descriptor  
+    /// This kind of descriptors will never be destroyed.  
+    /// Used for hacking reasons.
+    Persisting = 2,
+}
+
+const ZLUDA_DESCRIPTOR_MAGIC: ::std::os::raw::c_uint = 0x1B950F42;
+#[repr(C)]
+struct BackendDescriptor {
+    magic: ::std::os::raw::c_uint,
+    kind: BackendDescriptorKind,
+    internal: miopenBackendDescriptor_t,
+}
+
+impl BackendDescriptor {
+    fn new(internal: miopenBackendDescriptor_t) -> BackendDescriptor {
+        BackendDescriptor {
+            magic: ZLUDA_DESCRIPTOR_MAGIC,
+            kind: BackendDescriptorKind::Owned,
+            internal,
+        }
+    }
+
+    fn dummy() -> BackendDescriptor {
+        BackendDescriptor::persisting(ptr::null_mut())
+    }
+
+    fn persisting(internal: miopenBackendDescriptor_t) -> BackendDescriptor {
+        BackendDescriptor {
+            magic: ZLUDA_DESCRIPTOR_MAGIC,
+            kind: BackendDescriptorKind::Persisting,
+            internal,
+        }
+    }
+
+    fn release(self) -> *mut BackendDescriptor {
+        Box::into_raw(Box::new(self))
+    }
+
+    unsafe fn try_retrieve(raw: *mut BackendDescriptor) -> Option<Box<BackendDescriptor>> {
+        if (*raw).magic != ZLUDA_DESCRIPTOR_MAGIC {
+            return None;
+        }
+        Some(Box::from_raw(raw))
+    }
+
+    unsafe fn try_from<'a>(raw: miopenBackendDescriptor_t) -> Option<&'a mut BackendDescriptor> {
+        let raw = raw as *mut BackendDescriptor;
+        if (*raw).magic != ZLUDA_DESCRIPTOR_MAGIC {
+            return None;
+        }
+        raw.as_mut()
+    }
+}
+
 fn to_backend_descriptor_type(
     descriptor_type: cudnnBackendDescriptorType_t,
 ) -> miopenBackendDescriptorType_t {
@@ -1275,7 +1274,7 @@ unsafe fn backend_create_descriptor(
         // the vectors that contains the information of
         // the convolution to be forwarded is unloaded
         // simultaneously from the memory.
-        // Indeed, this will lead to memory leak.
+        // Indeed, this leads to memory leak.
         // However, there is no other clear way to
         // make this work.
         *descriptor = BackendDescriptor::persisting((*descriptor).cast()).release() as _;
@@ -1313,164 +1312,6 @@ unsafe fn backend_finalize(descriptor: cudnnBackendDescriptor_t) -> cudnnStatus_
         return call!(miopenBackendFinalize(descriptor.internal));
     }
     cudnnStatus_t::CUDNN_STATUS_BAD_PARAM
-}
-
-fn to_backend_attribute_name(name: cudnnBackendAttributeName_t) -> miopenBackendAttributeName_t {
-    match name {
-        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_COMP_TYPE => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_COMP_TYPE
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_CONV_MODE => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_CONV_MODE
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_DILATIONS => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_DILATIONS
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_FILTER_STRIDES => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_FILTER_STRIDES
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_POST_PADDINGS => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_POST_PADDINGS
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_PRE_PADDINGS => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_PRE_PADDINGS
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_CONVOLUTION_SPATIAL_DIMS => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_CONVOLUTION_SPATIAL_DIMS
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINEHEUR_MODE => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINEHEUR_MODE
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINEHEUR_OPERATION_GRAPH => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINEHEUR_OPERATION_GRAPH
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINEHEUR_RESULTS => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINEHEUR_RESULTS
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINECFG_ENGINE => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINECFG_ENGINE
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINECFG_KNOB_CHOICES => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINECFG_KNOB_CHOICES
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_EXECUTION_PLAN_HANDLE => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_EXECUTION_PLAN_HANDLE
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_EXECUTION_PLAN_ENGINE_CONFIG => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_EXECUTION_PLAN_ENGINE_CONFIG
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_EXECUTION_PLAN_WORKSPACE_SIZE => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_EXECUTION_PLAN_WORKSPACE_SIZE
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_ALPHA => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_ALPHA
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_BETA => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_BETA
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_CONV_DESC => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_CONV_DESC
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_W => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_W
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_X => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_X
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATION_CONVOLUTION_FORWARD_Y => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_CONVOLUTION_FORWARD_Y
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATIONGRAPH_HANDLE => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATIONGRAPH_HANDLE
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_OPERATIONGRAPH_OPS => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATIONGRAPH_OPS
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_BYTE_ALIGNMENT => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_BYTE_ALIGNMENT
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_DATA_TYPE => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_DATA_TYPE
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_DIMENSIONS => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_DIMENSIONS
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_STRIDES => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_STRIDES
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_UNIQUE_ID => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_UNIQUE_ID
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_IS_VIRTUAL => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_IS_VIRTUAL
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_TENSOR_IS_BY_VALUE => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_IS_BY_VALUE
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_VARIANT_PACK_UNIQUE_IDS => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_VARIANT_PACK_UNIQUE_IDS
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_VARIANT_PACK_DATA_POINTERS => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_VARIANT_PACK_DATA_POINTERS
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_VARIANT_PACK_WORKSPACE => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_VARIANT_PACK_WORKSPACE
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINE_GLOBAL_INDEX => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINE_GLOBAL_INDEX
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINE_NUMERICAL_NOTE => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINE_NUMERICAL_NOTE
-        }
-        cudnnBackendAttributeName_t::CUDNN_ATTR_ENGINE_BEHAVIOR_NOTE => {
-            miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINE_BEHAVIOR_NOTE
-        }
-        _ => panic!("[ZLUDA] Unknown attribute name: {}", name.0),
-    }
-}
-
-fn to_backend_attribute_type(
-    attribute_type: cudnnBackendAttributeType_t,
-) -> miopenBackendAttributeType_t {
-    match attribute_type {
-        cudnnBackendAttributeType_t::CUDNN_TYPE_HANDLE => {
-            miopenBackendAttributeType_t::MIOPEN_TYPE_HANDLE
-        }
-        cudnnBackendAttributeType_t::CUDNN_TYPE_DATA_TYPE => {
-            miopenBackendAttributeType_t::MIOPEN_TYPE_DATA_TYPE
-        }
-        cudnnBackendAttributeType_t::CUDNN_TYPE_BOOLEAN => {
-            miopenBackendAttributeType_t::MIOPEN_TYPE_BOOLEAN
-        }
-        cudnnBackendAttributeType_t::CUDNN_TYPE_INT64 => {
-            miopenBackendAttributeType_t::MIOPEN_TYPE_INT64
-        }
-        cudnnBackendAttributeType_t::CUDNN_TYPE_FLOAT => {
-            miopenBackendAttributeType_t::MIOPEN_TYPE_FLOAT
-        }
-        cudnnBackendAttributeType_t::CUDNN_TYPE_DOUBLE => {
-            miopenBackendAttributeType_t::MIOPEN_TYPE_DOUBLE
-        }
-        cudnnBackendAttributeType_t::CUDNN_TYPE_VOID_PTR => {
-            miopenBackendAttributeType_t::MIOPEN_TYPE_VOID_PTR
-        }
-        cudnnBackendAttributeType_t::CUDNN_TYPE_CONVOLUTION_MODE => {
-            miopenBackendAttributeType_t::MIOPEN_TYPE_CONVOLUTION_MODE
-        }
-        cudnnBackendAttributeType_t::CUDNN_TYPE_HEUR_MODE => {
-            miopenBackendAttributeType_t::MIOPEN_TYPE_HEUR_MODE
-        }
-        cudnnBackendAttributeType_t::CUDNN_TYPE_NUMERICAL_NOTE => {
-            miopenBackendAttributeType_t::MIOPEN_TYPE_NUMERICAL_NOTE
-        }
-        cudnnBackendAttributeType_t::CUDNN_TYPE_BACKEND_DESCRIPTOR => {
-            miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR
-        }
-        cudnnBackendAttributeType_t::CUDNN_TYPE_BEHAVIOR_NOTE => {
-            miopenBackendAttributeType_t::MIOPEN_TYPE_BEHAVIOR_NOTE
-        }
-        _ => panic!("[ZLUDA] Unknown attribute type: {}", attribute_type.0),
-    }
 }
 
 unsafe fn backend_set_attribute_impl(
@@ -1515,13 +1356,13 @@ unsafe fn backend_set_attribute_impl(
             if element_count != 1 {
                 panic!("[ZLUDA] Unexpected value: element_count={}", element_count)
             }
-            let heur_type = to_heur_mode(*array_of_elements.cast());
+            let heur_mode: miopenBackendHeurMode_t = *array_of_elements.cast();
             miopenBackendSetAttribute(
                 descriptor,
                 attribute_name,
                 attribute_type,
                 element_count,
-                &raw const heur_type as _,
+                &raw const heur_mode as _,
             )
         }
         miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR => {
@@ -1570,8 +1411,8 @@ unsafe fn backend_set_attribute(
     array_of_elements: *const ::std::os::raw::c_void,
 ) -> cudnnStatus_t {
     if let Some(descriptor) = BackendDescriptor::try_from(descriptor.cast()) {
-        let attribute_name = to_backend_attribute_name(attribute_name);
-        let attribute_type = to_backend_attribute_type(attribute_type);
+        let attribute_name = miopenBackendAttributeName_t::from_cuda(attribute_name);
+        let attribute_type = miopenBackendAttributeType_t::from_cuda(attribute_type);
         return call!(backend_set_attribute_impl(
             descriptor.internal,
             attribute_name,
@@ -1591,19 +1432,14 @@ unsafe fn backend_get_attribute(
     element_count: *mut i64,
     array_of_elements: *mut ::std::os::raw::c_void,
 ) -> cudnnStatus_t {
-    let attribute_name = to_backend_attribute_name(attribute_name);
-    let attribute_type = to_backend_attribute_type(attribute_type);
+    let attribute_name = miopenBackendAttributeName_t::from_cuda(attribute_name);
+    let attribute_type = miopenBackendAttributeType_t::from_cuda(attribute_type);
 
     if let Some(descriptor) = BackendDescriptor::try_from(descriptor.cast()) {
         // cuDNN frontend
         if requested_element_count == 0
             && attribute_name == miopenBackendAttributeName_t::MIOPEN_ATTR_ENGINEHEUR_RESULTS
         {
-            assert_eq!(
-                attribute_type,
-                miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR
-            );
-
             let mut array_of_elements = mem::zeroed::<miopenBackendDescriptor_t>();
             return call!(miopenBackendGetAttribute(
                 descriptor.internal,
@@ -1648,10 +1484,6 @@ unsafe fn backend_get_attribute(
             && attribute_name
                 == miopenBackendAttributeName_t::MIOPEN_ATTR_EXECUTION_PLAN_WORKSPACE_SIZE
         {
-            assert_eq!(
-                attribute_type,
-                miopenBackendAttributeType_t::MIOPEN_TYPE_INT64
-            );
             assert_eq!(requested_element_count, 1);
 
             let mut element_count = 0i64;
