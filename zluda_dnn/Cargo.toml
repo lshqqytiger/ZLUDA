@@ -20,6 +20,6 @@ zluda_dark_api = { path = "../zluda_dark_api" }
 lazy_static = "1.4.0"
 
 [package.metadata.zluda]
-windows_nightly = true
+linux_only = true # windows_nightly = true
 linux_names = ["libcudnn.so.7", "libcudnn.so.8"]
 dump_names = ["libcudnn.so"]
