@@ -42,7 +42,7 @@ fn unsupported() -> cudnnStatus_t {
 #[cfg(not(debug_assertions))]
 fn unsupported() -> cudnnStatus_t {
     if let Ok(mut error) = LAST_ERROR.lock() {
-        *error = Some(cudnnStatus_t::CUDNN_STATUS_NOT_SUPPORTED);
+        *error = Some(miopenStatus_t::miopenStatusNotImplemented);
     }
     cudnnStatus_t::CUDNN_STATUS_NOT_SUPPORTED
 }
