@@ -174,6 +174,7 @@ pub unsafe extern "system" fn __cudaRegisterVar(
 pub unsafe extern "system" fn __cudaUnregisterFatBinary(
     fatCubinHandle: *mut *mut ::std::os::raw::c_void,
 ) -> () {
+    /*
     let lib = hip_common::zluda_ext::get_cuda_library().unwrap();
     let cu_module_unload = lib
         .get::<unsafe extern "C" fn(hmod: *mut ::std::os::raw::c_void) -> cuda_types::CUresult>(
@@ -182,6 +183,7 @@ pub unsafe extern "system" fn __cudaUnregisterFatBinary(
         .unwrap();
     let module = Box::from_raw(fatCubinHandle);
     cu_module_unload(*module);
+    */
 }
 
 fn to_cuda(status: hipError_t) -> cudaError_t {
