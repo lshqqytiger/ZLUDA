@@ -189,15 +189,23 @@ unsafe fn matmul_desc_create(
     compute_type: cublasComputeType_t,
     scale_type: cudaDataType_t,
 ) -> cublasStatus_t {
-    if compute_type != cublasComputeType_t::CUBLAS_COMPUTE_32F {
-        return cublasStatus_t::CUBLAS_STATUS_NOT_SUPPORTED;
-    }
+    let compute_type = to_compute_type(compute_type);
     let scale_type = data_type(scale_type);
     to_cuda(hipblasLtMatmulDescCreate(
         matmul_desc.cast(),
-        hipblasComputeType_t::HIPBLAS_COMPUTE_32F,
+        compute_type,
         scale_type,
     ))
+}
+
+fn to_compute_type(compute_type: cublasComputeType_t) -> hipblasComputeType_t {
+    match compute_type {
+        cublasComputeType_t::CUBLAS_COMPUTE_32F => hipblasComputeType_t::HIPBLAS_COMPUTE_32F,
+        cublasComputeType_t::CUBLAS_COMPUTE_32F_FAST_TF32 => {
+            hipblasComputeType_t::HIPBLAS_COMPUTE_32F_FAST_TF32
+        }
+        _ => panic!("[ZLUDA] Unknown compute type: {}", compute_type.0),
+    }
 }
 
 fn data_type(data_type: cudaDataType_t) -> hipDataType {
