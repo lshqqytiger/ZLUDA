@@ -7,7 +7,7 @@ use cuda_types::{CUresult, CUuuid};
 use hip_runtime_sys::*;
 use lazy_static::lazy_static;
 use miopen_sys::*;
-use std::{mem, ptr, sync::Mutex};
+use std::{collections::VecDeque, mem, ptr, sync::Mutex};
 
 lazy_static! {
     static ref LAST_ERROR: Mutex<Option<miopenStatus_t>> = Mutex::new(None);
@@ -1152,6 +1152,41 @@ impl FromCuda<cudnnBackendHeurMode_t> for miopenBackendHeurMode_t {}
 impl FromCuda<cudnnBackendAttributeName_t> for miopenBackendAttributeName_t {}
 impl FromCuda<cudnnBackendAttributeType_t> for miopenBackendAttributeType_t {}
 
+struct SendableWrapper<T>(T);
+
+impl<T> SendableWrapper<T> {
+    fn new(value: T) -> Self {
+        SendableWrapper(value)
+    }
+}
+
+unsafe impl<T> Send for SendableWrapper<T> {}
+
+const STICKY_DESCRIPTORS_CAPACITY: usize = 2;
+lazy_static! {
+    // TODO: LRU? should size be >2?
+    static ref STICKY_DESCRIPTORS: Mutex<VecDeque<SendableWrapper<miopenBackendDescriptor_t>>> =
+        Mutex::new(VecDeque::with_capacity(STICKY_DESCRIPTORS_CAPACITY));
+}
+
+fn is_descriptor_alive(descriptor: &BackendDescriptor) -> bool {
+    if descriptor.kind != BackendDescriptorKind::Sticky {
+        return true;
+    }
+    let sticky_descriptors = &*(match STICKY_DESCRIPTORS.lock() {
+        Ok(x) => x,
+        Err(_) => {
+            return false;
+        }
+    });
+    for v in sticky_descriptors {
+        if v.0 == descriptor.internal {
+            return true;
+        }
+    }
+    false
+}
+
 #[derive(PartialEq, Eq)]
 #[repr(u8)]
 enum BackendDescriptorKind {
@@ -1159,10 +1194,10 @@ enum BackendDescriptorKind {
     Owned = 0,
     /// Created by MIOpen internally
     System = 1,
-    /// Persisting descriptor  
-    /// This kind of descriptors will never be destroyed.  
-    /// Used for hacking reasons.
-    Persisting = 2,
+    /// see STICKY_DESCRIPTORS
+    Sticky = 2,
+    /// Null
+    Dummy = 3,
 }
 
 const ZLUDA_DESCRIPTOR_MAGIC: ::std::os::raw::c_uint = 0x1B950F42;
@@ -1182,15 +1217,19 @@ impl BackendDescriptor {
         }
     }
 
-    fn dummy() -> BackendDescriptor {
-        BackendDescriptor::persisting(ptr::null_mut())
-    }
-
-    fn persisting(internal: miopenBackendDescriptor_t) -> BackendDescriptor {
+    fn sticky(internal: miopenBackendDescriptor_t) -> BackendDescriptor {
         BackendDescriptor {
             magic: ZLUDA_DESCRIPTOR_MAGIC,
-            kind: BackendDescriptorKind::Persisting,
+            kind: BackendDescriptorKind::Sticky,
             internal,
+        }
+    }
+
+    fn dummy() -> BackendDescriptor {
+        BackendDescriptor {
+            magic: ZLUDA_DESCRIPTOR_MAGIC,
+            kind: BackendDescriptorKind::Dummy,
+            internal: ptr::null_mut(),
         }
     }
 
@@ -1268,16 +1307,23 @@ unsafe fn backend_create_descriptor(
         descriptor.cast(),
     ));
 
+    let descriptor = descriptor as *mut miopenBackendDescriptor_t;
     if descriptor_type == miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATIONGRAPH_DESCRIPTOR {
         // We cannot destroy OperationGraph descriptor.
         // Once OperationGraph descriptor is destroyed,
         // the vectors that contains the information of
         // the convolution to be forwarded is unloaded
         // simultaneously from the memory.
-        // Indeed, this leads to memory leak.
-        // However, there is no other clear way to
-        // make this work.
-        *descriptor = BackendDescriptor::persisting((*descriptor).cast()).release() as _;
+        if let Ok(mut guard) = STICKY_DESCRIPTORS.lock() {
+            let sticky_descriptors = &mut *guard;
+            if sticky_descriptors.len() == STICKY_DESCRIPTORS_CAPACITY {
+                if let Some(descriptor) = sticky_descriptors.pop_front() {
+                    asserted_call!(miopenBackendDestroyDescriptor(descriptor.0));
+                }
+            }
+            sticky_descriptors.push_back(SendableWrapper::new(*descriptor));
+        }
+        *descriptor = BackendDescriptor::sticky(*descriptor).release() as _;
     } else {
         // MIOpen behaves differently from cuDNN.
         // cuDNN "updates" the contents (members in C) of the descriptors.
@@ -1286,7 +1332,7 @@ unsafe fn backend_create_descriptor(
         // to get full control and distinction of the descriptor.
         // e.g.
         // https://github.com/NVIDIA/cudnn-frontend/blob/5040925e9450c399a66240b485b38564226e1212/include/cudnn_frontend_Heuristics.h#L95
-        *descriptor = BackendDescriptor::new((*descriptor).cast()).release() as _;
+        *descriptor = BackendDescriptor::new(*descriptor).release() as _;
     }
 
     result
@@ -1296,10 +1342,14 @@ unsafe fn backend_destroy_descriptor(descriptor: cudnnBackendDescriptor_t) -> cu
     if let Some(descriptor) = BackendDescriptor::try_retrieve(descriptor.cast()) {
         if matches!(
             descriptor.kind,
-            BackendDescriptorKind::System | BackendDescriptorKind::Persisting
+            BackendDescriptorKind::System
+            // We cannot destroy the descriptor
+            // as it is created from MIOpen internally.
+            | BackendDescriptorKind::Sticky
+            // The oldest sticky descriptor will be destroyed
+            // when the queue is full and there's new entry to be pushed.
+            | BackendDescriptorKind::Dummy // Dummy (null) descriptors
         ) {
-            // Cannot destroy the descriptor as it is created from MIOpen internally.
-            // Persisting descriptors will not be destroyed. (it may be dummy or OperationGraph descriptor)
             return cudnnStatus_t::CUDNN_STATUS_SUCCESS;
         }
         return call!(miopenBackendDestroyDescriptor(descriptor.internal));
@@ -1309,6 +1359,9 @@ unsafe fn backend_destroy_descriptor(descriptor: cudnnBackendDescriptor_t) -> cu
 
 unsafe fn backend_finalize(descriptor: cudnnBackendDescriptor_t) -> cudnnStatus_t {
     if let Some(descriptor) = BackendDescriptor::try_from(descriptor.cast()) {
+        if !is_descriptor_alive(descriptor) {
+            return cudnnStatus_t::CUDNN_STATUS_BAD_PARAM;
+        }
         return call!(miopenBackendFinalize(descriptor.internal));
     }
     cudnnStatus_t::CUDNN_STATUS_BAD_PARAM
@@ -1411,6 +1464,10 @@ unsafe fn backend_set_attribute(
     array_of_elements: *const ::std::os::raw::c_void,
 ) -> cudnnStatus_t {
     if let Some(descriptor) = BackendDescriptor::try_from(descriptor.cast()) {
+        if !is_descriptor_alive(descriptor) {
+            return cudnnStatus_t::CUDNN_STATUS_BAD_PARAM;
+        }
+
         let attribute_name = miopenBackendAttributeName_t::from_cuda(attribute_name);
         let attribute_type = miopenBackendAttributeType_t::from_cuda(attribute_type);
 
@@ -1435,6 +1492,10 @@ unsafe fn backend_get_attribute(
     array_of_elements: *mut ::std::os::raw::c_void,
 ) -> cudnnStatus_t {
     if let Some(descriptor) = BackendDescriptor::try_from(descriptor.cast()) {
+        if !is_descriptor_alive(descriptor) {
+            return cudnnStatus_t::CUDNN_STATUS_BAD_PARAM;
+        }
+
         let attribute_name = miopenBackendAttributeName_t::from_cuda(attribute_name);
         let attribute_type = miopenBackendAttributeType_t::from_cuda(attribute_type);
 
