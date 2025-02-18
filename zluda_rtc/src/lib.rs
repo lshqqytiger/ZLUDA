@@ -257,6 +257,7 @@ unsafe fn get_ptx_size(prog: nvrtcProgram, code_size_ret: *mut usize) -> nvrtcRe
             *code_size_ret = ptx.len();
             return nvrtcResult::NVRTC_SUCCESS;
         }
+        return nvrtcResult::NVRTC_ERROR_COMPILATION;
     }
     nvrtcResult::NVRTC_ERROR_INVALID_PROGRAM
 }
@@ -270,6 +271,7 @@ unsafe fn get_ptx(prog: nvrtcProgram, code: *mut c_char) -> nvrtcResult {
             }
             return nvrtcResult::NVRTC_SUCCESS;
         }
+        return nvrtcResult::NVRTC_ERROR_COMPILATION;
     }
     nvrtcResult::NVRTC_ERROR_INVALID_PROGRAM
 }
@@ -281,6 +283,7 @@ unsafe fn get_program_log_size(prog: nvrtcProgram, log_size_ret: *mut usize) -> 
             *log_size_ret = log.len();
             return nvrtcResult::NVRTC_SUCCESS;
         }
+        return nvrtcResult::NVRTC_ERROR_COMPILATION;
     }
     nvrtcResult::NVRTC_ERROR_INVALID_PROGRAM
 }
@@ -294,6 +297,7 @@ unsafe fn get_program_log(prog: nvrtcProgram, log: *mut ::std::os::raw::c_char) 
             }
             return nvrtcResult::NVRTC_SUCCESS;
         }
+        return nvrtcResult::NVRTC_ERROR_COMPILATION;
     }
     nvrtcResult::NVRTC_ERROR_INVALID_PROGRAM
 }
