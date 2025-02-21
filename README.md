@@ -92,8 +92,7 @@ Even though, nightly ZLUDA has cuDNN support with unofficial build of MIOpen.
 However, because MIOpen itself is very unstable and incomplete, there are some limitations as described below.
 
 - Custom build of MIOpen without rocMLIR and composable kernel is only tested.
-- Only FP32 is supported for Conv2d in gfx1100.
-- There is small memory leak issue due to technical difficulties.
+- Many bugs.
 
 ## Unknown issues
 
@@ -271,6 +270,17 @@ Performance is currently much lower than the native HIP backend, see the discuss
   torch.backends.cuda.enable_flash_sdp(False)
   torch.backends.cuda.enable_math_sdp(True)
   torch.backends.cuda.enable_mem_efficient_sdp(False)
+  torch.backends.cuda.enable_cudnn_sdp(False)
+  ```
+
+  However, if you are willing to enable cuDNN, insert these lines instead after installing HIP SDK extension with nightly ZLUDA.
+
+  ```py
+  torch.backends.cudnn.enabled = True
+  torch.backends.cuda.enable_flash_sdp(False)
+  torch.backends.cuda.enable_math_sdp(True)
+  torch.backends.cuda.enable_mem_efficient_sdp(False)
+  torch.backends.cuda.enable_cudnn_sdp(True)
   ```
 
   If you have PyTorch version >2.4 and are not using nightly build, set the following environment variable.
@@ -279,7 +289,7 @@ Performance is currently much lower than the native HIP backend, see the discuss
   DISABLE_ADDMM_CUDA_LT=1
   ```
 
-  If you have an issue while running `torch.topk`, insert the codes below
+  If you have an issue while running `torch.topk`, insert the codes below.
 
   ```py
   _topk = torch.topk
