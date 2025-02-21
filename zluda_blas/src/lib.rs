@@ -13,7 +13,8 @@ use cuda_types::*;
 use rocblas_sys::*;
 use rocsolver_sys::{
     rocsolver_cgetrf_batched, rocsolver_cgetri_outofplace_batched, rocsolver_dgetrs_batched,
-    rocsolver_sgetrs_batched, rocsolver_zgetrf_batched, rocsolver_zgetri_outofplace_batched,
+    rocsolver_sgels_batched, rocsolver_sgetrs_batched, rocsolver_zgetrf_batched,
+    rocsolver_zgetri_outofplace_batched,
 };
 use std::ptr;
 
@@ -818,6 +819,38 @@ unsafe fn dgetrs_batched(
     ))
 }
 
+unsafe fn sgels_batched(
+    handle: *mut cublasContext,
+    trans: cublasOperation_t,
+    m: i32,
+    n: i32,
+    nrhs: i32,
+    a: *const *mut f32,
+    lda: i32,
+    c: *const *mut f32,
+    ldc: i32,
+    info: *mut i32,
+    dev_info: *mut i32,
+    batch_size: i32,
+) -> cublasStatus_t {
+    // https://docs.nvidia.com/cuda/cublas/#cublas-t-gelsbatched
+    *info = 0;
+    let trans = op_from_cuda_for_solver(trans);
+    to_cuda_solver(rocsolver_sgels_batched(
+        handle.cast(),
+        trans,
+        m,
+        n,
+        nrhs,
+        a,
+        lda,
+        c,
+        ldc,
+        dev_info,
+        batch_size,
+    ))
+}
+
 unsafe fn dtrmm_v2(
     handle: *mut cublasContext,
     side: cublasSideMode_t,
@@ -1042,6 +1075,40 @@ unsafe fn dgemm_v2(
         beta,
         c,
         ldc,
+    ))
+}
+
+unsafe fn strsm(
+    handle: *mut cublasContext,
+    side: cublasSideMode_t,
+    uplo: cublasFillMode_t,
+    trans: cublasOperation_t,
+    diag: cublasDiagType_t,
+    m: i32,
+    n: i32,
+    alpha: *const f32,
+    a: *const f32,
+    lda: i32,
+    b: *mut f32,
+    ldb: i32,
+) -> cublasStatus_t {
+    let side = to_side(side);
+    let uplo = to_fill(uplo);
+    let trans = op_from_cuda(trans);
+    let diag = to_diag(diag);
+    to_cuda(rocblas_strsm(
+        handle.cast(),
+        side,
+        uplo,
+        trans,
+        diag,
+        m,
+        n,
+        alpha,
+        a,
+        lda,
+        b,
+        ldb,
     ))
 }
 

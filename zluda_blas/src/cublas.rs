@@ -3756,7 +3756,7 @@ pub extern "system" fn cublasZhemm_v2(
 }
 
 #[no_mangle]
-pub extern "system" fn cublasStrsm_v2(
+pub unsafe extern "system" fn cublasStrsm_v2(
     handle: cublasHandle_t,
     side: cublasSideMode_t,
     uplo: cublasFillMode_t,
@@ -3770,7 +3770,7 @@ pub extern "system" fn cublasStrsm_v2(
     B: *mut f32,
     ldb: ::std::os::raw::c_int,
 ) -> cublasStatus_t {
-    crate::unsupported()
+    crate::strsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb)
 }
 
 #[no_mangle]
@@ -4740,7 +4740,7 @@ pub extern "system" fn cublasZgeqrfBatched(
 }
 
 #[no_mangle]
-pub extern "system" fn cublasSgelsBatched(
+pub unsafe extern "system" fn cublasSgelsBatched(
     handle: cublasHandle_t,
     trans: cublasOperation_t,
     m: ::std::os::raw::c_int,
@@ -4754,7 +4754,20 @@ pub extern "system" fn cublasSgelsBatched(
     devInfoArray: *mut ::std::os::raw::c_int,
     batchSize: ::std::os::raw::c_int,
 ) -> cublasStatus_t {
-    crate::unsupported()
+    crate::sgels_batched(
+        handle,
+        trans,
+        m,
+        n,
+        nrhs,
+        Aarray,
+        lda,
+        Carray,
+        ldc,
+        info,
+        devInfoArray,
+        batchSize,
+    )
 }
 
 #[no_mangle]

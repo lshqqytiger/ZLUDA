@@ -1,5 +1,6 @@
 #[allow(warnings)]
 mod cudnn;
+mod extra;
 #[allow(warnings)]
 pub use cudnn::*;
 
@@ -169,8 +170,9 @@ fn to_data_type(type_: cudnnDataType_t) -> miopenDataType_t {
         cudnnDataType_t::CUDNN_DATA_FLOAT => miopenDataType_t::miopenFloat,
         cudnnDataType_t::CUDNN_DATA_DOUBLE => miopenDataType_t::miopenDouble,
         cudnnDataType_t::CUDNN_DATA_HALF => miopenDataType_t::miopenHalf,
+        cudnnDataType_t::CUDNN_DATA_INT32 => miopenDataType_t::miopenInt32,
         cudnnDataType_t::CUDNN_DATA_BFLOAT16 => miopenDataType_t::miopenBFloat16,
-        _ => todo!(),
+        _ => panic!("[ZLUDA] Unknown data type: {}", type_.0),
     }
 }
 
@@ -229,6 +231,30 @@ fn to_conv_mode(mode: cudnnConvolutionMode_t) -> miopenConvolutionMode_t {
             miopenConvolutionMode_t::miopenConvolution
         }
         _ => panic!(),
+    }
+}
+
+fn to_pointwise_mode(mode: cudnnPointwiseMode_t) -> miopenPointwiseMode_t {
+    match mode {
+        cudnnPointwiseMode_t::CUDNN_POINTWISE_ADD => miopenPointwiseMode_t::MIOPEN_POINTWISE_ADD,
+        cudnnPointwiseMode_t::CUDNN_POINTWISE_MUL => miopenPointwiseMode_t::MIOPEN_POINTWISE_MUL,
+        cudnnPointwiseMode_t::CUDNN_POINTWISE_DIV => miopenPointwiseMode_t::MIOPEN_POINTWISE_DIV,
+        cudnnPointwiseMode_t::CUDNN_POINTWISE_SUB => miopenPointwiseMode_t::MIOPEN_POINTWISE_SUB,
+        cudnnPointwiseMode_t::CUDNN_POINTWISE_EXP => miopenPointwiseMode_t::MIOPEN_POINTWISE_EXP,
+        cudnnPointwiseMode_t::CUDNN_POINTWISE_LOG => miopenPointwiseMode_t::MIOPEN_POINTWISE_LOG,
+        _ => panic!("[ZLUDA] Unknown pointwise mode: {}", mode.0),
+    }
+}
+
+fn to_reduce_tensor_op(op: cudnnReduceTensorOp_t) -> miopenReduceTensorOp_t {
+    match op {
+        cudnnReduceTensorOp_t::CUDNN_REDUCE_TENSOR_ADD => {
+            miopenReduceTensorOp_t::MIOPEN_REDUCE_TENSOR_ADD
+        }
+        cudnnReduceTensorOp_t::CUDNN_REDUCE_TENSOR_MAX => {
+            miopenReduceTensorOp_t::MIOPEN_REDUCE_TENSOR_MAX
+        }
+        _ => panic!("[ZLUDA] Unknown reduce tensor op: {}", op.0),
     }
 }
 
@@ -1102,46 +1128,6 @@ unsafe fn get_stream(handle: *mut cudnnContext, stream_id: *mut cudaStream_t) ->
     call!(miopenGetStream(handle as _, stream_id as _))
 }
 
-impl cudnnBackendHeurMode_t {
-    pub const CUDNN_HEUR_MODE_INSTANT: cudnnBackendHeurMode_t = cudnnBackendHeurMode_t(0);
-}
-impl cudnnBackendHeurMode_t {
-    pub const CUDNN_HEUR_MODE_B: cudnnBackendHeurMode_t = cudnnBackendHeurMode_t(1);
-}
-impl cudnnBackendHeurMode_t {
-    pub const CUDNN_HEUR_MODE_FALLBACK: cudnnBackendHeurMode_t = cudnnBackendHeurMode_t(2);
-}
-impl cudnnBackendHeurMode_t {
-    pub const CUDNN_HEUR_MODE_A: cudnnBackendHeurMode_t = cudnnBackendHeurMode_t(3);
-}
-impl cudnnBackendHeurMode_t {
-    pub const CUDNN_HEUR_MODES_COUNT: cudnnBackendHeurMode_t = cudnnBackendHeurMode_t(4);
-}
-#[allow(non_camel_case_types)]
-#[repr(transparent)]
-#[derive(Copy, Clone, Hash, PartialEq, Eq)]
-pub struct cudnnBackendHeurMode_t(pub ::std::os::raw::c_uint);
-
-impl miopenBackendHeurMode_t {
-    pub const MIOPEN_HEUR_MODE_INSTANT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(0);
-}
-impl miopenBackendHeurMode_t {
-    pub const MIOPEN_HEUR_MODE_B: miopenBackendHeurMode_t = miopenBackendHeurMode_t(1);
-}
-impl miopenBackendHeurMode_t {
-    pub const MIOPEN_HEUR_MODE_FALLBACK: miopenBackendHeurMode_t = miopenBackendHeurMode_t(2);
-}
-impl miopenBackendHeurMode_t {
-    pub const MIOPEN_HEUR_MODE_A: miopenBackendHeurMode_t = miopenBackendHeurMode_t(3);
-}
-impl miopenBackendHeurMode_t {
-    pub const MIOPEN_HEUR_MODES_COUNT: miopenBackendHeurMode_t = miopenBackendHeurMode_t(4);
-}
-#[allow(non_camel_case_types)]
-#[repr(transparent)]
-#[derive(Copy, Clone, Hash, PartialEq, Eq)]
-pub struct miopenBackendHeurMode_t(pub ::std::os::raw::c_uint);
-
 trait FromCuda<T: Sized>: Sized {
     fn from_cuda(t: T) -> Self {
         unsafe { mem::transmute_copy(&t) }
@@ -1200,11 +1186,20 @@ enum BackendDescriptorKind {
     Dummy = 3,
 }
 
+#[derive(Clone, Copy)]
+#[repr(u8)]
+enum BackendDescriptorFlag {
+    /// https://github.com/NVIDIA/cudnn-frontend/blob/5040925e9450c399a66240b485b38564226e1212/include/cudnn_frontend_Operation.h#L486
+    /// https://github.com/ROCm/MIOpen/blob/9bbdc770e84355b161bcaa253690f2fc3db40654/src/graphapi/pointwise.cpp#L784
+    PointwiseAlpha2NotSupported = 0b1,
+}
+
 const ZLUDA_DESCRIPTOR_MAGIC: ::std::os::raw::c_uint = 0x1B950F42;
 #[repr(C)]
 struct BackendDescriptor {
     magic: ::std::os::raw::c_uint,
     kind: BackendDescriptorKind,
+    flags: ::std::os::raw::c_uchar,
     internal: miopenBackendDescriptor_t,
 }
 
@@ -1213,6 +1208,7 @@ impl BackendDescriptor {
         BackendDescriptor {
             magic: ZLUDA_DESCRIPTOR_MAGIC,
             kind: BackendDescriptorKind::Owned,
+            flags: 0b0,
             internal,
         }
     }
@@ -1221,6 +1217,7 @@ impl BackendDescriptor {
         BackendDescriptor {
             magic: ZLUDA_DESCRIPTOR_MAGIC,
             kind: BackendDescriptorKind::Sticky,
+            flags: 0b0,
             internal,
         }
     }
@@ -1229,8 +1226,17 @@ impl BackendDescriptor {
         BackendDescriptor {
             magic: ZLUDA_DESCRIPTOR_MAGIC,
             kind: BackendDescriptorKind::Dummy,
+            flags: 0b0,
             internal: ptr::null_mut(),
         }
+    }
+
+    fn set_flag(&mut self, flag: BackendDescriptorFlag) {
+        self.flags |= flag as u8;
+    }
+
+    fn get_flag(&self, flag: BackendDescriptorFlag) -> bool {
+        self.flags & flag as u8 == flag as u8
     }
 
     fn release(self) -> *mut BackendDescriptor {
@@ -1257,6 +1263,9 @@ fn to_backend_descriptor_type(
     descriptor_type: cudnnBackendDescriptorType_t,
 ) -> miopenBackendDescriptorType_t {
     match descriptor_type {
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_POINTWISE_DESCRIPTOR => {
+            miopenBackendDescriptorType_t::MIOPEN_BACKEND_POINTWISE_DESCRIPTOR
+        }
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_CONVOLUTION_DESCRIPTOR => {
             miopenBackendDescriptorType_t::MIOPEN_BACKEND_CONVOLUTION_DESCRIPTOR
         }
@@ -1278,6 +1287,9 @@ fn to_backend_descriptor_type(
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR => {
             miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR
         }
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATION_POINTWISE_DESCRIPTOR => {
+            miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATION_POINTWISE_DESCRIPTOR
+        }
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATIONGRAPH_DESCRIPTOR => {
             miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATIONGRAPH_DESCRIPTOR
         }
@@ -1286,6 +1298,18 @@ fn to_backend_descriptor_type(
         }
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_TENSOR_DESCRIPTOR => {
             miopenBackendDescriptorType_t::MIOPEN_BACKEND_TENSOR_DESCRIPTOR
+        }
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_MATMUL_DESCRIPTOR => {
+            miopenBackendDescriptorType_t::MIOPEN_BACKEND_MATMUL_DESCRIPTOR
+        }
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATION_MATMUL_DESCRIPTOR => {
+            miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATION_MATMUL_DESCRIPTOR
+        }
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_REDUCTION_DESCRIPTOR => {
+            miopenBackendDescriptorType_t::MIOPEN_BACKEND_REDUCTION_DESCRIPTOR
+        }
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATION_REDUCTION_DESCRIPTOR => {
+            miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATION_REDUCTION_DESCRIPTOR
         }
         _ => panic!("[ZLUDA] Unknown descriptor type: {}", descriptor_type.0),
     }
@@ -1368,13 +1392,26 @@ unsafe fn backend_finalize(descriptor: cudnnBackendDescriptor_t) -> cudnnStatus_
 }
 
 unsafe fn backend_set_attribute_impl(
-    descriptor: miopenBackendDescriptor_t,
+    descriptor: &mut BackendDescriptor,
     attribute_name: miopenBackendAttributeName_t,
     attribute_type: miopenBackendAttributeType_t,
     element_count: i64,
     array_of_elements: *mut ::std::os::raw::c_void,
 ) -> miopenStatus_t {
-    if attribute_name == miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_BYTE_ALIGNMENT {
+    if matches!(
+        attribute_name,
+        miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_BYTE_ALIGNMENT
+        // not implemented
+            | miopenBackendAttributeName_t::MIOPEN_ATTR_TENSOR_IS_BY_VALUE
+            // not supported
+            | miopenBackendAttributeName_t::MIOPEN_ATTR_MATMUL_PADDING_VALUE // not supported
+    ) {
+        return miopenStatus_t::miopenStatusSuccess;
+    }
+
+    if attribute_name == miopenBackendAttributeName_t::MIOPEN_ATTR_OPERATION_POINTWISE_ALPHA2
+        && descriptor.get_flag(BackendDescriptorFlag::PointwiseAlpha2NotSupported)
+    {
         return miopenStatus_t::miopenStatusSuccess;
     }
 
@@ -1385,7 +1422,7 @@ unsafe fn backend_set_attribute_impl(
             }
             let data_type = to_data_type(*array_of_elements.cast());
             miopenBackendSetAttribute(
-                descriptor,
+                descriptor.internal,
                 attribute_name,
                 attribute_type,
                 element_count,
@@ -1398,7 +1435,7 @@ unsafe fn backend_set_attribute_impl(
             }
             let conv_type = to_conv_mode(*array_of_elements.cast());
             miopenBackendSetAttribute(
-                descriptor,
+                descriptor.internal,
                 attribute_name,
                 attribute_type,
                 element_count,
@@ -1411,11 +1448,32 @@ unsafe fn backend_set_attribute_impl(
             }
             let heur_mode: miopenBackendHeurMode_t = *array_of_elements.cast();
             miopenBackendSetAttribute(
-                descriptor,
+                descriptor.internal,
                 attribute_name,
                 attribute_type,
                 element_count,
                 &raw const heur_mode as _,
+            )
+        }
+        miopenBackendAttributeType_t::MIOPEN_TYPE_POINTWISE_MODE => {
+            if element_count != 1 {
+                panic!("[ZLUDA] Unexpected value: element_count={}", element_count)
+            }
+            let pointwise_mode = to_pointwise_mode(*array_of_elements.cast());
+            if matches!(
+                pointwise_mode,
+                miopenPointwiseMode_t::MIOPEN_POINTWISE_EXP
+                    | miopenPointwiseMode_t::MIOPEN_POINTWISE_LOG
+            ) {
+                // will be derived to operation pointwise descriptor
+                descriptor.set_flag(BackendDescriptorFlag::PointwiseAlpha2NotSupported);
+            }
+            miopenBackendSetAttribute(
+                descriptor.internal,
+                attribute_name,
+                attribute_type,
+                element_count,
+                &raw const pointwise_mode as _,
             )
         }
         miopenBackendAttributeType_t::MIOPEN_TYPE_BACKEND_DESCRIPTOR => {
@@ -1430,20 +1488,42 @@ unsafe fn backend_set_attribute_impl(
                     return miopenStatus_t::miopenStatusBadParm;
                 }
             }
+            if BackendDescriptor::try_from(*array_of_elements.cast())
+                .unwrap()
+                .get_flag(BackendDescriptorFlag::PointwiseAlpha2NotSupported)
+            {
+                // derive flag
+                // is there a better way to achive this?
+                descriptor.set_flag(BackendDescriptorFlag::PointwiseAlpha2NotSupported);
+            }
             miopenBackendSetAttribute(
-                descriptor,
+                descriptor.internal,
                 attribute_name,
                 attribute_type,
                 element_count,
                 elements.as_mut_ptr() as _,
             )
         }
+        miopenBackendAttributeType_t::MIOPEN_TYPE_REDUCTION_OPERATOR_TYPE => {
+            if element_count != 1 {
+                panic!("[ZLUDA] Unexpected value: element_count={}", element_count)
+            }
+            let reduce_tensor_op = to_reduce_tensor_op(*array_of_elements.cast());
+            miopenBackendSetAttribute(
+                descriptor.internal,
+                attribute_name,
+                attribute_type,
+                element_count,
+                &raw const reduce_tensor_op as _,
+            )
+        }
         miopenBackendAttributeType_t::MIOPEN_TYPE_HANDLE
+        | miopenBackendAttributeType_t::MIOPEN_TYPE_BOOLEAN
         | miopenBackendAttributeType_t::MIOPEN_TYPE_INT64
         | miopenBackendAttributeType_t::MIOPEN_TYPE_FLOAT
         | miopenBackendAttributeType_t::MIOPEN_TYPE_DOUBLE
         | miopenBackendAttributeType_t::MIOPEN_TYPE_VOID_PTR => miopenBackendSetAttribute(
-            descriptor,
+            descriptor.internal,
             attribute_name,
             attribute_type,
             element_count,
@@ -1472,7 +1552,7 @@ unsafe fn backend_set_attribute(
         let attribute_type = miopenBackendAttributeType_t::from_cuda(attribute_type);
 
         return call!(backend_set_attribute_impl(
-            descriptor.internal,
+            descriptor,
             attribute_name,
             attribute_type,
             element_count,

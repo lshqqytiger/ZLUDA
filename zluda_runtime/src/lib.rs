@@ -104,7 +104,6 @@ pub unsafe extern "system" fn __cudaRegisterFunction(
     gDim: *mut cudart::dim3,
     wSize: *mut ::std::os::raw::c_int,
 ) -> () {
-    // TODO?
 }
 
 #[no_mangle]
@@ -114,6 +113,8 @@ pub extern "system" fn __cudaRegisterHostVar(
     hostVar: *mut ::std::os::raw::c_char,
     size: usize,
 ) -> () {
+    #[cfg(not(debug_assertions))]
+    return ();
     unimplemented!()
 }
 
@@ -128,6 +129,8 @@ pub extern "system" fn __cudaRegisterManagedVar(
     constant: ::std::os::raw::c_int,
     global: ::std::os::raw::c_int,
 ) -> () {
+    #[cfg(not(debug_assertions))]
+    return ();
     unimplemented!()
 }
 
@@ -140,6 +143,8 @@ pub extern "system" fn __cudaRegisterSurface(
     dim: ::std::os::raw::c_int,
     ext: ::std::os::raw::c_int,
 ) -> () {
+    #[cfg(not(debug_assertions))]
+    return ();
     unimplemented!()
 }
 
@@ -153,7 +158,6 @@ pub extern "system" fn __cudaRegisterTexture(
     norm: ::std::os::raw::c_int,
     ext: ::std::os::raw::c_int,
 ) -> () {
-    unimplemented!()
 }
 
 #[no_mangle]
@@ -167,23 +171,12 @@ pub unsafe extern "system" fn __cudaRegisterVar(
     constant: ::std::os::raw::c_int,
     global: ::std::os::raw::c_int,
 ) -> () {
-    // TODO?
 }
 
 #[no_mangle]
 pub unsafe extern "system" fn __cudaUnregisterFatBinary(
     fatCubinHandle: *mut *mut ::std::os::raw::c_void,
 ) -> () {
-    /*
-    let lib = hip_common::zluda_ext::get_cuda_library().unwrap();
-    let cu_module_unload = lib
-        .get::<unsafe extern "C" fn(hmod: *mut ::std::os::raw::c_void) -> cuda_types::CUresult>(
-            b"cuModuleUnload\0",
-        )
-        .unwrap();
-    let module = Box::from_raw(fatCubinHandle);
-    cu_module_unload(*module);
-    */
 }
 
 fn to_cuda(status: hipError_t) -> cudaError_t {
