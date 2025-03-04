@@ -124,6 +124,7 @@ match {
     ".popc",
     ".pragma",
     ".pred",
+    ".ptr",
     ".r",
     ".red",
     ".reg",
@@ -566,6 +567,13 @@ KernelArguments: Vec<ast::VariableDeclaration<&'input str>> = {
     "(" <args:Comma<VariableDeclarationEntry>> ")" => args
 };
 
+// https://docs.nvidia.com/cuda/parallel-thread-execution/#kernel-function-parameter-attributes
+KernelParameterAttribute: ast::KernelParameterAttribute = {
+    ".ptr" <state_space:StateSpaceSpecifier?> => {
+        ast::KernelParameterAttribute::Pointer(state_space.unwrap_or(ast::StateSpace::Generic))
+    }
+};
+
 FnArguments: Vec<ast::VariableDeclaration<&'input str>> = {
     "(" <args:Comma<VariableDeclarationFunc>> ")" => args
 };
@@ -662,21 +670,21 @@ InitializerNoAdd: ast::Initializer<&'input str> = {
 }
 
 VariableDeclarationFunc: ast::VariableDeclaration<&'input str> = {
-    <var:VariableDeclarationBase> =>
+    <var:VariableDeclaration> =>
         validate_variable_declaration_func(var, errors)
 }
 
 VariableDeclarationEntry: ast::VariableDeclaration<&'input str> = {
-    <var:VariableDeclarationBase> =>
+    <var:VariableDeclaration> =>
         validate_variable_declaration_entry(var, errors)
 }
 
 VariableDeclarationProto: ast::VariableDeclaration<&'input str> = {
-    <var:VariableDeclarationBase> =>
+    <var:VariableDeclaration> =>
         validate_variable_declaration_proto(var, errors)
 }
 
-VariableDeclarationBase: ast::VariableDeclaration<&'input str> = {
+VariableDeclaration: ast::VariableDeclaration<&'input str> = {
     <variable:VariableDeclarationBegin> <name:ExtendedIDOrBlank> <dims:ArrayDimensions?> => {
         let mut variable = variable.clone();
         variable.name = name;
@@ -710,14 +718,52 @@ MultiVariableDefinition: Vec<ast::MultiVariableDefinition<&'input str>> = {
 }
 
 VariableDeclarationBegin: ast::VariableDeclaration<&'input str> = {
-    <state_space:StateSpaceSpecifier> <align:Align?> <type_:AnyType> => {
-        ast::VariableDeclaration {
+    <state_space:StateSpaceSpecifier> <align:Align> <v_len:VectorPrefix?> <type_:ScalarType> => {
+        let mut variable = ast::VariableDeclaration {
+            align: Some(align),
+            type_: ast::Type::Scalar(type_),
+            state_space,
+            name: ""
+        };
+        if let Some(v_len) = v_len {
+            variable.type_ = ast::Type::Vector(type_, v_len)
+        }
+        variable
+    },
+    <state_space:StateSpaceSpecifier> <v_len:VectorPrefix?> <type_:ScalarType> <attr:KernelParameterAttribute?> <align:Align?> => {
+        let mut variable = ast::VariableDeclaration {
             align,
-            type_,
+            type_: ast::Type::Scalar(type_),
+            state_space,
+            name: ""
+        };
+        if let Some(v_len) = v_len {
+            variable.type_ = ast::Type::Vector(type_, v_len)
+        }
+        if let Some(attr) = attr {
+            variable.type_ = match attr {
+                ast::KernelParameterAttribute::Pointer(state_space) => {
+                    ast::Type::Pointer(type_, state_space)
+                }
+            };
+        }
+        variable
+    },
+    <state_space:StateSpaceSpecifier> <var:VariableDeclarationBeginNonScalarTypeWithAlign> => {
+        ast::VariableDeclaration {
+            align: var.1,
+            type_: var.0,
             state_space,
             name: ""
         }
     }
+}
+
+VariableDeclarationBeginNonScalarTypeWithAlign: (ast::Type, Option<u32>) = {
+    <align:Align> ".texref" => (ast::Type::Texref, Some(align)),
+    ".texref" <align:Align?> => (ast::Type::Texref, align),
+    <align:Align> ".surfref" => (ast::Type::Surfref, Some(align)),
+    ".surfref" <align:Align?> => (ast::Type::Surfref, align)
 }
 
 VariableDefinitionOnce: (&'input str, Option<Either<u32, Vec<u32>>>, Option<ast::Initializer<&'input str>>) = {
@@ -732,13 +778,6 @@ VariableDefinitionSuffix: Either<u32, Vec<u32>> = {
 
 VariableDefinitionInitializer: ast::Initializer<&'input str> = {
     "=" <init:Initializer> => init
-}
-
-AnyType: ast::Type = {
-    ".texref" => ast::Type::Texref,
-    ".surfref" => ast::Type::Surfref,
-    <v_len:VectorPrefix> <type_:ScalarType> => ast::Type::Vector(type_, v_len),
-    <type_:ScalarType> => ast::Type::Scalar(type_),
 }
 
 #[inline]
@@ -2779,58 +2818,6 @@ AnyBitType: ast::ScalarType = {
     ".b32" => ast::ScalarType::B32,
     ".b64" => ast::ScalarType::B64,
 };
-
-VariableScalarUnitialized<T>: (Option<u32>, T, &'input str) = {
-    <align:Align?> <type_:T> <name:ExtendedID> => {
-        (align, type_, name)
-    }
-}
-
-VariableScalar<T>: (Option<u32>, T, &'input str, Vec<u8>) = {
-    <align:Align?> <type_:T> <name:ExtendedID> <init:VariableInitalizer?> => {
-        let initializer = init.map(ast::ImmediateValue::to_bytes).unwrap_or(Vec::new());
-        (align, type_, name, initializer)
-    }
-}
-
-VariableInitalizer: ast::ImmediateValue = {
-    "=" <v:ImmediateValue> => v
-}
-
-VariableVector<T>: (Option<u32>, u8, T, &'input str) = {
-    <align:Align?> <v_len:VectorPrefix> <type_:T> <name:ExtendedID> => {
-        (align, v_len, type_, name)
-    }
-}
-
-// empty dimensions [0] means it's a pointer
-VariableArrayOrPointer<T>: (Option<u32>, T, &'input str, ast::ArrayOrPointer) = {
-    <align:Align?> <typ:SizedScalarType> <name:ExtendedID> <dims:ArrayDimensions> <init:ArrayInitializer?> => {
-        let mut dims = dims;
-        let array_init = match init {
-            Some(init) => {
-                let init_vec = match init.to_vec(typ, &mut dims) {
-                    Err(error) => {
-                        errors.push(ParseError::User { error });
-                        Vec::new()
-                    }
-                    Ok(x) => x
-                };
-                ast::ArrayOrPointer::Array { dimensions: dims, init: init_vec }
-            }
-            None => {
-                if dims.len() > 1 && dims.contains(&0) {
-                    errors.push(ParseError::User { error: ast::PtxError::ZeroDimensionArray });
-                }
-                match &*dims {
-                    [0] => ast::ArrayOrPointer::Pointer,
-                    _ => ast::ArrayOrPointer::Array { dimensions: dims, init: Vec::new() }
-                }
-            }
-        };
-        (align, typ, name, array_init)
-    }
-}
 
 // [0] and [] are treated the same
 ArrayDimensions: Vec<u32> = {
