@@ -3828,7 +3828,7 @@ pub extern "system" fn cublasZtrsm_v2(
 }
 
 #[no_mangle]
-pub extern "system" fn cublasStrmm_v2(
+pub unsafe extern "system" fn cublasStrmm_v2(
     handle: cublasHandle_t,
     side: cublasSideMode_t,
     uplo: cublasFillMode_t,
@@ -3844,7 +3844,9 @@ pub extern "system" fn cublasStrmm_v2(
     C: *mut f32,
     ldc: ::std::os::raw::c_int,
 ) -> cublasStatus_t {
-    crate::unsupported()
+    crate::strmm(
+        handle, side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb, C, ldc,
+    )
 }
 
 #[no_mangle]
@@ -4292,7 +4294,7 @@ pub extern "system" fn cublasHgemmStridedBatched(
 }
 
 #[no_mangle]
-pub extern "system" fn cublasSgeam(
+pub unsafe extern "system" fn cublasSgeam(
     handle: cublasHandle_t,
     transa: cublasOperation_t,
     transb: cublasOperation_t,
@@ -4307,7 +4309,9 @@ pub extern "system" fn cublasSgeam(
     C: *mut f32,
     ldc: ::std::os::raw::c_int,
 ) -> cublasStatus_t {
-    crate::unsupported()
+    crate::sgeam(
+        handle, transa, transb, m, n, alpha, A, lda, beta, B, ldb, C, ldc,
+    )
 }
 
 #[no_mangle]

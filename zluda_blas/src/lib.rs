@@ -489,6 +489,40 @@ fn to_compute_type(compute_type: cublasComputeType_t) -> rocblas_datatype {
     }
 }
 
+unsafe fn sgeam(
+    handle: *mut cublasContext,
+    transa: cublasOperation_t,
+    transb: cublasOperation_t,
+    m: i32,
+    n: i32,
+    alpha: *const f32,
+    a: *const f32,
+    lda: i32,
+    beta: *const f32,
+    b: *const f32,
+    ldb: i32,
+    c: *mut f32,
+    ldc: i32,
+) -> cublasStatus_t {
+    let transa = op_from_cuda(transa);
+    let transb = op_from_cuda(transb);
+    to_cuda(rocblas_sgeam(
+        handle.cast(),
+        transa,
+        transb,
+        m,
+        n,
+        alpha,
+        a,
+        lda,
+        beta,
+        b,
+        ldb,
+        c,
+        ldc,
+    ))
+}
+
 unsafe fn zgemm_strided_batch(
     handle: *mut cublasContext,
     transa: cublasOperation_t,
@@ -1143,6 +1177,44 @@ unsafe fn dtrsm(
         lda,
         b,
         ldb,
+    ))
+}
+
+unsafe fn strmm(
+    handle: *mut cublasContext,
+    side: cublasSideMode_t,
+    uplo: cublasFillMode_t,
+    trans: cublasOperation_t,
+    diag: cublasDiagType_t,
+    m: i32,
+    n: i32,
+    alpha: *const f32,
+    a: *const f32,
+    lda: i32,
+    b: *const f32,
+    ldb: i32,
+    c: *mut f32,
+    ldc: i32,
+) -> cublasStatus_t {
+    let side = to_side(side);
+    let uplo = to_fill(uplo);
+    let trans = op_from_cuda(trans);
+    let diag = to_diag(diag);
+    to_cuda(rocblas_strmm(
+        handle.cast(),
+        side,
+        uplo,
+        trans,
+        diag,
+        m,
+        n,
+        alpha,
+        a,
+        lda,
+        b,
+        ldb,
+        c,
+        ldc,
     ))
 }
 
