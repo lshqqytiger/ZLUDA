@@ -58,6 +58,9 @@ fn to_cudnn(status: miopen_sys::miopenStatus_t) -> cudnnStatus_t {
             cudnnStatus_t::CUDNN_STATUS_INVALID_VALUE
         }
         miopen_sys::miopenStatus_t::miopenStatusBadParm => cudnnStatus_t::CUDNN_STATUS_BAD_PARAM,
+        miopen_sys::miopenStatus_t::miopenStatusInternalError => {
+            cudnnStatus_t::CUDNN_STATUS_INTERNAL_ERROR
+        }
         miopen_sys::miopenStatus_t::miopenStatusNotImplemented => {
             cudnnStatus_t::CUDNN_STATUS_NOT_SUPPORTED
         }
