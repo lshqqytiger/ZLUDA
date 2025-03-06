@@ -181,6 +181,12 @@ pub(crate) unsafe fn get_flags(stream: *mut Stream, flags: *mut u32) -> Result<(
     Ok(())
 }
 
+pub(crate) unsafe fn get_priority(stream: *mut Stream, priority: *mut i32) -> Result<(), CUresult> {
+    let hip_stream = as_hip_stream(stream)?;
+    hip_call_cuda! { hipStreamGetPriority(hip_stream, priority) };
+    Ok(())
+}
+
 pub(crate) unsafe fn is_capturing(
     stream: *mut Stream,
     capture_status: *mut hipStreamCaptureStatus,
