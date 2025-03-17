@@ -144,6 +144,7 @@ cuda_function_declarations!(
         cuStreamGetCtx,
         cuStreamGetCtx_ptsz,
         cuStreamGetFlags,
+        cuStreamGetPriority,
         cuStreamIsCapturing,
         cuStreamQuery,
         cuStreamSynchronize,
@@ -1087,6 +1088,13 @@ mod definitions {
         stream::get_flags(hStream, flags)
     }
 
+    pub(crate) unsafe fn cuStreamGetPriority(
+        hStream: *mut stream::Stream,
+        priority: *mut ::std::os::raw::c_int,
+    ) -> Result<(), CUresult> {
+        stream::get_priority(hStream, priority)
+    }
+
     pub(crate) unsafe fn cuStreamIsCapturing(
         hStream: *mut stream::Stream,
         captureStatus: *mut hipStreamCaptureStatus,
@@ -1662,9 +1670,7 @@ mod definitions {
         array::mipmapped_create(pHandle, pMipmappedArrayDesc, numMipmapLevels)
     }
 
-    pub(crate) unsafe fn cuMipmappedArrayDestroy(
-        hMipmappedArray: CUmipmappedArray,
-    ) -> hipError_t {
+    pub(crate) unsafe fn cuMipmappedArrayDestroy(hMipmappedArray: CUmipmappedArray) -> hipError_t {
         array::mipmapped_destroy(hMipmappedArray)
     }
 

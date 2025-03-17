@@ -2729,7 +2729,7 @@ impl cudnnBatchNormOps_t {
 pub struct cudnnBatchNormOps_t(pub ::std::os::raw::c_int);
 
 #[no_mangle]
-pub extern "system" fn cudnnBatchNormalizationForwardInference(
+pub unsafe extern "system" fn cudnnBatchNormalizationForwardInference(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     alpha: *const ::std::os::raw::c_void,
@@ -2745,7 +2745,22 @@ pub extern "system" fn cudnnBatchNormalizationForwardInference(
     estimatedVariance: *const ::std::os::raw::c_void,
     epsilon: f64,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::batch_normalization_forward_inference(
+        handle,
+        mode,
+        alpha,
+        beta,
+        xDesc,
+        x,
+        yDesc,
+        y,
+        bnScaleBiasMeanVarDesc,
+        bnScale,
+        bnBias,
+        estimatedMean,
+        estimatedVariance,
+        epsilon,
+    )
 }
 impl cudnnNormMode_t {
     pub const CUDNN_NORM_PER_ACTIVATION: cudnnNormMode_t = cudnnNormMode_t(0);

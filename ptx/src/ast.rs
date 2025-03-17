@@ -144,6 +144,10 @@ pub struct Function<'a, ID, S> {
     pub body: Option<Vec<S>>,
 }
 
+pub enum KernelParameterAttribute {
+    Pointer(StateSpace),
+}
+
 #[derive(PartialEq, Eq, Clone, Hash)]
 pub enum Type {
     // .param.b32 foo;

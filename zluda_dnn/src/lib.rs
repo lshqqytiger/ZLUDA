@@ -58,6 +58,9 @@ fn to_cudnn(status: miopen_sys::miopenStatus_t) -> cudnnStatus_t {
             cudnnStatus_t::CUDNN_STATUS_INVALID_VALUE
         }
         miopen_sys::miopenStatus_t::miopenStatusBadParm => cudnnStatus_t::CUDNN_STATUS_BAD_PARAM,
+        miopen_sys::miopenStatus_t::miopenStatusInternalError => {
+            cudnnStatus_t::CUDNN_STATUS_INTERNAL_ERROR
+        }
         miopen_sys::miopenStatus_t::miopenStatusNotImplemented => {
             cudnnStatus_t::CUDNN_STATUS_NOT_SUPPORTED
         }
@@ -753,6 +756,54 @@ unsafe fn lrn_cross_channel_forward(
         false,
         ptr::null_mut(),
     ))
+}
+
+unsafe fn batch_normalization_forward_inference(
+    handle: *mut cudnnContext,
+    mode: cudnnBatchNormMode_t,
+    alpha: *const std::ffi::c_void,
+    beta: *const std::ffi::c_void,
+    x_desc: *mut cudnnTensorStruct,
+    x: *const std::ffi::c_void,
+    y_desc: *mut cudnnTensorStruct,
+    y: *mut std::ffi::c_void,
+    bn_scale_bias_mean_var_desc: *mut cudnnTensorStruct,
+    bn_scale: *const std::ffi::c_void,
+    bn_bias: *const std::ffi::c_void,
+    estimated_mean: *const std::ffi::c_void,
+    estimated_variance: *const std::ffi::c_void,
+    epsilon: f64,
+) -> cudnnStatus_t {
+    if mode == cudnnBatchNormMode_t::CUDNN_BATCHNORM_SPATIAL_PERSISTENT {
+        return cudnnStatus_t::CUDNN_STATUS_NOT_SUPPORTED;
+    }
+    let mode = batch_norm_mode(mode);
+    call!(miopenBatchNormalizationForwardInference(
+        handle.cast(),
+        mode,
+        alpha.cast_mut(),
+        beta.cast_mut(),
+        x_desc as _,
+        x,
+        y_desc as _,
+        y,
+        bn_scale_bias_mean_var_desc as _,
+        bn_scale.cast_mut(),
+        bn_bias.cast_mut(),
+        estimated_mean.cast_mut(),
+        estimated_variance.cast_mut(),
+        epsilon
+    ))
+}
+
+fn batch_norm_mode(mode: cudnnBatchNormMode_t) -> miopenBatchNormMode_t {
+    match mode {
+        cudnnBatchNormMode_t::CUDNN_BATCHNORM_PER_ACTIVATION => {
+            miopenBatchNormMode_t::miopenBNPerActivation
+        }
+        cudnnBatchNormMode_t::CUDNN_BATCHNORM_SPATIAL => miopenBatchNormMode_t::miopenBNSpatial,
+        _ => panic!(),
+    }
 }
 
 unsafe fn softmax_forward(
