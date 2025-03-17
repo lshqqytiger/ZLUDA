@@ -1,9 +1,9 @@
 #[allow(warnings)]
 mod nvrtc;
-use std::{env, ffi::c_char, ptr, result, sync::Mutex};
+pub use nvrtc::*;
 
 use lazy_static::lazy_static;
-pub use nvrtc::*;
+use std::{env, ffi::c_char, ptr, result, sync::Mutex};
 
 macro_rules! call {
     ($expr:expr) => {
@@ -104,34 +104,48 @@ impl Nvrtc {
         &self,
         prog: nvrtcProgram,
         num_options: i32,
-        options: *const *const c_char,
+        options_: *const *const c_char,
     ) -> Result<(), nvrtcResult> {
-        let program = unsafe { Program::from(prog) };
-        if program.is_none() {
-            return Err(nvrtcResult::NVRTC_ERROR_INVALID_PROGRAM);
+        let mut options = Vec::<*const c_char>::new();
+        for i in 0..num_options {
+            let option =
+                unsafe { std::ffi::CStr::from_ptr(*options_.add(i as _)) }.to_string_lossy();
+            if option.starts_with("--gpu-architecture") {
+                options.push(b"--gpu-architecture=sm_86\0".as_ptr() as _);
+                continue;
+            }
+            options.push(option.as_ptr() as _);
         }
-        let program = program.unwrap();
 
         let nvrtc = self.get()?;
-        call!(nvrtc.nvrtcCompileProgram(prog, num_options, options));
+        call!(nvrtc.nvrtcCompileProgram(prog, options.len() as _, options.as_ptr()));
 
+        Ok(())
+    }
+
+    pub fn get_ptx_size(&self, prog: nvrtcProgram) -> Result<usize, nvrtcResult> {
+        let nvrtc = self.get()?;
         let mut size = 0;
         call!(nvrtc.nvrtcGetPTXSize(prog, &mut size));
-        let mut ptx = {
-            let ptx = Box::<[c_char]>::new_uninit_slice(size);
-            unsafe { ptx.assume_init() }
-        };
-        call!(nvrtc.nvrtcGetPTX(prog, ptx.as_mut_ptr()));
-        program.set_ptx(ptx);
+        Ok(size)
+    }
 
+    pub fn get_ptx(&self, prog: nvrtcProgram, code: *mut c_char) -> Result<(), nvrtcResult> {
+        let nvrtc = self.get()?;
+        call!(nvrtc.nvrtcGetPTX(prog, code));
+        Ok(())
+    }
+
+    pub fn get_program_log_size(&self, prog: nvrtcProgram) -> Result<usize, nvrtcResult> {
+        let nvrtc = self.get()?;
+        let mut size = 0;
         call!(nvrtc.nvrtcGetProgramLogSize(prog, &mut size));
-        let mut log = {
-            let log = Box::<[c_char]>::new_uninit_slice(size);
-            unsafe { log.assume_init() }
-        };
-        call!(nvrtc.nvrtcGetProgramLog(prog, log.as_mut_ptr()));
-        program.set_log(log);
+        Ok(size)
+    }
 
+    pub fn get_program_log(&self, prog: nvrtcProgram, log: *mut c_char) -> Result<(), nvrtcResult> {
+        let nvrtc = self.get()?;
+        call!(nvrtc.nvrtcGetProgramLog(prog, log));
         Ok(())
     }
 }
@@ -148,45 +162,6 @@ fn unsupported() -> nvrtcResult {
 
 const NVRTC_VERSION_MAJOR: i32 = 12;
 const NVRTC_VERSION_MINOR: i32 = 2;
-
-#[repr(C)]
-struct Program {
-    base: nvrtcProgram,
-    ptx: Option<Box<[c_char]>>,
-    log: Option<Box<[c_char]>>,
-}
-
-impl Program {
-    fn new(base: nvrtcProgram) -> Self {
-        Program {
-            base,
-            ptx: None,
-            log: None,
-        }
-    }
-
-    unsafe fn from<'a>(ptr: nvrtcProgram) -> Option<&'a mut Program> {
-        (ptr as *mut Program).as_mut()
-    }
-
-    fn set_ptx(&mut self, ptx: Box<[c_char]>) {
-        self.ptx = Some(ptx);
-    }
-
-    fn set_log(&mut self, log: Box<[c_char]>) {
-        self.log = Some(log);
-    }
-}
-
-trait IntoBox {
-    unsafe fn into_box(self) -> Box<Program>;
-}
-
-impl IntoBox for *mut nvrtcProgram {
-    unsafe fn into_box(self) -> Box<Program> {
-        Box::from_raw(*(self as *mut *mut Program))
-    }
-}
 
 fn get_error_string(result: nvrtcResult) -> *const c_char {
     let nvrtc_mutex = &*NVRTC;
@@ -212,22 +187,15 @@ fn create_program(
     let nvrtc = &*nvrtc_mutex.lock().unwrap();
     nvrtc
         .create_program(src, name, num_headers, headers, include_names)
-        .then(|program| {
-            let program = Box::into_raw(Box::new(Program::new(program)));
-            unsafe {
-                *(prog as *mut *mut Program) = program;
-            }
+        .then(|program| unsafe {
+            *prog = program;
         })
 }
 
 fn destroy_program(prog: *mut nvrtcProgram) -> nvrtcResult {
     let nvrtc_mutex = &*NVRTC;
     let nvrtc = &*nvrtc_mutex.lock().unwrap();
-
-    let mut prog = unsafe { prog.into_box() };
-    let result = nvrtc.destroy_program(&mut prog.base).into();
-    drop(prog);
-    result
+    nvrtc.destroy_program(prog).into()
 }
 
 fn compile_program(
@@ -237,67 +205,45 @@ fn compile_program(
 ) -> nvrtcResult {
     let nvrtc_mutex = &*NVRTC;
     let nvrtc = &*nvrtc_mutex.lock().unwrap();
-
-    let prog = unsafe { Program::from(prog) };
-    if prog.is_none() {
-        return nvrtcResult::NVRTC_ERROR_INVALID_PROGRAM;
-    }
-    let prog = prog.unwrap();
-
-    nvrtc
-        .compile_program(prog.base, num_options, options)
-        .err()
-        .unwrap_or(nvrtcResult::NVRTC_SUCCESS)
+    nvrtc.compile_program(prog, num_options, options).into()
 }
 
 unsafe fn get_ptx_size(prog: nvrtcProgram, code_size_ret: *mut usize) -> nvrtcResult {
-    let prog = Program::from(prog);
-    if let Some(prog) = prog {
-        if let Some(ptx) = &prog.ptx {
-            *code_size_ret = ptx.len();
-            return nvrtcResult::NVRTC_SUCCESS;
-        }
-        return nvrtcResult::NVRTC_ERROR_COMPILATION;
-    }
-    nvrtcResult::NVRTC_ERROR_INVALID_PROGRAM
+    let nvrtc_mutex = &*NVRTC;
+    let nvrtc = &*nvrtc_mutex.lock().unwrap();
+    nvrtc.get_ptx_size(prog).then(|size| unsafe {
+        *code_size_ret = size;
+    })
 }
 
 unsafe fn get_ptx(prog: nvrtcProgram, code: *mut c_char) -> nvrtcResult {
-    let prog = Program::from(prog);
-    if let Some(prog) = prog {
-        if let Some(ptx) = &prog.ptx {
-            for (i, &c) in ptx.iter().enumerate() {
-                *code.add(i) = c;
-            }
-            return nvrtcResult::NVRTC_SUCCESS;
-        }
-        return nvrtcResult::NVRTC_ERROR_COMPILATION;
-    }
-    nvrtcResult::NVRTC_ERROR_INVALID_PROGRAM
+    let nvrtc_mutex = &*NVRTC;
+    let nvrtc = &*nvrtc_mutex.lock().unwrap();
+    nvrtc.get_ptx(prog, code).into()
 }
 
 unsafe fn get_program_log_size(prog: nvrtcProgram, log_size_ret: *mut usize) -> nvrtcResult {
-    let prog = Program::from(prog);
-    if let Some(prog) = prog {
-        if let Some(log) = &prog.log {
-            *log_size_ret = log.len();
-            return nvrtcResult::NVRTC_SUCCESS;
-        }
-        return nvrtcResult::NVRTC_ERROR_COMPILATION;
-    }
-    nvrtcResult::NVRTC_ERROR_INVALID_PROGRAM
+    let nvrtc_mutex = &*NVRTC;
+    let nvrtc = &*nvrtc_mutex.lock().unwrap();
+    nvrtc.get_program_log_size(prog).then(|size| unsafe {
+        *log_size_ret = size;
+    })
 }
 
-unsafe fn get_program_log(prog: nvrtcProgram, log: *mut ::std::os::raw::c_char) -> nvrtcResult {
-    let prog = Program::from(prog);
-    if let Some(prog) = prog {
-        if let Some(ptr) = &prog.log {
-            for (i, &c) in ptr.iter().enumerate() {
-                *log.add(i) = c;
-            }
-            return nvrtcResult::NVRTC_SUCCESS;
-        }
-        return nvrtcResult::NVRTC_ERROR_COMPILATION;
-    }
-    nvrtcResult::NVRTC_ERROR_INVALID_PROGRAM
+unsafe fn get_program_log(prog: nvrtcProgram, log: *mut c_char) -> nvrtcResult {
+    let nvrtc_mutex = &*NVRTC;
+    let nvrtc = &*nvrtc_mutex.lock().unwrap();
+    nvrtc.get_program_log(prog, log).into()
+}
+
+unsafe fn get_cubin_size(prog: nvrtcProgram, cubin_size_ret: *mut usize) -> nvrtcResult {
+    get_ptx_size(prog, cubin_size_ret)
+}
+
+unsafe fn get_cubin(prog: nvrtcProgram, cubin: *mut c_char) -> nvrtcResult {
+    /* We return PTX code instead of ELF binary here
+    because it may be passed to cuModuleLoadData,
+    then it can be treated as CUmoduleContent::RawText.
+    So nvcuda.dll will translate PTX and compile LLVM-IR. */
+    get_ptx(prog, cubin)
 }
