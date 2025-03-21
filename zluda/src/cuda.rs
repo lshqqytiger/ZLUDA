@@ -151,6 +151,7 @@ cuda_function_declarations!(
         cuStreamQuery,
         cuStreamSynchronize,
         cuStreamSynchronize_ptsz,
+        cuThreadExchangeStreamCaptureMode,
         cuStreamDestroy,
         cuStreamDestroy_v2,
         cuStreamWaitEvent,
@@ -1132,6 +1133,12 @@ mod definitions {
         hStream: *mut stream::Stream,
     ) -> Result<(), CUresult> {
         stream::synchronize(hStream, true)
+    }
+
+    pub(crate) unsafe fn cuThreadExchangeStreamCaptureMode(
+        mode: *mut hipStreamCaptureMode,
+    ) -> Result<(), CUresult> {
+        stream::thread_exchange_capture_mode(mode)
     }
 
     pub(crate) unsafe fn cuStreamDestroy(hStream: *mut stream::Stream) -> Result<(), CUresult> {

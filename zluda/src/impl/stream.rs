@@ -108,6 +108,13 @@ pub(crate) unsafe fn synchronize(
     Ok(())
 }
 
+pub(crate) unsafe fn thread_exchange_capture_mode(
+    mode: *mut hipStreamCaptureMode,
+) -> Result<(), CUresult> {
+    hip_call_cuda!(hipThreadExchangeStreamCaptureMode(mode));
+    Ok(())
+}
+
 pub(crate) unsafe fn destroy(stream: *mut Stream) -> Result<(), CUresult> {
     if as_default_stream(stream).is_some() {
         return Err(CUresult::CUDA_ERROR_INVALID_VALUE);
