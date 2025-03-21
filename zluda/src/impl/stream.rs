@@ -67,6 +67,24 @@ pub(crate) unsafe fn create_with_priority(
     Ok(())
 }
 
+pub(crate) unsafe fn begin_capture(
+    stream: *mut Stream,
+    mode: hipStreamCaptureMode,
+) -> Result<(), CUresult> {
+    let hip_stream = as_hip_stream(stream)?;
+    hip_call_cuda! { hipStreamBeginCapture(hip_stream, mode) };
+    Ok(())
+}
+
+pub(crate) unsafe fn end_capture(
+    stream: *mut Stream,
+    p_graph: *mut hipGraph_t,
+) -> Result<(), CUresult> {
+    let hip_stream = as_hip_stream(stream)?;
+    hip_call_cuda! { hipStreamEndCapture(hip_stream, p_graph) };
+    Ok(())
+}
+
 pub(crate) unsafe fn get_ctx(
     stream: *mut Stream,
     pctx: *mut *mut context::Context,
