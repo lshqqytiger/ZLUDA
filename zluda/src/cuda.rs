@@ -140,6 +140,8 @@ cuda_function_declarations!(
         cuPointerGetAttributes,
         cuStreamCreate,
         cuStreamCreateWithPriority,
+        cuStreamBeginCapture_v2,
+        cuStreamEndCapture,
         cuStreamGetCaptureInfo,
         cuStreamGetCtx,
         cuStreamGetCtx_ptsz,
@@ -149,6 +151,7 @@ cuda_function_declarations!(
         cuStreamQuery,
         cuStreamSynchronize,
         cuStreamSynchronize_ptsz,
+        cuThreadExchangeStreamCaptureMode,
         cuStreamDestroy,
         cuStreamDestroy_v2,
         cuStreamWaitEvent,
@@ -195,12 +198,14 @@ cuda_function_declarations!(
         cuEventRecord,
         cuEventRecord_ptsz,
         cuEventSynchronize,
+        cuGraphGetNodes,
         cuGraphAddDependencies,
         cuGraphAddEmptyNode,
         cuGraphAddKernelNode,
         cuGraphCreate,
         cuGraphDestroy,
         cuGraphExecDestroy,
+        cuGraphInstantiateWithFlags,
         cuGraphInstantiate,
         cuGraphInstantiate_v2,
         cuGraphLaunch,
@@ -1059,6 +1064,20 @@ mod definitions {
         stream::create_with_priority(phStream, flags, priority)
     }
 
+    pub(crate) unsafe fn cuStreamBeginCapture_v2(
+        stream: *mut stream::Stream,
+        mode: hipStreamCaptureMode,
+    ) -> Result<(), CUresult> {
+        stream::begin_capture(stream, mode)
+    }
+
+    pub(crate) unsafe fn cuStreamEndCapture(
+        stream: *mut stream::Stream,
+        phGraph: *mut hipGraph_t,
+    ) -> Result<(), CUresult> {
+        stream::end_capture(stream, phGraph)
+    }
+
     pub(crate) unsafe fn cuStreamGetCaptureInfo(
         stream: *mut stream::Stream,
         captureStatus_out: *mut hipStreamCaptureStatus,
@@ -1114,6 +1133,12 @@ mod definitions {
         hStream: *mut stream::Stream,
     ) -> Result<(), CUresult> {
         stream::synchronize(hStream, true)
+    }
+
+    pub(crate) unsafe fn cuThreadExchangeStreamCaptureMode(
+        mode: *mut hipStreamCaptureMode,
+    ) -> Result<(), CUresult> {
+        stream::thread_exchange_capture_mode(mode)
     }
 
     pub(crate) unsafe fn cuStreamDestroy(hStream: *mut stream::Stream) -> Result<(), CUresult> {
@@ -1487,6 +1512,14 @@ mod definitions {
         hipEventSynchronize(event)
     }
 
+    pub(crate) unsafe fn cuGraphGetNodes(
+        graph: hipGraph_t,
+        nodes: *mut hipGraphNode_t,
+        numNodes: *mut usize,
+    ) -> hipError_t {
+        hipGraphGetNodes(graph, nodes, numNodes)
+    }
+
     pub(crate) unsafe fn cuGraphAddDependencies(
         graph: hipGraph_t,
         from: *const hipGraphNode_t,
@@ -1534,6 +1567,14 @@ mod definitions {
 
     pub(crate) unsafe fn cuGraphExecDestroy(graphExec: hipGraphExec_t) -> hipError_t {
         hipGraphExecDestroy(graphExec)
+    }
+
+    pub(crate) unsafe fn cuGraphInstantiateWithFlags(
+        phGraphExec: *mut hipGraphExec_t,
+        hGraph: hipGraph_t,
+        flags: ::std::os::raw::c_ulonglong,
+    ) -> hipError_t {
+        hipGraphInstantiateWithFlags(phGraphExec, hGraph, flags)
     }
 
     pub(crate) unsafe fn cuGraphInstantiate(
