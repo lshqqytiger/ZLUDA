@@ -245,7 +245,7 @@ Performance is currently much lower than the native HIP backend, see the discuss
   export USE_EXPERIMENTAL_CUDNN_V8_API=OFF
   ```
 
-  or (untested):
+  or:
 
   ```
   export TORCH_CUDA_ARCH_LIST="6.1+PTX"
@@ -256,7 +256,7 @@ Performance is currently much lower than the native HIP backend, see the discuss
   export USE_EXPERIMENTAL_CUDNN_V8_API=OFF
   ```
 
-  When running use the following environment variable:
+  When running, use the following environment variable:
 
   ```
   DISABLE_ADDMM_CUDA_LT=1
