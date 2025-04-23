@@ -3184,7 +3184,7 @@ pub extern "system" fn cudnnDivisiveNormalizationBackward(
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnGetBatchNormalizationForwardTrainingExWorkspaceSize(
+pub unsafe extern "system" fn cudnnGetBatchNormalizationForwardTrainingExWorkspaceSize(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     bnOps: cudnnBatchNormOps_t,
@@ -3195,7 +3195,17 @@ pub extern "system" fn cudnnGetBatchNormalizationForwardTrainingExWorkspaceSize(
     activationDesc: cudnnActivationDescriptor_t,
     sizeInBytes: *mut usize,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::get_batch_normalization_forward_training_ex_workspace_size(
+        handle,
+        mode,
+        bnOps,
+        xDesc,
+        zDesc,
+        yDesc,
+        bnScaleBiasMeanVarDesc,
+        activationDesc,
+        sizeInBytes,
+    )
 }
 
 #[no_mangle]
@@ -3216,7 +3226,7 @@ pub extern "system" fn cudnnGetBatchNormalizationBackwardExWorkspaceSize(
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnGetBatchNormalizationTrainingExReserveSpaceSize(
+pub unsafe extern "system" fn cudnnGetBatchNormalizationTrainingExReserveSpaceSize(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     bnOps: cudnnBatchNormOps_t,
@@ -3224,7 +3234,14 @@ pub extern "system" fn cudnnGetBatchNormalizationTrainingExReserveSpaceSize(
     xDesc: cudnnTensorDescriptor_t,
     sizeInBytes: *mut usize,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::get_batch_normalization_training_ex_reserve_space_size(
+        handle,
+        mode,
+        bnOps,
+        activationDesc,
+        xDesc,
+        sizeInBytes,
+    )
 }
 
 #[no_mangle]
@@ -3251,7 +3268,7 @@ pub extern "system" fn cudnnBatchNormalizationForwardTraining(
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnBatchNormalizationForwardTrainingEx(
+pub unsafe extern "system" fn cudnnBatchNormalizationForwardTrainingEx(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     bnOps: cudnnBatchNormOps_t,
@@ -3278,7 +3295,33 @@ pub extern "system" fn cudnnBatchNormalizationForwardTrainingEx(
     reserveSpace: *mut ::std::os::raw::c_void,
     reserveSpaceSizeInBytes: usize,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::batch_normalization_forward_training_ex(
+        handle,
+        mode,
+        bnOps,
+        alpha,
+        beta,
+        xDesc,
+        xData,
+        zDesc,
+        zData,
+        yDesc,
+        yData,
+        bnScaleBiasMeanVarDesc,
+        bnScale,
+        bnBias,
+        exponentialAverageFactor,
+        resultRunningMean,
+        resultRunningVariance,
+        epsilon,
+        resultSaveMean,
+        resultSaveInvVariance,
+        activationDesc,
+        workspace,
+        workSpaceSizeInBytes,
+        reserveSpace,
+        reserveSpaceSizeInBytes,
+    )
 }
 
 #[no_mangle]

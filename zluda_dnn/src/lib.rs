@@ -191,8 +191,90 @@ unsafe fn set_filter_nd_descriptor(
         filter_desc as _,
         data_type,
         nb_dims,
-        filter_dim_a as _,
+        filter_dim_a,
         ptr::null_mut(),
+    ))
+}
+
+unsafe fn get_batch_normalization_forward_training_ex_workspace_size(
+    _handle: *mut cudnnContext,
+    _mode: cudnnBatchNormMode_t,
+    _bn_ops: cudnnBatchNormOps_t,
+    _x_desc: *mut cudnnTensorStruct,
+    _z_desc: *mut cudnnTensorStruct,
+    _y_desc: *mut cudnnTensorStruct,
+    _bn_scale_bias_mean_var_desc: *mut cudnnTensorStruct,
+    _activation_desc: *mut cudnnActivationStruct,
+    size_in_bytes: *mut usize,
+) -> cudnnStatus_t {
+    *size_in_bytes = 0;
+    cudnnStatus_t::CUDNN_STATUS_SUCCESS
+}
+
+unsafe fn get_batch_normalization_training_ex_reserve_space_size(
+    _handle: *mut cudnnContext,
+    _mode: cudnnBatchNormMode_t,
+    _bn_ops: cudnnBatchNormOps_t,
+    _activation_desc: *mut cudnnActivationStruct,
+    _x_desc: *mut cudnnTensorStruct,
+    size_in_bytes: *mut usize,
+) -> cudnnStatus_t {
+    *size_in_bytes = 0;
+    cudnnStatus_t::CUDNN_STATUS_SUCCESS
+}
+
+unsafe fn batch_normalization_forward_training_ex(
+    handle: *mut cudnnContext,
+    mode: cudnnBatchNormMode_t,
+    bn_ops: cudnnBatchNormOps_t,
+    alpha: *const std::ffi::c_void,
+    beta: *const std::ffi::c_void,
+    x_desc: *mut cudnnTensorStruct,
+    x: *const std::ffi::c_void,
+    _z_desc: *mut cudnnTensorStruct,
+    _z: *const std::ffi::c_void,
+    y_desc: *mut cudnnTensorStruct,
+    y: *mut std::ffi::c_void,
+    bn_scale_bias_mean_var_desc: *mut cudnnTensorStruct,
+    bn_scale: *const std::ffi::c_void,
+    bn_bias: *const std::ffi::c_void,
+    exponential_average_factor: f64,
+    result_running_mean: *mut std::ffi::c_void,
+    result_running_variance: *mut std::ffi::c_void,
+    epsilon: f64,
+    result_save_mean: *mut std::ffi::c_void,
+    result_save_inv_variance: *mut std::ffi::c_void,
+    _activation_desc: *mut cudnnActivationStruct,
+    _workspace: *mut std::ffi::c_void,
+    _work_space_size_in_bytes: usize,
+    _reserve_space: *mut std::ffi::c_void,
+    _reserve_space_size_in_bytes: usize,
+) -> cudnnStatus_t {
+    if mode == cudnnBatchNormMode_t::CUDNN_BATCHNORM_SPATIAL_PERSISTENT {
+        return cudnnStatus_t::CUDNN_STATUS_NOT_SUPPORTED;
+    }
+    if bn_ops != cudnnBatchNormOps_t::CUDNN_BATCHNORM_OPS_BN {
+        return cudnnStatus_t::CUDNN_STATUS_NOT_SUPPORTED;
+    }
+    let mode = batch_norm_mode(mode);
+    call!(miopenBatchNormalizationForwardTraining(
+        handle as _,
+        mode,
+        alpha as _,
+        beta as _,
+        x_desc as _,
+        x,
+        y_desc as _,
+        y,
+        bn_scale_bias_mean_var_desc as _,
+        bn_scale as _,
+        bn_bias as _,
+        exponential_average_factor,
+        result_running_mean,
+        result_running_variance,
+        epsilon,
+        result_save_mean,
+        result_save_inv_variance
     ))
 }
 
