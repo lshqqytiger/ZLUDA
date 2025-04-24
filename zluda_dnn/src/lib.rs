@@ -211,6 +211,23 @@ unsafe fn get_batch_normalization_forward_training_ex_workspace_size(
     cudnnStatus_t::CUDNN_STATUS_SUCCESS
 }
 
+unsafe fn get_batch_normalization_backward_ex_workspace_size(
+    _handle: *mut cudnnContext,
+    _mode: cudnnBatchNormMode_t,
+    _bn_ops: cudnnBatchNormOps_t,
+    _x_desc: *mut cudnnTensorStruct,
+    _y_desc: *mut cudnnTensorStruct,
+    _dy_desc: *mut cudnnTensorStruct,
+    _dz_desc: *mut cudnnTensorStruct,
+    _dx_desc: *mut cudnnTensorStruct,
+    _d_bn_scale_bias_desc: *mut cudnnTensorStruct,
+    _activation_desc: *mut cudnnActivationStruct,
+    size_in_bytes: *mut usize,
+) -> cudnnStatus_t {
+    *size_in_bytes = 0;
+    cudnnStatus_t::CUDNN_STATUS_SUCCESS
+}
+
 unsafe fn get_batch_normalization_training_ex_reserve_space_size(
     _handle: *mut cudnnContext,
     _mode: cudnnBatchNormMode_t,
@@ -275,6 +292,68 @@ unsafe fn batch_normalization_forward_training_ex(
         epsilon,
         result_save_mean,
         result_save_inv_variance
+    ))
+}
+
+unsafe fn batch_normalization_backward_ex(
+    handle: *mut cudnnContext,
+    mode: cudnnBatchNormMode_t,
+    bn_ops: cudnnBatchNormOps_t,
+    alpha_data_diff: *const std::ffi::c_void,
+    beta_data_diff: *const std::ffi::c_void,
+    alpha_param_diff: *const std::ffi::c_void,
+    beta_param_diff: *const std::ffi::c_void,
+    x_desc: *mut cudnnTensorStruct,
+    x: *const std::ffi::c_void,
+    _y_desc: *mut cudnnTensorStruct,
+    _y: *const std::ffi::c_void,
+    dy_desc: *mut cudnnTensorStruct,
+    dy: *const std::ffi::c_void,
+    _dz_desc: *mut cudnnTensorStruct,
+    _dz: *mut std::ffi::c_void,
+    dx_desc: *mut cudnnTensorStruct,
+    dx: *mut std::ffi::c_void,
+    d_bn_scale_bias_desc: *mut cudnnTensorStruct,
+    bn_scale_data: *const std::ffi::c_void,
+    _bn_bias_data: *const std::ffi::c_void,
+    d_bn_scale_data: *mut std::ffi::c_void,
+    d_bn_bias_data: *mut std::ffi::c_void,
+    epsilon: f64,
+    saved_mean: *const std::ffi::c_void,
+    saved_inv_variance: *const std::ffi::c_void,
+    _activation_desc: *mut cudnnActivationStruct,
+    _work_space: *mut std::ffi::c_void,
+    _work_space_size_in_bytes: usize,
+    _reserve_space: *mut std::ffi::c_void,
+    _reserve_space_size_in_bytes: usize,
+) -> cudnnStatus_t {
+    if mode == cudnnBatchNormMode_t::CUDNN_BATCHNORM_SPATIAL_PERSISTENT {
+        return cudnnStatus_t::CUDNN_STATUS_NOT_SUPPORTED;
+    }
+    if bn_ops != cudnnBatchNormOps_t::CUDNN_BATCHNORM_OPS_BN {
+        return cudnnStatus_t::CUDNN_STATUS_NOT_SUPPORTED;
+    }
+    let mode = batch_norm_mode(mode);
+    call!(miopenBatchNormalizationBackward(
+        handle as _,
+        mode,
+        alpha_data_diff,
+        beta_data_diff,
+        alpha_param_diff,
+        beta_param_diff,
+        x_desc as _,
+        x,
+        dy_desc as _,
+        dy,
+        dx_desc as _,
+        dx,
+        d_bn_scale_bias_desc as _,
+        bn_scale_data,
+        d_bn_scale_data,
+        d_bn_bias_data,
+        epsilon,
+        saved_mean,
+        saved_inv_variance
     ))
 }
 
@@ -1419,6 +1498,12 @@ fn to_backend_descriptor_type(
         }
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR => {
             miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATION_CONVOLUTION_FORWARD_DESCRIPTOR
+        }
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATION_CONVOLUTION_BACKWARD_FILTER_DESCRIPTOR => {
+            miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATION_CONVOLUTION_BACKWARD_FILTER_DESCRIPTOR
+        }
+        cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATION_CONVOLUTION_BACKWARD_DATA_DESCRIPTOR => {
+            miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATION_CONVOLUTION_BACKWARD_DATA_DESCRIPTOR
         }
         cudnnBackendDescriptorType_t::CUDNN_BACKEND_OPERATION_POINTWISE_DESCRIPTOR => {
             miopenBackendDescriptorType_t::MIOPEN_BACKEND_OPERATION_POINTWISE_DESCRIPTOR

@@ -3209,7 +3209,7 @@ pub unsafe extern "system" fn cudnnGetBatchNormalizationForwardTrainingExWorkspa
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnGetBatchNormalizationBackwardExWorkspaceSize(
+pub unsafe extern "system" fn cudnnGetBatchNormalizationBackwardExWorkspaceSize(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     bnOps: cudnnBatchNormOps_t,
@@ -3222,7 +3222,19 @@ pub extern "system" fn cudnnGetBatchNormalizationBackwardExWorkspaceSize(
     activationDesc: cudnnActivationDescriptor_t,
     sizeInBytes: *mut usize,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::get_batch_normalization_backward_ex_workspace_size(
+        handle,
+        mode,
+        bnOps,
+        xDesc,
+        yDesc,
+        dyDesc,
+        dzDesc,
+        dxDesc,
+        dBnScaleBiasDesc,
+        activationDesc,
+        sizeInBytes,
+    )
 }
 
 #[no_mangle]
@@ -3350,7 +3362,7 @@ pub extern "system" fn cudnnBatchNormalizationBackward(
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnBatchNormalizationBackwardEx(
+pub unsafe extern "system" fn cudnnBatchNormalizationBackwardEx(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     bnOps: cudnnBatchNormOps_t,
@@ -3382,7 +3394,38 @@ pub extern "system" fn cudnnBatchNormalizationBackwardEx(
     reserveSpace: *mut ::std::os::raw::c_void,
     reserveSpaceSizeInBytes: usize,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::batch_normalization_backward_ex(
+        handle,
+        mode,
+        bnOps,
+        alphaDataDiff,
+        betaDataDiff,
+        alphaParamDiff,
+        betaParamDiff,
+        xDesc,
+        xData,
+        yDesc,
+        yData,
+        dyDesc,
+        dyData,
+        dzDesc,
+        dzData,
+        dxDesc,
+        dxData,
+        dBnScaleBiasDesc,
+        bnScaleData,
+        bnBiasData,
+        dBnScaleData,
+        dBnBiasData,
+        epsilon,
+        savedMean,
+        savedInvVariance,
+        activationDesc,
+        workSpace,
+        workSpaceSizeInBytes,
+        reserveSpace,
+        reserveSpaceSizeInBytes,
+    )
 }
 
 #[no_mangle]
