@@ -168,6 +168,23 @@ unsafe fn set_tensor_nd_decriptor(
     ))
 }
 
+unsafe fn set_tensor_nd_descriptor_ex(
+    tensor_desc: *mut cudnnTensorStruct,
+    _format: cudnnTensorFormat_t,
+    data_type: cudnnDataType_t,
+    nb_dims: i32,
+    dim_a: *const i32,
+) -> cudnnStatus_t {
+    let data_type = to_data_type(data_type);
+    call!(miopenSetTensorDescriptor(
+        tensor_desc as _,
+        data_type,
+        nb_dims,
+        dim_a,
+        ptr::null_mut(),
+    ))
+}
+
 fn to_data_type(type_: cudnnDataType_t) -> miopenDataType_t {
     match type_ {
         cudnnDataType_t::CUDNN_DATA_FLOAT => miopenDataType_t::miopenFloat,
@@ -623,7 +640,6 @@ unsafe fn convolution_forward(
     y_desc: *mut cudnnTensorStruct,
     y: *mut std::ffi::c_void,
 ) -> cudnnStatus_t {
-    let mut algo = algo_from_cudnn(algo);
     // In cuDNN it is possible to find algorithm for sizes X and then pass the algo
     // for sizes Y. On miOpen this fails
     let mut perf_results = vec![mem::zeroed(); 32];
@@ -645,8 +661,10 @@ unsafe fn convolution_forward(
         true,
     ));
     if algo_count == 0 {
-        panic!()
+        return cudnnStatus_t::CUDNN_STATUS_NOT_SUPPORTED;
     }
+
+    let mut algo = algo_from_cudnn(algo);
     if let None = perf_results[..algo_count as usize]
         .iter()
         .find(|result| result.__bindgen_anon_1.fwd_algo == algo)
@@ -667,6 +685,52 @@ unsafe fn convolution_forward(
         y,
         work_space,
         work_space_size_in_bytes,
+    ))
+}
+
+unsafe fn convolution_bias_activation_forward(
+    handle: *mut cudnnContext,
+    alpha1: *const std::ffi::c_void,
+    x_desc: *mut cudnnTensorStruct,
+    x: *const std::ffi::c_void,
+    w_desc: *mut cudnnFilterStruct,
+    w: *const std::ffi::c_void,
+    conv_desc: *mut cudnnConvolutionStruct,
+    algo: cudnnConvolutionFwdAlgo_t,
+    work_space: *mut std::ffi::c_void,
+    work_space_size_in_bytes: usize,
+    alpha2: *const std::ffi::c_void,
+    z_desc: *mut cudnnTensorStruct,
+    z: *const std::ffi::c_void,
+    bias_desc: *mut cudnnTensorStruct,
+    bias: *const std::ffi::c_void,
+    activation_desc: *mut cudnnActivationStruct,
+    y_desc: *mut cudnnTensorStruct,
+    y: *mut std::ffi::c_void,
+) -> cudnnStatus_t {
+    let mut algo = algo_from_cudnn(algo);
+    if algo == miopenConvFwdAlgorithm_t::miopenConvolutionFwdAlgoWinograd {
+        algo = miopenConvFwdAlgorithm_t::miopenConvolutionFwdAlgoDirect;
+    }
+    call!(miopenConvolutionBiasActivationForward(
+        handle as _,
+        alpha1,
+        x_desc as _,
+        x,
+        w_desc as _,
+        w,
+        conv_desc as _,
+        algo,
+        work_space,
+        work_space_size_in_bytes,
+        alpha2,
+        z_desc as _,
+        z,
+        bias_desc as _,
+        bias,
+        activation_desc as _,
+        y_desc as _,
+        y,
     ))
 }
 

@@ -1960,14 +1960,14 @@ pub unsafe extern "system" fn cudnnSetTensorNdDescriptor(
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnSetTensorNdDescriptorEx(
+pub unsafe extern "system" fn cudnnSetTensorNdDescriptorEx(
     tensorDesc: cudnnTensorDescriptor_t,
     format: cudnnTensorFormat_t,
     dataType: cudnnDataType_t,
     nbDims: ::std::os::raw::c_int,
     dimA: *const ::std::os::raw::c_int,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::set_tensor_nd_descriptor_ex(tensorDesc, format, dataType, nbDims, dimA)
 }
 
 #[no_mangle]
@@ -4625,7 +4625,7 @@ pub extern "system" fn cudnnGetConvolutionForwardAlgorithmMaxCount(
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnGetConvolutionForwardAlgorithm_v7(
+pub unsafe extern "system" fn cudnnGetConvolutionForwardAlgorithm_v7(
     handle: cudnnHandle_t,
     srcDesc: cudnnTensorDescriptor_t,
     filterDesc: cudnnFilterDescriptor_t,
@@ -4635,7 +4635,16 @@ pub extern "system" fn cudnnGetConvolutionForwardAlgorithm_v7(
     returnedAlgoCount: *mut ::std::os::raw::c_int,
     perfResults: *mut cudnnConvolutionFwdAlgoPerf_t,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::find_convolution_forward_algorithm(
+        handle,
+        srcDesc,
+        filterDesc,
+        convDesc,
+        destDesc,
+        requestedAlgoCount,
+        returnedAlgoCount,
+        perfResults,
+    )
 }
 
 #[no_mangle]
@@ -4775,7 +4784,7 @@ pub unsafe extern "system" fn cudnnConvolutionForward(
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnConvolutionBiasActivationForward(
+pub unsafe extern "system" fn cudnnConvolutionBiasActivationForward(
     handle: cudnnHandle_t,
     alpha1: *const ::std::os::raw::c_void,
     xDesc: cudnnTensorDescriptor_t,
@@ -4795,7 +4804,26 @@ pub extern "system" fn cudnnConvolutionBiasActivationForward(
     yDesc: cudnnTensorDescriptor_t,
     y: *mut ::std::os::raw::c_void,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::convolution_bias_activation_forward(
+        handle,
+        alpha1,
+        xDesc,
+        x,
+        wDesc,
+        w,
+        convDesc,
+        algo,
+        workSpace,
+        workSpaceSizeInBytes,
+        alpha2,
+        zDesc,
+        z,
+        biasDesc,
+        bias,
+        activationDesc,
+        yDesc,
+        y,
+    )
 }
 #[repr(C)]
 #[derive(Copy, Clone)]
