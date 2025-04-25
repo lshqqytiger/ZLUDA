@@ -37,11 +37,11 @@ RUN dnf config-manager --add-repo https://developer.download.nvidia.com/compute/
     cuda-nvml-devel-${CUDA_VERSION} \
     libcudnn8-devel
 
-ARG RUST_VERSION=1.79.0
+ARG RUST_VERSION=1.86.0
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=${RUST_VERSION}
 RUN . $HOME/.cargo/env && cargo install bindgen-cli --locked
 
-ARG ROCM_VERSION=6.1.2
+ARG ROCM_VERSION=6.2.4
 RUN sh -c 'echo -e "[ROCm-${ROCM_VERSION}]\n\
 name=ROCm${ROCM_VERSION}\n\
 baseurl=https://repo.radeon.com/rocm/rhel8/${ROCM_VERSION}/main\n\

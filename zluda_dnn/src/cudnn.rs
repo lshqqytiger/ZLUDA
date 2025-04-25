@@ -1960,14 +1960,14 @@ pub unsafe extern "system" fn cudnnSetTensorNdDescriptor(
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnSetTensorNdDescriptorEx(
+pub unsafe extern "system" fn cudnnSetTensorNdDescriptorEx(
     tensorDesc: cudnnTensorDescriptor_t,
     format: cudnnTensorFormat_t,
     dataType: cudnnDataType_t,
     nbDims: ::std::os::raw::c_int,
     dimA: *const ::std::os::raw::c_int,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::set_tensor_nd_descriptor_ex(tensorDesc, format, dataType, nbDims, dimA)
 }
 
 #[no_mangle]
@@ -3184,7 +3184,7 @@ pub extern "system" fn cudnnDivisiveNormalizationBackward(
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnGetBatchNormalizationForwardTrainingExWorkspaceSize(
+pub unsafe extern "system" fn cudnnGetBatchNormalizationForwardTrainingExWorkspaceSize(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     bnOps: cudnnBatchNormOps_t,
@@ -3195,11 +3195,21 @@ pub extern "system" fn cudnnGetBatchNormalizationForwardTrainingExWorkspaceSize(
     activationDesc: cudnnActivationDescriptor_t,
     sizeInBytes: *mut usize,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::get_batch_normalization_forward_training_ex_workspace_size(
+        handle,
+        mode,
+        bnOps,
+        xDesc,
+        zDesc,
+        yDesc,
+        bnScaleBiasMeanVarDesc,
+        activationDesc,
+        sizeInBytes,
+    )
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnGetBatchNormalizationBackwardExWorkspaceSize(
+pub unsafe extern "system" fn cudnnGetBatchNormalizationBackwardExWorkspaceSize(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     bnOps: cudnnBatchNormOps_t,
@@ -3212,11 +3222,23 @@ pub extern "system" fn cudnnGetBatchNormalizationBackwardExWorkspaceSize(
     activationDesc: cudnnActivationDescriptor_t,
     sizeInBytes: *mut usize,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::get_batch_normalization_backward_ex_workspace_size(
+        handle,
+        mode,
+        bnOps,
+        xDesc,
+        yDesc,
+        dyDesc,
+        dzDesc,
+        dxDesc,
+        dBnScaleBiasDesc,
+        activationDesc,
+        sizeInBytes,
+    )
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnGetBatchNormalizationTrainingExReserveSpaceSize(
+pub unsafe extern "system" fn cudnnGetBatchNormalizationTrainingExReserveSpaceSize(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     bnOps: cudnnBatchNormOps_t,
@@ -3224,7 +3246,14 @@ pub extern "system" fn cudnnGetBatchNormalizationTrainingExReserveSpaceSize(
     xDesc: cudnnTensorDescriptor_t,
     sizeInBytes: *mut usize,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::get_batch_normalization_training_ex_reserve_space_size(
+        handle,
+        mode,
+        bnOps,
+        activationDesc,
+        xDesc,
+        sizeInBytes,
+    )
 }
 
 #[no_mangle]
@@ -3251,7 +3280,7 @@ pub extern "system" fn cudnnBatchNormalizationForwardTraining(
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnBatchNormalizationForwardTrainingEx(
+pub unsafe extern "system" fn cudnnBatchNormalizationForwardTrainingEx(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     bnOps: cudnnBatchNormOps_t,
@@ -3278,7 +3307,33 @@ pub extern "system" fn cudnnBatchNormalizationForwardTrainingEx(
     reserveSpace: *mut ::std::os::raw::c_void,
     reserveSpaceSizeInBytes: usize,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::batch_normalization_forward_training_ex(
+        handle,
+        mode,
+        bnOps,
+        alpha,
+        beta,
+        xDesc,
+        xData,
+        zDesc,
+        zData,
+        yDesc,
+        yData,
+        bnScaleBiasMeanVarDesc,
+        bnScale,
+        bnBias,
+        exponentialAverageFactor,
+        resultRunningMean,
+        resultRunningVariance,
+        epsilon,
+        resultSaveMean,
+        resultSaveInvVariance,
+        activationDesc,
+        workspace,
+        workSpaceSizeInBytes,
+        reserveSpace,
+        reserveSpaceSizeInBytes,
+    )
 }
 
 #[no_mangle]
@@ -3307,7 +3362,7 @@ pub extern "system" fn cudnnBatchNormalizationBackward(
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnBatchNormalizationBackwardEx(
+pub unsafe extern "system" fn cudnnBatchNormalizationBackwardEx(
     handle: cudnnHandle_t,
     mode: cudnnBatchNormMode_t,
     bnOps: cudnnBatchNormOps_t,
@@ -3339,7 +3394,38 @@ pub extern "system" fn cudnnBatchNormalizationBackwardEx(
     reserveSpace: *mut ::std::os::raw::c_void,
     reserveSpaceSizeInBytes: usize,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::batch_normalization_backward_ex(
+        handle,
+        mode,
+        bnOps,
+        alphaDataDiff,
+        betaDataDiff,
+        alphaParamDiff,
+        betaParamDiff,
+        xDesc,
+        xData,
+        yDesc,
+        yData,
+        dyDesc,
+        dyData,
+        dzDesc,
+        dzData,
+        dxDesc,
+        dxData,
+        dBnScaleBiasDesc,
+        bnScaleData,
+        bnBiasData,
+        dBnScaleData,
+        dBnBiasData,
+        epsilon,
+        savedMean,
+        savedInvVariance,
+        activationDesc,
+        workSpace,
+        workSpaceSizeInBytes,
+        reserveSpace,
+        reserveSpaceSizeInBytes,
+    )
 }
 
 #[no_mangle]
@@ -4539,7 +4625,7 @@ pub extern "system" fn cudnnGetConvolutionForwardAlgorithmMaxCount(
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnGetConvolutionForwardAlgorithm_v7(
+pub unsafe extern "system" fn cudnnGetConvolutionForwardAlgorithm_v7(
     handle: cudnnHandle_t,
     srcDesc: cudnnTensorDescriptor_t,
     filterDesc: cudnnFilterDescriptor_t,
@@ -4549,7 +4635,16 @@ pub extern "system" fn cudnnGetConvolutionForwardAlgorithm_v7(
     returnedAlgoCount: *mut ::std::os::raw::c_int,
     perfResults: *mut cudnnConvolutionFwdAlgoPerf_t,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::find_convolution_forward_algorithm(
+        handle,
+        srcDesc,
+        filterDesc,
+        convDesc,
+        destDesc,
+        requestedAlgoCount,
+        returnedAlgoCount,
+        perfResults,
+    )
 }
 
 #[no_mangle]
@@ -4689,7 +4784,7 @@ pub unsafe extern "system" fn cudnnConvolutionForward(
 }
 
 #[no_mangle]
-pub extern "system" fn cudnnConvolutionBiasActivationForward(
+pub unsafe extern "system" fn cudnnConvolutionBiasActivationForward(
     handle: cudnnHandle_t,
     alpha1: *const ::std::os::raw::c_void,
     xDesc: cudnnTensorDescriptor_t,
@@ -4709,7 +4804,26 @@ pub extern "system" fn cudnnConvolutionBiasActivationForward(
     yDesc: cudnnTensorDescriptor_t,
     y: *mut ::std::os::raw::c_void,
 ) -> cudnnStatus_t {
-    crate::unsupported()
+    crate::convolution_bias_activation_forward(
+        handle,
+        alpha1,
+        xDesc,
+        x,
+        wDesc,
+        w,
+        convDesc,
+        algo,
+        workSpace,
+        workSpaceSizeInBytes,
+        alpha2,
+        zDesc,
+        z,
+        biasDesc,
+        bias,
+        activationDesc,
+        yDesc,
+        y,
+    )
 }
 #[repr(C)]
 #[derive(Copy, Clone)]

@@ -39,11 +39,12 @@ Make sure you have the following installed:
 - Git
 - CMake
 - Python 3
-- Rust (1.81 or newer)
+- Rust (1.86 or newer)
 - C++ compiler
 - [ROCm](https://rocm.docs.amd.com/en/latest/deploy/linux/install_overview.html) 6.0+ (or [HIP SDK](https://rocm.docs.amd.com/projects/install-on-windows/en/latest/) on Windows)
 - (Windows only) Recent [AMD Radeon Software Adrenalin](https://www.amd.com/en/technologies/software)
 - (Recommended, optional) [Ninja](https://ninja-build.org/)
+- (Optional) HIP SDK extension (see releases)
 
 Alternatively, if you are building for Linux, [.devcontainer](.devcontainer) directory contains various developer Dockerfiles with all the required dependencies
 
@@ -65,7 +66,9 @@ cargo xtask --release
 
 ### Nightly Build (Windows-only)
 
-You can enable unstable features by turning `--nightly` flag on.
+You can enable unstable features, which are not supported officially by AMD, by turning `--nightly` flag on.
+
+In order to compile and use nightly features, HIP SDK extension is required. (see releases)
 
 ```
 cargo xtask --nightly
@@ -73,26 +76,12 @@ cargo xtask --nightly
 
 This will enable the following modules.
 
+- cuBLASLt
+- cuDNN
+
 `--nightly` flag can be combined with `--release`.
 
 ※ Nightly builds receive very limited amount of tests. You'd like to just disable the unsupported features rather than using nightly build if possible.
-
-#### cuBLASLt
-
-In Windows, cuBLASLt support is disabled by default because AMD haven't released hipBLASLt on Windows yet.
-
-Even though, nightly ZLUDA has cuBLASLt support with unofficial build of hipBLASLt.
-
-#### cuDNN
-
-In Windows, cuDNN support is disabled by default because AMD haven't released MIOpen on Windows yet.
-
-Even though, nightly ZLUDA has cuDNN support with unofficial build of MIOpen.
-
-However, because MIOpen itself is very unstable and incomplete, there are some limitations as described below.
-
-- Custom build of MIOpen without rocMLIR and composable kernel is only tested.
-- Many bugs.
 
 ## Unknown issues
 
@@ -245,7 +234,7 @@ Performance is currently much lower than the native HIP backend, see the discuss
   export USE_EXPERIMENTAL_CUDNN_V8_API=OFF
   ```
 
-  or (untested):
+  or:
 
   ```
   export TORCH_CUDA_ARCH_LIST="6.1+PTX"
@@ -256,7 +245,7 @@ Performance is currently much lower than the native HIP backend, see the discuss
   export USE_EXPERIMENTAL_CUDNN_V8_API=OFF
   ```
 
-  When running use the following environment variable:
+  When running, use the following environment variable:
 
   ```
   DISABLE_ADDMM_CUDA_LT=1
