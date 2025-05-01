@@ -6894,6 +6894,7 @@ impl<T: ast::ArgParams> ast::Instruction<T> {
                 ast::ScalarType::U16 => 2,
                 ast::ScalarType::S16 => 2,
                 ast::ScalarType::B16 => 2,
+                ast::ScalarType::BF16 => 2,
                 ast::ScalarType::F16 => 2,
                 ast::ScalarType::U32 => 4,
                 ast::ScalarType::S32 => 4,

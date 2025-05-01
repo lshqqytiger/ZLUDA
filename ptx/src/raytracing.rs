@@ -3666,6 +3666,7 @@ fn initializer_to_binary_vector(
                         .to_le_bytes();
                     result.extend_from_slice(&bytes);
                 }
+                ast::ScalarType::BF16 => todo!(),
                 ast::ScalarType::F16 => return Err(TranslateError::unexpected_pattern()),
                 ast::ScalarType::F32 => {
                     let bytes = constant

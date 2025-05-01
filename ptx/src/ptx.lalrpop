@@ -56,6 +56,7 @@ match {
     ".b64",
     ".b8",
     ".ballot",
+    ".bf16",
     ".bfly",
     ".ca",
     ".callprototype",
@@ -1064,6 +1065,12 @@ RoundingModeFloat : ast::RoundingMode = {
     ".rp" => ast::RoundingMode::PositiveInf,
 };
 
+#[inline]
+RoundingModeFloatWithoutSign : ast::RoundingMode = {
+    ".rn" => ast::RoundingMode::NearestEven,
+    ".rz" => ast::RoundingMode::Zero,
+};
+
 RoundingModeInt : ast::RoundingMode = {
     ".rni" => ast::RoundingMode::NearestEven,
     ".rzi" => ast::RoundingMode::Zero,
@@ -1100,6 +1107,7 @@ SIntType: ast::ScalarType = {
 };
 
 FloatType: ast::ScalarType = {
+    ".bf16" => ast::ScalarType::BF16,
     ".f16" => ast::ScalarType::F16,
     ".f16x2" => ast::ScalarType::F16x2,
     ".f32" => ast::ScalarType::F32,
@@ -1422,6 +1430,17 @@ InstCvt: ast::Instruction<ast::ParsedArgParams<'input>> = {
             }
         ), a)
     },
+    "cvt" <r:RoundingModeFloat> <f:".ftz"?> <s:".sat"?> ".bf16" ".f32" <a:Arg2> => {
+        ast::Instruction::Cvt(ast::CvtDetails::FloatFromFloat(
+            ast::CvtDesc {
+                rounding: Some(r),
+                flush_to_zero: Some(f.is_some()),
+                saturate: s.is_some(),
+                dst: ast::ScalarType::BF16,
+                src: ast::ScalarType::F32
+            }
+        ), a)
+    },
 };
 
 CvtTypeInt: ast::ScalarType = {
@@ -1436,6 +1455,7 @@ CvtTypeInt: ast::ScalarType = {
 };
 
 CvtTypeFloat: ast::ScalarType = {
+    ".bf16" => ast::ScalarType::BF16,
     ".f16" => ast::ScalarType::F16,
     ".f32" => ast::ScalarType::F32,
     ".f64" => ast::ScalarType::F64,
@@ -2506,7 +2526,6 @@ InstIsspacep: ast::Instruction<ast::ParsedArgParams<'input>> = {
     }
 }
 
-
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-sad
 InstSad: ast::Instruction<ast::ParsedArgParams<'input>> = {
     "sad" <type_:IntType> <a:Arg4> => {
@@ -2589,6 +2608,13 @@ ArithFloatMustRound: ast::ArithFloat = {
     },
     ".rn" <ftz:".ftz"?> <sat:".sat"?> ".f16x2" => ast::ArithFloat {
         typ: ast::ScalarType::F16x2,
+        rounding: Some(ast::RoundingMode::NearestEven),
+        flush_to_zero: Some(ftz.is_some()),
+        saturate: sat.is_some(),
+    },
+    // Not in documentation, but used by bitsandbytes
+    ".rn" <ftz:".ftz"?> <sat:".sat"?> ".bf16" => ast::ArithFloat {
+        typ: ast::ScalarType::BF16,
         rounding: Some(ast::RoundingMode::NearestEven),
         flush_to_zero: Some(ftz.is_some()),
         saturate: sat.is_some(),

@@ -213,6 +213,7 @@ pub enum ScalarType {
     S16,
     S32,
     S64,
+    BF16,
     F16,
     F32,
     F64,
@@ -235,6 +236,7 @@ impl ScalarType {
             ScalarType::S16 => "s16",
             ScalarType::S32 => "s32",
             ScalarType::S64 => "s64",
+            ScalarType::BF16 => "bf16",
             ScalarType::F16 => "f16",
             ScalarType::F32 => "f32",
             ScalarType::F64 => "f64",
@@ -253,6 +255,7 @@ impl ScalarType {
             ScalarType::U16 => 2,
             ScalarType::S16 => 2,
             ScalarType::B16 => 2,
+            ScalarType::BF16 => 2,
             ScalarType::F16 => 2,
             ScalarType::U32 => 4,
             ScalarType::S32 => 4,
@@ -1293,6 +1296,7 @@ impl<'a> NumsOrArrays<'a> {
             ScalarType::S64 => {
                 Self::parse_and_copy_single_t::<i64>(idx, str_val, radix, output)?;
             }
+            ScalarType::BF16 => todo!(),
             ScalarType::F16 => {
                 Self::parse_and_copy_single_t::<f16>(idx, str_val, radix, output)?;
             }
@@ -1377,6 +1381,7 @@ impl ScalarType {
             ScalarType::B16 => ScalarKind::Bit,
             ScalarType::B32 => ScalarKind::Bit,
             ScalarType::B64 => ScalarKind::Bit,
+            ScalarType::BF16 => ScalarKind::Float,
             ScalarType::F16 => ScalarKind::Float,
             ScalarType::F32 => ScalarKind::Float,
             ScalarType::F64 => ScalarKind::Float,
