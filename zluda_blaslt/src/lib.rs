@@ -1,6 +1,6 @@
 #![allow(warnings)]
 mod cublaslt;
-mod trap;
+mod decl;
 
 pub use cublaslt::*;
 use hipblaslt_sys::*;
@@ -19,73 +19,77 @@ pub(crate) fn unsupported() -> cublasStatus_t {
 // Not in the headers, but exported by library and used (by cuBLAS)
 // These traps allow us to load the original cuBLAS library
 // and ZLUDA simultaneously.
-install_trap!(cublasLtLegacyGemmUtilizationDDD);
-install_trap!(cublasLtLegacyGemmUtilizationCCC);
-install_trap!(cublasLtLegacyGemmUtilizationZZZ);
-install_trap!(cublasLtLegacyGemmDDD);
-install_trap!(cublasLtLegacyGemmCCC);
-install_trap!(cublasLtLegacyGemmZZZ);
-install_trap!(cublasLtLegacyGemmTST);
-install_trap!(cublasLtLegacyGemmTSS);
-install_trap!(cublasLtLegacyGemmSSS);
-install_trap!(cublasLtLegacyGemmHSS);
-install_trap!(cublasLtLegacyGemmHSH);
-install_trap!(cublasLtLegacyGemmHHH);
-install_trap!(cublasLtLegacyGemmBSS);
-install_trap!(cublasLtLegacyGemmBII);
-install_trap!(cublasLtLegacyGemmACC);
-install_trap!(cublasLt_for_cublas_TST);
-install_trap!(cublasLt_for_cublas_TSS);
-install_trap!(cublasLt_for_cublas_ZZZ);
-install_trap!(cublasLt_for_cublas_HSS);
-install_trap!(cublasLt_for_cublas_HSH);
-install_trap!(cublasLt_for_cublas_BSS);
-install_trap!(cublasLt_for_cublas_BII);
-install_trap!(cublasLt_for_cublas_CCC);
-install_trap!(cublasLt_for_cublas_SSS);
-install_trap!(cublasLt_for_cublas_HHH);
-install_trap!(cublasLt_for_cublas_DDD);
-install_trap!(cublasLtZZZMatmulAlgoInit);
-install_trap!(cublasLtZZZMatmulAlgoGetHeuristic);
-install_trap!(cublasLtZZZMatmul);
-install_trap!(cublasLtTSTMatmulAlgoInit);
-install_trap!(cublasLtTSTMatmulAlgoGetHeuristic);
-install_trap!(cublasLtTSTMatmul);
-install_trap!(cublasLtTSSMatmulAlgoInit);
-install_trap!(cublasLtTSSMatmulAlgoGetHeuristic);
-install_trap!(cublasLtTSSMatmul);
-install_trap!(cublasLtSSSMatmulAlgoInit);
-install_trap!(cublasLtSSSMatmulAlgoGetHeuristic);
-install_trap!(cublasLtSSSMatmul);
-install_trap!(cublasLtHSSMatmulAlgoInit);
-install_trap!(cublasLtHSSMatmulAlgoGetHeuristic);
-install_trap!(cublasLtHSSMatmul);
-install_trap!(cublasLtHSHMatmulAlgoInit);
-install_trap!(cublasLtHSHMatmulAlgoGetHeuristic);
-install_trap!(cublasLtHSHMatmul);
-install_trap!(cublasLtHHHMatmulAlgoInit);
-install_trap!(cublasLtHHHMatmulAlgoGetHeuristic);
-install_trap!(cublasLtHHHMatmul);
-install_trap!(cublasLtDDDMatmulAlgoInit);
-install_trap!(cublasLtDDDMatmulAlgoGetHeuristic);
-install_trap!(cublasLtDDDMatmul);
-install_trap!(cublasLtCCCMatmulAlgoInit);
-install_trap!(cublasLtCCCMatmulAlgoGetHeuristic);
-install_trap!(cublasLtCCCMatmul);
-install_trap!(cublasLtBIIMatmulAlgoInit);
-install_trap!(cublasLtBIIMatmulAlgoGetHeuristic);
-install_trap!(cublasLtBIIMatmul);
-install_trap!(cublasLtBSSMatmulAlgoInit);
-install_trap!(cublasLtBSSMatmulAlgoGetHeuristic);
-install_trap!(cublasLtBSSMatmul);
-install_trap!(cublasLtACCMatmulAlgoInit);
-install_trap!(cublasLtACCMatmulAlgoGetHeuristic);
-install_trap!(cublasLtACCMatmul);
-install_trap!(cublasLtCtxInit);
-install_trap!(cublasLtShutdownCtx);
+decl!(cublasLtLegacyGemmUtilizationDDD);
+decl!(cublasLtLegacyGemmUtilizationCCC);
+decl!(cublasLtLegacyGemmUtilizationZZZ);
+decl!(cublasLtLegacyGemmDDD);
+decl!(cublasLtLegacyGemmCCC);
+decl!(cublasLtLegacyGemmZZZ);
+decl!(cublasLtLegacyGemmTST);
+decl!(cublasLtLegacyGemmTSS);
+decl!(cublasLtLegacyGemmSSS);
+decl!(cublasLtLegacyGemmHSS);
+decl!(cublasLtLegacyGemmHSH);
+decl!(cublasLtLegacyGemmHHH);
+decl!(cublasLtLegacyGemmBSS);
+decl!(cublasLtLegacyGemmBII);
+decl!(cublasLtLegacyGemmACC);
+decl!(cublasLt_for_cublas_TST);
+decl!(cublasLt_for_cublas_TSS);
+decl!(cublasLt_for_cublas_ZZZ);
+decl!(cublasLt_for_cublas_HSS);
+decl!(cublasLt_for_cublas_HSH);
+decl!(cublasLt_for_cublas_BSS);
+decl!(cublasLt_for_cublas_BII);
+decl!(cublasLt_for_cublas_CCC);
+decl!(cublasLt_for_cublas_SSS);
+decl!(cublasLt_for_cublas_HHH);
+decl!(cublasLt_for_cublas_DDD);
+decl!(cublasLtZZZMatmulAlgoInit);
+decl!(cublasLtZZZMatmulAlgoGetHeuristic);
+decl!(cublasLtZZZMatmul);
+decl!(cublasLtTSTMatmulAlgoInit);
+decl!(cublasLtTSTMatmulAlgoGetHeuristic);
+decl!(cublasLtTSTMatmul);
+decl!(cublasLtTSSMatmulAlgoInit);
+decl!(cublasLtTSSMatmulAlgoGetHeuristic);
+decl!(cublasLtTSSMatmul);
+decl!(cublasLtSSSMatmulAlgoInit);
+decl!(cublasLtSSSMatmulAlgoGetHeuristic);
+decl!(cublasLtSSSMatmul);
+decl!(cublasLtHSSMatmulAlgoInit);
+decl!(cublasLtHSSMatmulAlgoGetHeuristic);
+decl!(cublasLtHSSMatmul);
+decl!(cublasLtHSHMatmulAlgoInit);
+decl!(cublasLtHSHMatmulAlgoGetHeuristic);
+decl!(cublasLtHSHMatmul);
+decl!(cublasLtHHHMatmulAlgoInit);
+decl!(cublasLtHHHMatmulAlgoGetHeuristic);
+decl!(cublasLtHHHMatmul);
+decl!(cublasLtDDDMatmulAlgoInit);
+decl!(cublasLtDDDMatmulAlgoGetHeuristic);
+decl!(cublasLtDDDMatmul);
+decl!(cublasLtCCCMatmulAlgoInit);
+decl!(cublasLtCCCMatmulAlgoGetHeuristic);
+decl!(cublasLtCCCMatmul);
+decl!(cublasLtBIIMatmulAlgoInit);
+decl!(cublasLtBIIMatmulAlgoGetHeuristic);
+decl!(cublasLtBIIMatmul);
+decl!(cublasLtBSSMatmulAlgoInit);
+decl!(cublasLtBSSMatmulAlgoGetHeuristic);
+decl!(cublasLtBSSMatmul);
+decl!(cublasLtACCMatmulAlgoInit);
+decl!(cublasLtACCMatmulAlgoGetHeuristic);
+decl!(cublasLtACCMatmul);
+decl!(cublasLtCtxInit);
+decl!(cublasLtShutdownCtx);
 
-unsafe fn create(handle: *mut cublasLtHandle_t) -> cublasStatus_t {
+unsafe fn create(handle: *mut *mut cublasLtContext) -> cublasStatus_t {
     to_cuda(hipblasLtCreate(handle.cast()))
+}
+
+unsafe fn destroy(handle: *mut cublasLtContext) -> cublasStatus_t {
+    to_cuda(hipblasLtDestroy(handle.cast()))
 }
 
 fn to_cuda(result: hipblasStatus_t) -> cublasStatus_t {
