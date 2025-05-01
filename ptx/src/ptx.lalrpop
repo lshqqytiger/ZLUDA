@@ -1353,6 +1353,17 @@ InstCvt: ast::Instruction<ast::ParsedArgParams<'input>> = {
             }
         ), a)
     },
+    "cvt" <f:".ftz"?> <s:".sat"?> ".f32" ".bf16" <a:Arg2> => {
+        ast::Instruction::Cvt(ast::CvtDetails::FloatFromFloat(
+            ast::CvtDesc {
+                rounding: None,
+                flush_to_zero: Some(f.is_some()),
+                saturate: s.is_some(),
+                dst: ast::ScalarType::F32,
+                src: ast::ScalarType::BF16
+            }
+        ), a)
+    },
     "cvt" <s:".sat"?> ".f64" ".f16" <a:Arg2> => {
         ast::Instruction::Cvt(ast::CvtDetails::FloatFromFloat(
             ast::CvtDesc {
@@ -1371,6 +1382,17 @@ InstCvt: ast::Instruction<ast::ParsedArgParams<'input>> = {
                 flush_to_zero: Some(f.is_some()),
                 saturate: s.is_some(),
                 dst: ast::ScalarType::F16,
+                src: ast::ScalarType::F32
+            }
+        ), a)
+    },
+    "cvt" <r:RoundingModeFloat> <f:".ftz"?> <s:".sat"?> ".bf16" ".f32" <a:Arg2> => {
+        ast::Instruction::Cvt(ast::CvtDetails::FloatFromFloat(
+            ast::CvtDesc {
+                rounding: Some(r),
+                flush_to_zero: Some(f.is_some()),
+                saturate: s.is_some(),
+                dst: ast::ScalarType::BF16,
                 src: ast::ScalarType::F32
             }
         ), a)
@@ -1429,18 +1451,7 @@ InstCvt: ast::Instruction<ast::ParsedArgParams<'input>> = {
                 src: ast::ScalarType::F64
             }
         ), a)
-    },
-    "cvt" <r:RoundingModeFloat> <f:".ftz"?> <s:".sat"?> ".bf16" ".f32" <a:Arg2> => {
-        ast::Instruction::Cvt(ast::CvtDetails::FloatFromFloat(
-            ast::CvtDesc {
-                rounding: Some(r),
-                flush_to_zero: Some(f.is_some()),
-                saturate: s.is_some(),
-                dst: ast::ScalarType::BF16,
-                src: ast::ScalarType::F32
-            }
-        ), a)
-    },
+    }
 };
 
 CvtTypeInt: ast::ScalarType = {
@@ -1744,6 +1755,9 @@ MinMaxDetails: ast::MinMaxDetails = {
     ),
     <ftz:".ftz"?> <nan:".NaN"?> ".f16" => ast::MinMaxDetails::Float(
         ast::MinMaxFloat{ flush_to_zero: Some(ftz.is_some()), nan: nan.is_some(), typ: ast::ScalarType::F16 }
+    ),
+    <ftz:".ftz"?> <nan:".NaN"?> ".bf16" => ast::MinMaxDetails::Float(
+        ast::MinMaxFloat{ flush_to_zero: Some(ftz.is_some()), nan: nan.is_some(), typ: ast::ScalarType::BF16 }
     ),
     <ftz:".ftz"?> <nan:".NaN"?> ".f16x2" => ast::MinMaxDetails::Float(
         ast::MinMaxFloat{ flush_to_zero: Some(ftz.is_some()), nan: nan.is_some(), typ: ast::ScalarType::F16x2 }
