@@ -16,7 +16,10 @@ cuda_types = { path = "../cuda_types" }
 hip_common = { path = "../hip_common" }
 hip_runtime-sys = { path = "../hip_runtime-sys" }
 zluda_dark_api = { path = "../zluda_dark_api" }
+rustc-hash = "1.1"
+lazy_static = "1.4.0"
 
 [package.metadata.zluda]
+broken = true
 linux_names = ["libcudart.so.10", "libcudart.so.11"]
 dump_names = ["libcudart.so"]

@@ -1,4 +1,4 @@
-bindgen include/cuda_runtime.h -o src/cudart.rs --allowlist-function="^cuda.*" --default-enum-style=newtype --no-layout-tests --no-derive-debug -- -I""
+bindgen $CUDA_PATH/include/cuda_runtime.h -o src/cudart.rs --allowlist-function="^cuda.*" --default-enum-style=newtype --no-layout-tests --no-derive-debug -- -I""
 sed -i -e 's/extern "C" {//g' -e 's/-> cudaError_t;/-> cudaError_t { crate::unsupported()/g' -e 's/pub fn /#[no_mangle] pub extern "system" fn /g' src/cudart.rs
-bindgen include/cuda_profiler_api.h -o src/profiler.rs --allowlist-function="^cuda.*" --default-enum-style=newtype --no-layout-tests --no-derive-debug -- -I""
+bindgen $CUDA_PATH/include/cuda_profiler_api.h -o src/profiler.rs --allowlist-function="^cuda.*" --default-enum-style=newtype --no-layout-tests --no-derive-debug -- -I""
 sed -i -e 's/extern "C" {//g' -e 's/-> cudaError_t;/-> cudaError_t { crate::unsupported()/g' -e 's/pub fn /#[no_mangle] pub extern "system" fn /g' src/profiler.rs
