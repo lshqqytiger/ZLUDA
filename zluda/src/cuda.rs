@@ -1291,8 +1291,8 @@ mod definitions {
         texobj::create(pTexObject, pResDesc, pTexDesc, pResViewDesc)
     }
 
-    pub(crate) unsafe fn cuTexObjectDestroy(texObject: hipTextureObject_t) -> hipError_t {
-        hipTexObjectDestroy(texObject)
+    pub(crate) unsafe fn cuTexObjectDestroy(texObject: hipTextureObject_t) -> Result<(), CUresult> {
+        texobj::destroy(texObject)
     }
 
     pub(crate) unsafe fn cuTexRefGetAddress_v2(
