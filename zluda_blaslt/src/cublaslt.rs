@@ -3739,18 +3739,18 @@ pub unsafe extern "system" fn cublasLtCreate(lightHandle: *mut cublasLtHandle_t)
 
 #[no_mangle]
 pub unsafe extern "system" fn cublasLtDestroy(lightHandle: cublasLtHandle_t) -> cublasStatus_t {
-    crate::unsupported()
+    crate::destroy(lightHandle)
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtGetStatusName(
+pub extern "system" fn cublasLtGetStatusName(
     status: cublasStatus_t,
 ) -> *const ::std::os::raw::c_char {
     unimplemented!()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtGetStatusString(
+pub extern "system" fn cublasLtGetStatusString(
     status: cublasStatus_t,
 ) -> *const ::std::os::raw::c_char {
     unimplemented!()
@@ -3762,12 +3762,12 @@ pub unsafe extern "system" fn cublasLtGetVersion() -> usize {
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtGetCudartVersion() -> usize {
+pub extern "system" fn cublasLtGetCudartVersion() -> usize {
     unimplemented!()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtGetProperty(
+pub extern "system" fn cublasLtGetProperty(
     type_: libraryPropertyType,
     value: *mut ::std::os::raw::c_int,
 ) -> cublasStatus_t {
@@ -3775,16 +3775,12 @@ pub unsafe extern "system" fn cublasLtGetProperty(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtHeuristicsCacheGetCapacity(
-    capacity: *mut usize,
-) -> cublasStatus_t {
+pub extern "system" fn cublasLtHeuristicsCacheGetCapacity(capacity: *mut usize) -> cublasStatus_t {
     crate::unsupported()
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtHeuristicsCacheSetCapacity(
-    capacity: usize,
-) -> cublasStatus_t {
+pub extern "system" fn cublasLtHeuristicsCacheSetCapacity(capacity: usize) -> cublasStatus_t {
     crate::unsupported()
 }
 #[doc = " Semi-opaque descriptor for matrix memory layout"]
@@ -4396,7 +4392,7 @@ pub unsafe extern "system" fn cublasLtMatmul(
 
 #[doc = " Matrix layout conversion helper (C = alpha * op(A) + beta * op(B))\n\n Can be used to change memory order of data or to scale and shift the values.\n\n \\retval     CUBLAS_STATUS_NOT_INITIALIZED   if cuBLASLt handle has not been initialized\n \\retval     CUBLAS_STATUS_INVALID_VALUE     if parameters are in conflict or in an impossible configuration; e.g.\n                                             when A is not NULL, but Adesc is NULL\n \\retval     CUBLAS_STATUS_NOT_SUPPORTED     if current implementation on selected device doesn't support configured\n                                             operation\n \\retval     CUBLAS_STATUS_ARCH_MISMATCH     if configured operation cannot be run using selected device\n \\retval     CUBLAS_STATUS_EXECUTION_FAILED  if cuda reported execution error from the device\n \\retval     CUBLAS_STATUS_SUCCESS           if the operation completed successfully"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtMatrixTransform(
+pub extern "system" fn cublasLtMatrixTransform(
     lightHandle: cublasLtHandle_t,
     transformDesc: cublasLtMatrixTransformDesc_t,
     alpha: *const ::std::os::raw::c_void,
@@ -4667,7 +4663,7 @@ pub struct cublasLtMatmulDescAttributes_t(pub ::std::os::raw::c_uint);
 
 #[doc = " Internal. Do not use directly."]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtMatmulDescInit_internal(
+pub extern "system" fn cublasLtMatmulDescInit_internal(
     matmulDesc: cublasLtMatmulDesc_t,
     size: usize,
     computeType: cublasComputeType_t,
@@ -4743,7 +4739,7 @@ pub struct cublasLtMatrixTransformDescAttributes_t(pub ::std::os::raw::c_uint);
 
 #[doc = " Internal. Do not use directly."]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtMatrixTransformDescInit_internal(
+pub extern "system" fn cublasLtMatrixTransformDescInit_internal(
     transformDesc: cublasLtMatrixTransformDesc_t,
     size: usize,
     scaleType: cudaDataType,
@@ -4753,7 +4749,7 @@ pub unsafe extern "system" fn cublasLtMatrixTransformDescInit_internal(
 
 #[doc = " Create new matrix transform operation descriptor.\n\n \\retval     CUBLAS_STATUS_ALLOC_FAILED  if memory could not be allocated\n \\retval     CUBLAS_STATUS_SUCCESS       if desciptor was created successfully"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtMatrixTransformDescCreate(
+pub extern "system" fn cublasLtMatrixTransformDescCreate(
     transformDesc: *mut cublasLtMatrixTransformDesc_t,
     scaleType: cudaDataType,
 ) -> cublasStatus_t {
@@ -4762,7 +4758,7 @@ pub unsafe extern "system" fn cublasLtMatrixTransformDescCreate(
 
 #[doc = " Destroy matrix transform operation descriptor.\n\n \\retval     CUBLAS_STATUS_SUCCESS  if operation was successful"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtMatrixTransformDescDestroy(
+pub extern "system" fn cublasLtMatrixTransformDescDestroy(
     transformDesc: cublasLtMatrixTransformDesc_t,
 ) -> cublasStatus_t {
     crate::unsupported()
@@ -4770,7 +4766,7 @@ pub unsafe extern "system" fn cublasLtMatrixTransformDescDestroy(
 
 #[doc = " Set matrix transform operation descriptor attribute.\n\n \\param[in]  transformDesc  The descriptor\n \\param[in]  attr           The attribute\n \\param[in]  buf            memory address containing the new value\n \\param[in]  sizeInBytes    size of buf buffer for verification (in bytes)\n\n \\retval     CUBLAS_STATUS_INVALID_VALUE  if buf is NULL or sizeInBytes doesn't match size of internal storage for\n                                          selected attribute\n \\retval     CUBLAS_STATUS_SUCCESS        if attribute was set successfully"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtMatrixTransformDescSetAttribute(
+pub extern "system" fn cublasLtMatrixTransformDescSetAttribute(
     transformDesc: cublasLtMatrixTransformDesc_t,
     attr: cublasLtMatrixTransformDescAttributes_t,
     buf: *const ::std::os::raw::c_void,
@@ -4781,7 +4777,7 @@ pub unsafe extern "system" fn cublasLtMatrixTransformDescSetAttribute(
 
 #[doc = " Get matrix transform operation descriptor attribute.\n\n \\param[in]  transformDesc  The descriptor\n \\param[in]  attr           The attribute\n \\param[out] buf            memory address containing the new value\n \\param[in]  sizeInBytes    size of buf buffer for verification (in bytes)\n \\param[out] sizeWritten    only valid when return value is CUBLAS_STATUS_SUCCESS. If sizeInBytes is non-zero: number\n of bytes actually written, if sizeInBytes is 0: number of bytes needed to write full contents\n\n \\retval     CUBLAS_STATUS_INVALID_VALUE  if sizeInBytes is 0 and sizeWritten is NULL, or if  sizeInBytes is non-zero\n                                          and buf is NULL or sizeInBytes doesn't match size of internal storage for\n                                          selected attribute\n \\retval     CUBLAS_STATUS_SUCCESS        if attribute's value was successfully written to user memory"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtMatrixTransformDescGetAttribute(
+pub extern "system" fn cublasLtMatrixTransformDescGetAttribute(
     transformDesc: cublasLtMatrixTransformDesc_t,
     attr: cublasLtMatrixTransformDescAttributes_t,
     buf: *mut ::std::os::raw::c_void,
@@ -5003,7 +4999,7 @@ pub struct cublasLtMatmulPreferenceAttributes_t(pub ::std::os::raw::c_uint);
 
 #[doc = " Internal. Do not use directly."]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtMatmulPreferenceInit_internal(
+pub extern "system" fn cublasLtMatmulPreferenceInit_internal(
     pref: cublasLtMatmulPreference_t,
     size: usize,
 ) -> cublasStatus_t {
@@ -5039,7 +5035,7 @@ pub unsafe extern "system" fn cublasLtMatmulPreferenceSetAttribute(
 
 #[doc = " Get matmul heuristic search preference descriptor attribute.\n\n \\param[in]  pref         The descriptor\n \\param[in]  attr         The attribute\n \\param[out] buf          memory address containing the new value\n \\param[in]  sizeInBytes  size of buf buffer for verification (in bytes)\n \\param[out] sizeWritten  only valid when return value is CUBLAS_STATUS_SUCCESS. If sizeInBytes is non-zero: number of\n                          bytes actually written, if sizeInBytes is 0: number of bytes needed to write full contents\n\n \\retval     CUBLAS_STATUS_INVALID_VALUE  if sizeInBytes is 0 and sizeWritten is NULL, or if  sizeInBytes is non-zero\n                                          and buf is NULL or sizeInBytes doesn't match size of internal storage for\n                                          selected attribute\n \\retval     CUBLAS_STATUS_SUCCESS        if attribute's value was successfully written to user memory"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtMatmulPreferenceGetAttribute(
+pub extern "system" fn cublasLtMatmulPreferenceGetAttribute(
     pref: cublasLtMatmulPreference_t,
     attr: cublasLtMatmulPreferenceAttributes_t,
     buf: *mut ::std::os::raw::c_void,
@@ -5093,7 +5089,7 @@ pub unsafe extern "system" fn cublasLtMatmulAlgoGetHeuristic(
 
 #[doc = " Routine to get all algo IDs that can potentially run\n\n \\param[in]  int              requestedAlgoCount requested number of algos (must be less or equal to size of algoIdsA\n (in elements)) \\param[out] algoIdsA         array to write algoIds to \\param[out] returnAlgoCount  number of algoIds\n actually written\n\n \\retval     CUBLAS_STATUS_INVALID_VALUE  if requestedAlgoCount is less or equal to zero\n \\retval     CUBLAS_STATUS_SUCCESS        if query was successful, inspect returnAlgoCount to get actual number of IDs\n                                          available"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtMatmulAlgoGetIds(
+pub extern "system" fn cublasLtMatmulAlgoGetIds(
     lightHandle: cublasLtHandle_t,
     computeType: cublasComputeType_t,
     scaleType: cudaDataType_t,
@@ -5110,7 +5106,7 @@ pub unsafe extern "system" fn cublasLtMatmulAlgoGetIds(
 
 #[doc = " Initialize algo structure\n\n \\retval     CUBLAS_STATUS_INVALID_VALUE  if algo is NULL or algoId is outside of recognized range\n \\retval     CUBLAS_STATUS_NOT_SUPPORTED  if algoId is not supported for given combination of data types\n \\retval     CUBLAS_STATUS_SUCCESS        if the structure was successfully initialized"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtMatmulAlgoInit(
+pub extern "system" fn cublasLtMatmulAlgoInit(
     lightHandle: cublasLtHandle_t,
     computeType: cublasComputeType_t,
     scaleType: cudaDataType_t,
@@ -5126,7 +5122,7 @@ pub unsafe extern "system" fn cublasLtMatmulAlgoInit(
 
 #[doc = " Check configured algo descriptor for correctness and support on current device.\n\n Result includes required workspace size and calculated wave count.\n\n CUBLAS_STATUS_SUCCESS doesn't fully guarantee algo will run (will fail if e.g. buffers are not correctly aligned);\n but if cublasLtMatmulAlgoCheck fails, the algo will not run.\n\n \\param[in]  algo    algo configuration to check\n \\param[out] result  result structure to report algo runtime characteristics; algo field is never updated\n\n \\retval     CUBLAS_STATUS_INVALID_VALUE  if matrix layout descriptors or operation descriptor don't match algo\n                                          descriptor\n \\retval     CUBLAS_STATUS_NOT_SUPPORTED  if algo configuration or data type combination is not currently supported on\n                                          given device\n \\retval     CUBLAS_STATUS_ARCH_MISMATCH  if algo configuration cannot be run using the selected device\n \\retval     CUBLAS_STATUS_SUCCESS        if check was successful"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtMatmulAlgoCheck(
+pub extern "system" fn cublasLtMatmulAlgoCheck(
     lightHandle: cublasLtHandle_t,
     operationDesc: cublasLtMatmulDesc_t,
     Adesc: cublasLtMatrixLayout_t,
@@ -5245,7 +5241,7 @@ pub struct cublasLtMatmulAlgoCapAttributes_t(pub ::std::os::raw::c_uint);
 
 #[doc = " Get algo capability attribute.\n\n E.g. to get list of supported Tile IDs:\n      cublasLtMatmulTile_t tiles[CUBLASLT_MATMUL_TILE_END];\n      size_t num_tiles, size_written;\n      if (cublasLtMatmulAlgoCapGetAttribute(algo, CUBLASLT_ALGO_CAP_TILE_IDS, tiles, sizeof(tiles), size_written) ==\n CUBLAS_STATUS_SUCCESS) { num_tiles = size_written / sizeof(tiles[0]);\n      }\n\n \\param[in]  algo         The algo descriptor\n \\param[in]  attr         The attribute\n \\param[out] buf          memory address containing the new value\n \\param[in]  sizeInBytes  size of buf buffer for verification (in bytes)\n \\param[out] sizeWritten  only valid when return value is CUBLAS_STATUS_SUCCESS. If sizeInBytes is non-zero: number of\n                          bytes actually written, if sizeInBytes is 0: number of bytes needed to write full contents\n\n \\retval     CUBLAS_STATUS_INVALID_VALUE  if sizeInBytes is 0 and sizeWritten is NULL, or if  sizeInBytes is non-zero\n                                          and buf is NULL or sizeInBytes doesn't match size of internal storage for\n                                          selected attribute\n \\retval     CUBLAS_STATUS_SUCCESS        if attribute's value was successfully written to user memory"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtMatmulAlgoCapGetAttribute(
+pub extern "system" fn cublasLtMatmulAlgoCapGetAttribute(
     algo: *const cublasLtMatmulAlgo_t,
     attr: cublasLtMatmulAlgoCapAttributes_t,
     buf: *mut ::std::os::raw::c_void,
@@ -5306,7 +5302,7 @@ pub struct cublasLtMatmulAlgoConfigAttributes_t(pub ::std::os::raw::c_uint);
 
 #[doc = " Set algo configuration attribute.\n\n \\param[in]  algo         The algo descriptor\n \\param[in]  attr         The attribute\n \\param[in]  buf          memory address containing the new value\n \\param[in]  sizeInBytes  size of buf buffer for verification (in bytes)\n\n \\retval     CUBLAS_STATUS_INVALID_VALUE  if buf is NULL or sizeInBytes doesn't match size of internal storage for\n                                          selected attribute\n \\retval     CUBLAS_STATUS_SUCCESS        if attribute was set successfully"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtMatmulAlgoConfigSetAttribute(
+pub extern "system" fn cublasLtMatmulAlgoConfigSetAttribute(
     algo: *mut cublasLtMatmulAlgo_t,
     attr: cublasLtMatmulAlgoConfigAttributes_t,
     buf: *const ::std::os::raw::c_void,
@@ -5317,7 +5313,7 @@ pub unsafe extern "system" fn cublasLtMatmulAlgoConfigSetAttribute(
 
 #[doc = " Get algo configuration attribute.\n\n \\param[in]  algo         The algo descriptor\n \\param[in]  attr         The attribute\n \\param[out] buf          memory address containing the new value\n \\param[in]  sizeInBytes  size of buf buffer for verification (in bytes)\n \\param[out] sizeWritten  only valid when return value is CUBLAS_STATUS_SUCCESS. If sizeInBytes is non-zero: number of\n                          bytes actually written, if sizeInBytes is 0: number of bytes needed to write full contents\n\n \\retval     CUBLAS_STATUS_INVALID_VALUE  if sizeInBytes is 0 and sizeWritten is NULL, or if  sizeInBytes is non-zero\n                                          and buf is NULL or sizeInBytes doesn't match size of internal storage for\n                                          selected attribute\n \\retval     CUBLAS_STATUS_SUCCESS        if attribute's value was successfully written to user memory"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtMatmulAlgoConfigGetAttribute(
+pub extern "system" fn cublasLtMatmulAlgoConfigGetAttribute(
     algo: *const cublasLtMatmulAlgo_t,
     attr: cublasLtMatmulAlgoConfigAttributes_t,
     buf: *mut ::std::os::raw::c_void,
@@ -5337,7 +5333,7 @@ pub type cublasLtLoggerCallback_t = ::std::option::Option<
 
 #[doc = " Experimental: Logger callback setter.\n\n \\param[in]  callback                     a user defined callback function to be called by the logger\n\n \\retval     CUBLAS_STATUS_SUCCESS        if callback was set successfully"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtLoggerSetCallback(
+pub extern "system" fn cublasLtLoggerSetCallback(
     callback: cublasLtLoggerCallback_t,
 ) -> cublasStatus_t {
     crate::unsupported()
@@ -5345,7 +5341,7 @@ pub unsafe extern "system" fn cublasLtLoggerSetCallback(
 
 #[doc = " Experimental: Open log file.\n\n \\param[in]  logFile                      log file path. if the log file does not exist, it will be created\n\n \\retval     CUBLAS_STATUS_SUCCESS        if log file was created successfully"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtLoggerOpenFile(
+pub extern "system" fn cublasLtLoggerOpenFile(
     logFile: *const ::std::os::raw::c_char,
 ) -> cublasStatus_t {
     crate::unsupported()
@@ -5353,20 +5349,18 @@ pub unsafe extern "system" fn cublasLtLoggerOpenFile(
 
 #[doc = " Experimental: Log level setter.\n\n \\param[in]  level                        log level, should be one of the following:\n                                          0. Off\n                                          1. Errors\n                                          2. Performance Trace\n                                          3. Performance Hints\n                                          4. Heuristics Trace\n                                          5. API Trace\n\n \\retval     CUBLAS_STATUS_INVALID_VALUE  if log level is not one of the above levels\n\n \\retval     CUBLAS_STATUS_SUCCESS        if log level was set successfully"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtLoggerSetLevel(
-    level: ::std::os::raw::c_int,
-) -> cublasStatus_t {
+pub extern "system" fn cublasLtLoggerSetLevel(level: ::std::os::raw::c_int) -> cublasStatus_t {
     crate::unsupported()
 }
 
 #[doc = " Experimental: Log mask setter.\n\n \\param[in]  mask                         log mask, should be a combination of the following masks:\n                                          0.  Off\n                                          1.  Errors\n                                          2.  Performance Trace\n                                          4.  Performance Hints\n                                          8.  Heuristics Trace\n                                          16. API Trace\n\n \\retval     CUBLAS_STATUS_SUCCESS        if log mask was set successfully"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtLoggerSetMask(mask: ::std::os::raw::c_int) -> cublasStatus_t {
+pub extern "system" fn cublasLtLoggerSetMask(mask: ::std::os::raw::c_int) -> cublasStatus_t {
     crate::unsupported()
 }
 
 #[doc = " Experimental: Disable logging for the entire session.\n\n \\retval     CUBLAS_STATUS_SUCCESS        if disabled logging"]
 #[no_mangle]
-pub unsafe extern "system" fn cublasLtLoggerForceDisable() -> cublasStatus_t {
+pub extern "system" fn cublasLtLoggerForceDisable() -> cublasStatus_t {
     crate::unsupported()
 }

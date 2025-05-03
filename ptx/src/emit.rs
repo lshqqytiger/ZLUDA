@@ -2728,7 +2728,8 @@ fn get_min_max(type_: ast::ScalarType) -> Result<(i128, i128), TranslateError> {
         ast::ScalarType::S16 => (i16::MIN as _, i16::MAX as _),
         ast::ScalarType::S32 => (i32::MIN as _, i32::MAX as _),
         ast::ScalarType::S64 => (i64::MIN as _, i64::MAX as _),
-        ast::ScalarType::F16
+        ast::ScalarType::BF16
+        | ast::ScalarType::F16
         | ast::ScalarType::F32
         | ast::ScalarType::F64
         | ast::ScalarType::F16x2
@@ -3793,6 +3794,7 @@ fn get_llvm_type(ctx: &EmitContext, type_: &ast::Type) -> Result<LLVMTypeRef, Tr
                 ast::ScalarType::B64 | ast::ScalarType::U64 | ast::ScalarType::S64 => {
                     LLVMInt64TypeInContext(ctx.context.get())
                 }
+                ast::ScalarType::BF16 => LLVMBFloatTypeInContext(ctx.context.get()),
                 ast::ScalarType::F16 => LLVMHalfTypeInContext(ctx.context.get()),
                 ast::ScalarType::F32 => LLVMFloatTypeInContext(ctx.context.get()),
                 ast::ScalarType::F64 => LLVMDoubleTypeInContext(ctx.context.get()),
@@ -4006,6 +4008,7 @@ impl Display for ScalarTypeLLVMDisplay {
             ast::ScalarType::B16 | ast::ScalarType::U16 | ast::ScalarType::S16 => write!(f, "i16"),
             ast::ScalarType::B32 | ast::ScalarType::U32 | ast::ScalarType::S32 => write!(f, "i32"),
             ast::ScalarType::B64 | ast::ScalarType::U64 | ast::ScalarType::S64 => write!(f, "i64"),
+            ast::ScalarType::BF16 => write!(f, "bf16"),
             ast::ScalarType::F16 => write!(f, "f16"),
             ast::ScalarType::F32 => write!(f, "f32"),
             ast::ScalarType::F64 => write!(f, "f64"),

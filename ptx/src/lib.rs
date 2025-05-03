@@ -334,7 +334,8 @@ pub(crate) mod lalrpop {
             | ast::ScalarType::S32
             | ast::ScalarType::S64
             | ast::ScalarType::Pred => ast::ImmediateValue::U64(0),
-            ast::ScalarType::F16
+            ast::ScalarType::BF16
+            | ast::ScalarType::F16
             | ast::ScalarType::F32
             | ast::ScalarType::F64
             | ast::ScalarType::F16x2 => ast::ImmediateValue::F64(0.0),

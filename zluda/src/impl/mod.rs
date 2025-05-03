@@ -514,8 +514,12 @@ pub(crate) unsafe fn get_proc_address_v2(
     if symbol == ptr::null() || pfn == ptr::null_mut() {
         return CUresult::CUDA_ERROR_INVALID_VALUE;
     }
-    MAXIMUM_PROC_VERSION.fetch_max(cuda_version, std::sync::atomic::Ordering::SeqCst);
     let symbol = unsafe { CStr::from_ptr(symbol) };
+    if symbol.is_empty() && symbol_status == ptr::null_mut() {
+        // cuGetProcAddress_v2("", &ptr, 0, 0, nullptr) returns CUDA_SUCCESS
+        return CUresult::CUDA_SUCCESS;
+    }
+    MAXIMUM_PROC_VERSION.fetch_max(cuda_version, std::sync::atomic::Ordering::SeqCst);
     let fn_ptr = get_proc_address(symbol.to_bytes(), flags, cuda_version as u32);
     let (status, result) = if fn_ptr == ptr::null_mut() {
         (

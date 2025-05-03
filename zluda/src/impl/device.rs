@@ -191,7 +191,12 @@ pub(crate) unsafe fn get_attribute(
         CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR => {
             // My 1060 returns same for CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR and
             // CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_BLOCK, not sure what is the difference
-            hipDeviceAttribute_t::hipDeviceAttributeMaxRegistersPerBlock
+            // hipDeviceAttribute_t::hipDeviceAttributeMaxRegistersPerBlock
+
+            // Workaround for HIP SDK 6 bug:
+            // HIP SDK 6 returns 0 for hipDeviceAttributeMaxRegistersPerBlock
+            *pi = 65536;
+            return Ok(());
         }
         CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN => {
             hipDeviceAttribute_t::hipDeviceAttributeMaxSharedMemoryPerBlock
@@ -254,7 +259,8 @@ pub(crate) unsafe fn get_attribute(
         | CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE1D_LAYERED_LAYERS
         | CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACE1D_LAYERED_LAYERS
         | CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAXIMUM_SURFACE2D_LAYERED_LAYERS => {
-            *pi = u16::MAX as i32;
+            // 2048 for RTX 3080 Ti
+            *pi = 0x800;
             return Ok(());
         }
         // linear sizes

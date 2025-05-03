@@ -1,5 +1,5 @@
 #[macro_export]
-macro_rules! install_trap {
+macro_rules! decl {
     ($name:ident) => {
         #[no_mangle]
         pub extern "system" fn $name() -> cublasStatus_t {

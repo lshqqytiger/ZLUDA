@@ -427,8 +427,8 @@ pub(crate) fn cuModuleLoadData_Post(
     if result != CUresult::CUDA_SUCCESS {
         return;
     }
-    if let Some(module_content) =
-        fn_logger.log_unwrap(unsafe { CUmoduleContent::from_ptr(raw_image.cast()) }.map_err(LogEntry::from))
+    if let Some(module_content) = fn_logger
+        .log_unwrap(unsafe { CUmoduleContent::from_ptr(raw_image.cast()) }.map_err(LogEntry::from))
     {
         state
             .cuda_state
@@ -945,7 +945,7 @@ pub(crate) fn cuGetProcAddress_v2_Post(
     result_value: *mut *mut ::std::os::raw::c_void,
     cudaVersion: ::std::os::raw::c_int,
     flags: cuuint64_t,
-    _symbolStatus: *mut CUdriverProcAddressQueryResult,
+    symbol_status: *mut CUdriverProcAddressQueryResult,
     fn_logger: &mut log::FunctionLogger,
     _state: &mut GlobalDelayedState,
     _pre_result: (),
@@ -955,6 +955,9 @@ pub(crate) fn cuGetProcAddress_v2_Post(
         return;
     }
     let symbol = unsafe { CStr::from_ptr(symbol) };
+    if symbol.is_empty() && symbol_status == ptr::null_mut() {
+        return;
+    }
     let name = symbol.to_bytes();
     let version = cudaVersion as u32;
     let fn_ptr = get_proc_address(name, flags, version);
@@ -1070,8 +1073,8 @@ pub(crate) fn cuLibraryLoadData_Post(
     ) {
         return;
     }
-    if let Some(module_content) =
-        fn_logger.log_unwrap(unsafe { CUmoduleContent::from_ptr(code.cast()) }.map_err(LogEntry::from))
+    if let Some(module_content) = fn_logger
+        .log_unwrap(unsafe { CUmoduleContent::from_ptr(code.cast()) }.map_err(LogEntry::from))
     {
         state
             .cuda_state

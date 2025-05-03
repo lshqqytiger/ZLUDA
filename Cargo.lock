@@ -2971,6 +2971,8 @@ dependencies = [
  "cuda_types",
  "hip_common",
  "hip_runtime-sys",
+ "lazy_static",
+ "rustc-hash",
  "zluda_dark_api",
 ]
 
