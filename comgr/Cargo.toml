@@ -2,7 +2,7 @@
 name = "comgr"
 version = "0.0.0"
 authors = ["Andrzej Janik <vosen@vosen.pl>"]
-edition = "2018"
+edition = "2021"
 
 [features]
 rocm5 = ["hip_common/rocm5"]
