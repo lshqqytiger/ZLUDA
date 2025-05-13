@@ -635,8 +635,7 @@ unsafe fn run_cuda<Input: From<u8> + Copy + Debug, Output: From<u8> + Copy + Deb
     result
 }
 
-static mut COMGR: comgr::Result<Comgr> =
-    comgr::Result::Err(comgr::amd_comgr::amd_comgr_status_t::AMD_COMGR_STATUS_ERROR);
+static mut COMGR: comgr::Result<Comgr> = comgr::Error::Generic;
 static COMGR_INIT: Once = Once::new();
 
 fn get_comgr() -> comgr::Result<&'static Comgr> {
