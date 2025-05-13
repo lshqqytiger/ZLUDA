@@ -1,4 +1,4 @@
-use comgr::{sys::amd_comgr_status_t, Comgr};
+use comgr::Comgr;
 use cuda_types::*;
 use hip_runtime_sys::*;
 use memoffset::offset_of;
@@ -397,14 +397,10 @@ impl IntoCuda for () {
     }
 }
 
-pub(crate) fn comgr_error_to_cuda(this: amd_comgr_status_t) -> CUresult {
+pub(crate) fn comgr_error_to_cuda(this: comgr::Error) -> CUresult {
     match this {
-        amd_comgr_status_t::AMD_COMGR_STATUS_ERROR_INVALID_ARGUMENT => {
-            CUresult::CUDA_ERROR_INVALID_VALUE
-        }
-        amd_comgr_status_t::AMD_COMGR_STATUS_ERROR_OUT_OF_RESOURCES => {
-            CUresult::CUDA_ERROR_OUT_OF_MEMORY
-        }
+        comgr::Error::InvalidArgument => CUresult::CUDA_ERROR_INVALID_VALUE,
+        comgr::Error::OutOfResources => CUresult::CUDA_ERROR_OUT_OF_MEMORY,
         _ => CUresult::CUDA_ERROR_UNKNOWN,
     }
 }
