@@ -118,14 +118,14 @@ impl GlobalState {
     fn new() -> Self {
         GlobalState {
             log_factory: log::Factory::new(),
-            delayed_state: LateInit::Unitialized,
+            delayed_state: LateInit::Uninitialized,
         }
     }
 }
 
 enum LateInit<T> {
     Success(T),
-    Unitialized,
+    Uninitialized,
     Error,
 }
 
@@ -133,7 +133,7 @@ impl<T> LateInit<T> {
     fn as_mut(&mut self) -> Option<&mut T> {
         match self {
             Self::Success(t) => Some(t),
-            Self::Unitialized => None,
+            Self::Uninitialized => None,
             Self::Error => None,
         }
     }
@@ -141,7 +141,7 @@ impl<T> LateInit<T> {
     pub(crate) fn unwrap_mut(&mut self) -> &mut T {
         match self {
             Self::Success(t) => t,
-            Self::Unitialized | Self::Error => panic!(),
+            Self::Uninitialized | Self::Error => panic!(),
         }
     }
 }
@@ -348,7 +348,7 @@ where
         ),
         // There's no libcuda to load, so we might as well panic
         LateInit::Error => panic!(),
-        LateInit::Unitialized => {
+        LateInit::Uninitialized => {
             let (new_delayed_state, logger) =
                 GlobalDelayedState::new(func, arguments_writer, &mut global_state.log_factory);
             global_state.delayed_state = new_delayed_state;
