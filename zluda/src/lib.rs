@@ -40,6 +40,11 @@ pub unsafe extern "C" fn zluda_get_hip_object(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn zluda_get_version() -> *const std::os::raw::c_char {
+    return env!("VERGEN_GIT_SHA").as_ptr() as _;
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn zluda_get_nightly_flag() -> std::os::raw::c_int {
     #[cfg(feature = "nightly")]
     return 1;
