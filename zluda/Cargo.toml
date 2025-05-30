@@ -49,4 +49,4 @@ gag = "1.0.0"
 libc = "0.2"
 
 [build-dependencies]
-vergen = { version = "7.5.1", default-features = false, features = ["git"] }
+vergen = { version = "8.3.2", features = ["git", "gitcl"] }

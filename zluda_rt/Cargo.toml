@@ -40,7 +40,7 @@ rusqlite = { version = "0.28.0", features = ["bundled", "serde_json"] }
 float-cmp = "0.9.0"
 
 [build-dependencies]
-vergen = { version = "7.5.1", default-features = false, features = ["git"] }
+vergen = { version = "8.3.2", features = ["git", "gitcl"] }
 
 [package.metadata.zluda]
 broken = true
