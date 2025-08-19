@@ -83,6 +83,29 @@ This will enable the following modules.
 
 ※ Nightly builds receive very limited amount of tests. You'd like to just disable the unsupported features rather than using nightly build if possible.
 
+## Windows build notes from sfinktah
+
+These notes are relevant to building the project on **Windows** and were contributed on **August 20, 2025** to the [lshqqytiger fork](https://github.com/lshqqytiger/ZLUDA) of ZLUDA by [sfinktah](https://github.com/sfinktah). 
+
+**No responsibility or support is offered in regard to these notes.**
+
+### Fixing Linking Failures
+
+If you encounter linking failures in `zluda_blas` related to symbols like `__imp_OpenProcessToken`, set the following environment variable before building:
+```cmd
+set RUSTFLAGS=-C link-args=advapi32.lib
+```
+
+### Building `cudnn.dll`
+
+To successfully build `cudnn.dll`, you need to update `zluda_dnn/Cargo.toml`. Replace the `linux_only` feature with `windows_nightly`:
+
+1. Open `zluda_dnn/Cargo.toml` in a text editor.
+2. Look for line `linux_only = true` and change it to `windows_nightly = true`.
+
+***end of build notes from sfinktah***
+---
+
 ## Unknown issues
 
 If an application fails to start under ZLUDA or crashes please check [Known Issues](#known-issues) section below. If nothing there applies, then please read [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
