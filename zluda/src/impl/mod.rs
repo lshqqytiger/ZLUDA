@@ -11,6 +11,8 @@ use std::{
     ptr::{self, NonNull},
     sync::{atomic::AtomicI32, Once},
 };
+use std::path::{Path, PathBuf};
+
 
 use self::cache::KernelCache;
 
@@ -491,9 +493,16 @@ pub(crate) fn init(flags: u32) -> Result<(), CUresult> {
 }
 
 fn create_default_cache() -> Option<KernelCache> {
-    let mut disk_cache_location = dirs::cache_dir()?;
-    disk_cache_location.push("ZLUDA");
-    disk_cache_location.push("ComputeCache");
+    // check for a custom cache directory via the ZLUDA_CACHE_DIR environment variable
+    let disk_cache_location = if let Ok(custom_dir) = std::env::var("ZLUDA_CACHE_DIR") {
+        PathBuf::from(custom_dir)
+    } else {
+        let mut default_dir = dirs::cache_dir()?;
+        default_dir.push("ZLUDA");
+        default_dir.push("ComputeCache");
+        default_dir
+    };
+
     fs::create_dir_all(&disk_cache_location).ok()?;
     KernelCache::new(&disk_cache_location)
 }
