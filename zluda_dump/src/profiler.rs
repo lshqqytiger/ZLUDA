@@ -62,7 +62,7 @@ impl Profiler {
             .ok();
     }
 
-    pub(crate) fn record_task(&self, function: &'static str) -> TimedTask {
+    pub(crate) fn record_task(&self, function: &'static str) -> TimedTask<'_> {
         let thread_id = thread_id::get();
         TimedTask {
             profiler: self,

@@ -415,7 +415,7 @@ dark_api_table!(
     }
 );
 
-pub const ELF_MAGIC: c_uint = unsafe { std::mem::transmute(*b"\x7FELF") };
+pub const ELF_MAGIC: c_uint = c_uint::from_ne_bytes(*b"\x7FELF");
 pub const FATBINC_MAGIC: c_uint = 0x466243B1;
 pub const FATBINC_VERSION_V1: c_uint = 0x1;
 pub const FATBINC_VERSION_V2: c_uint = 0x2;

@@ -18,8 +18,8 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::str::Utf8Error;
 use zluda_dark_api::AnyUInt;
-use zluda_dark_api::FatbinFileKind;
 use zluda_dark_api::DecompressionFailure;
+use zluda_dark_api::FatbinFileKind;
 use zluda_dark_api::UnexpectedFieldError;
 
 const LOG_PREFIX: &[u8] = b"[ZLUDA_DUMP] ";
@@ -200,7 +200,7 @@ impl Factory {
         &mut self,
         func: &'static str,
         arguments_writer: Box<dyn FnMut(&mut dyn std::io::Write) -> std::io::Result<()>>,
-    ) -> (FunctionLogger, Settings) {
+    ) -> (FunctionLogger<'_>, Settings) {
         let log_enabled = self.log_enable;
         let mut first_logger = self.get_logger(func, arguments_writer);
         let settings = Settings::read_and_init(log_enabled, &mut first_logger);
@@ -221,7 +221,7 @@ impl Factory {
         &mut self,
         func: &'static str,
         arguments_writer: Box<dyn FnMut(&mut dyn std::io::Write) -> std::io::Result<()>>,
-    ) -> FunctionLogger {
+    ) -> FunctionLogger<'_> {
         FunctionLogger {
             result: None,
             name: CudaFunctionName::Normal(func),
@@ -238,7 +238,7 @@ impl Factory {
         guid: CUuuid,
         index: usize,
         arguments_writer: Option<Box<dyn FnMut(&mut dyn std::io::Write) -> std::io::Result<()>>>,
-    ) -> FunctionLogger {
+    ) -> FunctionLogger<'_> {
         FunctionLogger {
             result: None,
             name: CudaFunctionName::Dark { guid, index },
@@ -611,17 +611,12 @@ impl From<UnexpectedFieldError> for LogEntry {
 // don't (everything else), this trait encapsulates that logic
 pub(crate) trait WriteTrailingZeroAware {
     fn write_zero_aware(&mut self, buf: &[u8]) -> std::io::Result<()>;
-    fn flush(&mut self) -> std::io::Result<()>;
     fn should_prefix(&self) -> bool;
 }
 
 impl WriteTrailingZeroAware for File {
     fn write_zero_aware(&mut self, buf: &[u8]) -> std::io::Result<()> {
         <Self as std::io::Write>::write_all(self, buf.split_last().unwrap().1)
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        <Self as std::io::Write>::flush(self)
     }
 
     fn should_prefix(&self) -> bool {
@@ -634,10 +629,6 @@ impl WriteTrailingZeroAware for Stderr {
         <Self as std::io::Write>::write_all(self, buf.split_last().unwrap().1)
     }
 
-    fn flush(&mut self) -> std::io::Result<()> {
-        <Self as std::io::Write>::flush(self)
-    }
-
     fn should_prefix(&self) -> bool {
         true
     }
@@ -647,10 +638,6 @@ struct NullLog;
 
 impl WriteTrailingZeroAware for NullLog {
     fn write_zero_aware(&mut self, _buf: &[u8]) -> std::io::Result<()> {
-        Ok(())
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
         Ok(())
     }
 
@@ -670,10 +657,6 @@ mod os {
     impl WriteTrailingZeroAware for OutputDebugString {
         fn write_zero_aware(&mut self, buf: &[u8]) -> std::io::Result<()> {
             unsafe { OutputDebugStringA(buf.as_ptr() as *const _) };
-            Ok(())
-        }
-
-        fn flush(&mut self) -> std::io::Result<()> {
             Ok(())
         }
 
@@ -724,10 +707,6 @@ mod tests {
             }
         }
 
-        fn flush(&mut self) -> std::io::Result<()> {
-            panic!()
-        }
-
         fn should_prefix(&self) -> bool {
             false
         }
@@ -741,10 +720,6 @@ mod tests {
         fn write_zero_aware(&mut self, buf: &[u8]) -> std::io::Result<()> {
             let mut vec = self.0.borrow_mut();
             vec.extend_from_slice(buf.split_last().unwrap().1);
-            Ok(())
-        }
-
-        fn flush(&mut self) -> std::io::Result<()> {
             Ok(())
         }
 

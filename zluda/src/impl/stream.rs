@@ -180,6 +180,7 @@ unsafe extern "C" fn steam_callback_to_host_func(
 }
 
 struct HostCallback {
+    #[allow(non_snake_case)]
     fn_: unsafe extern "system" fn(userData: *mut ::std::os::raw::c_void),
     user_data: *mut ::std::os::raw::c_void,
 }
