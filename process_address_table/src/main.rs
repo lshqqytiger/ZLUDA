@@ -63,6 +63,7 @@ unsafe fn main_impl() {
         .collect::<Vec<_>>();
     cuda_versions.sort_unstable();
     let cuda = Library::new(os::CUDA_PATH).unwrap();
+    #[allow(non_snake_case)]
     let mut cu_get_proc_address = cuda
         .get::<unsafe extern "C" fn(
             symbol: *const ::std::os::raw::c_char,
@@ -187,7 +188,7 @@ mod os {
         nvcuda_exports
     }
 
-    unsafe extern "stdcall" fn get_unversioned_export(
+    unsafe extern "system" fn get_unversioned_export(
         context: PVOID,
         _ordinal: ULONG,
         name: LPCSTR,

@@ -84,6 +84,16 @@ pub enum LLVMDWARFSourceLanguage {
     LLVMDWARFSourceLanguageFortran08,
     LLVMDWARFSourceLanguageRenderScript,
     LLVMDWARFSourceLanguageBLISS,
+    LLVMDWARFSourceLanguageKotlin,
+    LLVMDWARFSourceLanguageZig,
+    LLVMDWARFSourceLanguageCrystal,
+    LLVMDWARFSourceLanguageC_plus_plus_17,
+    LLVMDWARFSourceLanguageC_plus_plus_20,
+    LLVMDWARFSourceLanguageC17,
+    LLVMDWARFSourceLanguageFortran18,
+    LLVMDWARFSourceLanguageAda2005,
+    LLVMDWARFSourceLanguageAda2012,
+    LLVMDWARFSourceLanguageMojo,
     // Vendor extensions:
     LLVMDWARFSourceLanguageMips_Assembler,
     LLVMDWARFSourceLanguageGOOGLE_RenderScript,
@@ -137,6 +147,7 @@ pub enum LLVMMetadataKind {
     LLVMDIStringTypeMetadataKind,
     LLVMDIGenericSubrangeMetadataKind,
     LLVMDIArgListMetadataKind,
+    LLVMDIAssignIDMetadataKind,
 }
 
 pub type LLVMDWARFTypeEncoding = ::libc::c_uint;
@@ -744,6 +755,9 @@ extern "C" {
         Decl: LLVMMetadataRef,
         AlignInBits: u32,
     ) -> LLVMMetadataRef;
+
+    /// Get the dwarf::Tag of a DINode
+    pub fn LLVMGetDINodeTag(MD: LLVMMetadataRef) -> u16;
 
     /// Retrieves the DIVariable associated with this global variable expression.
     pub fn LLVMDIGlobalVariableExpressionGetVariable(GVE: LLVMMetadataRef) -> LLVMMetadataRef;

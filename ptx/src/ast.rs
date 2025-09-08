@@ -158,7 +158,7 @@ pub enum Type {
     Vector(ScalarType, u8),
     // .param.b32 foo[4];
     // -> OpTypeArray
-    Array(ScalarType, Vec<u32>),
+    Array(ScalarType, Vec<u64>),
     /*
         Variables of this type almost never exist in the original .ptx and are
         usually artificially created. Some examples below:

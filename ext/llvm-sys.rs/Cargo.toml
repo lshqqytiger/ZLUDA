@@ -5,16 +5,16 @@ readme = "README.md"
 license = "MIT"
 keywords = ["bindings", "llvm"]
 categories = ["external-ffi-bindings"]
-links = "llvm-15"
+links = "llvm-17"
 name = "llvm-sys"
-version = "150.1.2"
-authors = [
-  "Peter Marheine <peter@taricorp.net>",
-]
+version = "170.2.0"
+authors = ["Peter Marheine <peter@taricorp.net>"]
 build = "build.rs"
 
 [dependencies]
 libc = "0.2"
+clang-sys = { version = "1.2.2", optional = true }
+tempfile = { version = "3.2.0", optional = true }
 
 [build-dependencies]
 cmake = "0.1"

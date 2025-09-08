@@ -369,7 +369,7 @@ NumToken: (&'input str, u32, bool) = {
 F32Num: f32 = {
     <s:F32NumToken> => {
         match u32::from_str_radix(&s[2..], 16) {
-            Ok(x) => unsafe { std::mem::transmute::<_, f32>(x) },
+            Ok(x) => f32::from_bits(x),
             Err(err) => {
                 errors.push(ParseError::User { error: ast::PtxError::from(err) });
                 0.0
@@ -382,7 +382,7 @@ F32Num: f32 = {
 F64Num: f64 = {
     <s:F64NumToken> => {
         match u64::from_str_radix(&s[2..], 16) {
-            Ok(x) => unsafe { std::mem::transmute::<_, f64>(x) },
+            Ok(x) => f64::from_bits(x),
             Err(err) => {
                 errors.push(ParseError::User { error: ast::PtxError::from(err) });
                 0.0
@@ -767,11 +767,11 @@ VariableDeclarationBeginNonScalarTypeWithAlign: (ast::Type, Option<u32>) = {
     ".surfref" <align:Align?> => (ast::Type::Surfref, align)
 }
 
-VariableDefinitionOnce: (&'input str, Option<Either<u32, Vec<u32>>>, Option<ast::Initializer<&'input str>>) = {
+VariableDefinitionOnce: (&'input str, Option<Either<u32, Vec<u64>>>, Option<ast::Initializer<&'input str>>) = {
     <name:ExtendedIDOrBlank> <suffix:VariableDefinitionSuffix?> <init:VariableDefinitionInitializer?> => (name, suffix, init)
 }
 
-VariableDefinitionSuffix: Either<u32, Vec<u32>> = {
+VariableDefinitionSuffix: Either<u32, Vec<u64>> = {
     // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parameterized-variable-names
     "<" <n:U32Num> ">" => either::Left(n),
     <dims:ArrayDimensions>  => either::Right(dims),
@@ -2860,11 +2860,11 @@ AnyBitType: ast::ScalarType = {
 };
 
 // [0] and [] are treated the same
-ArrayDimensions: Vec<u32> = {
-    ArrayEmptyDimension => vec![0u32],
+ArrayDimensions: Vec<u64> = {
+    ArrayEmptyDimension => vec![0u64],
     ArrayEmptyDimension <dims:ArrayDimension+> => {
         let mut dims = dims;
-        let mut result = vec![0u32];
+        let mut result = vec![0u64];
         result.append(&mut dims);
         result
     },
@@ -2875,8 +2875,8 @@ ArrayEmptyDimension = {
     "[" "]" 
 }
 
-ArrayDimension: u32  = {
-    "[" <n:U32Num> "]" => n,
+ArrayDimension: u64  = {
+    "[" <n:U32Num> "]" => n as _,
 }
 
 ArrayInitializer: ast::NumsOrArrays<'input> = {

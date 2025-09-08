@@ -130,7 +130,7 @@ pub(crate) mod lalrpop {
 
     enum ConstTypeMut<'a> {
         Type(&'a mut ast::Type),
-        ArraySubtype(ast::ScalarType, &'a mut [u32]),
+        ArraySubtype(ast::ScalarType, &'a mut [u64]),
     }
 
     pub(crate) fn validate_variable_declaration2<'input>(
@@ -256,7 +256,7 @@ pub(crate) mod lalrpop {
     fn type_check_pad_array<'input>(
         scalar: ast::ScalarType,
         initializers: &mut Vec<ast::Initializer<&'input str>>,
-        dims: &mut [u32],
+        dims: &mut [u64],
         subarray: bool,
         errors: &mut Vec<ParseError<usize, Token<'input>, ast::PtxError>>,
     ) {
@@ -268,7 +268,7 @@ pub(crate) mod lalrpop {
                             error: ast::PtxError::ZeroDimensionArray,
                         });
                     } else {
-                        *x = initializers.len() as u32;
+                        *x = initializers.len() as _;
                     }
                 }
             }
@@ -300,7 +300,7 @@ pub(crate) mod lalrpop {
     fn zero_pad_initializers<'input>(
         scalar: ast::ScalarType,
         initializers: &mut Vec<ast::Initializer<&str>>,
-        dims: &[u32],
+        dims: &[u64],
         errors: &mut Vec<ParseError<usize, Token<'input>, ast::PtxError>>,
     ) {
         let expected_len = dims[0] as usize;
@@ -359,7 +359,7 @@ pub(crate) mod lalrpop {
 
     pub(crate) fn make_array_type<'input>(
         type_: ast::Type,
-        array_dimensions: Option<Vec<u32>>,
+        array_dimensions: Option<Vec<u64>>,
         errors: &mut Vec<ParseError<usize, Token<'input>, ast::PtxError>>,
     ) -> ast::Type {
         match array_dimensions {

@@ -1,15 +1,15 @@
 // Some LLVM  headers produce this warning, we'd like to pass them
 // with -isystem, but it's currently impossible to do so
 #if defined(__GNUC__)
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
 #include "llvm-c/Core.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/Support/Alignment.h"
 #if defined(__GNUC__)
-    #pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
 #endif
 
 using namespace llvm;

@@ -60,5 +60,9 @@ extern "C" {
         Options: LLVMPassBuilderOptionsRef,
         MergeFunctions: LLVMBool,
     );
+    pub fn LLVMPassBuilderOptionsSetInlinerThreshold(
+        Options: LLVMPassBuilderOptionsRef,
+        Threshold: ::libc::c_int,
+    );
     pub fn LLVMDisposePassBuilderOptions(Options: LLVMPassBuilderOptionsRef);
 }

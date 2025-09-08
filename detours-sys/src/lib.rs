@@ -35,7 +35,7 @@ mod tests {
             return 1;
         }
 
-        let tru = unsafe { &mut TRUE_SLEEP as *mut _ as *mut *mut ffi::c_void };
+        let tru = &raw mut TRUE_SLEEP as *mut _ as *mut *mut ffi::c_void;
         let new = TimedSleep as *mut ffi::c_void;
 
         match reason {
@@ -68,11 +68,11 @@ mod tests {
 
             Sleep(500);
             slept = SLEPT;
-            assert_ne!(SLEPT, 0);
+            assert_ne!(*&raw const SLEPT, 0);
 
             DllMain(ptr::null_mut(), 0, ptr::null_mut());
             Sleep(500);
-            assert_eq!(slept, SLEPT);
+            assert_eq!(slept, *&raw const SLEPT);
         }
     }
 }

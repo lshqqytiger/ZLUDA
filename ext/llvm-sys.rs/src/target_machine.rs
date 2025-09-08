@@ -87,7 +87,7 @@ extern "C" {
     pub fn LLVMTargetMachineEmitToFile(
         T: LLVMTargetMachineRef,
         M: LLVMModuleRef,
-        Filename: *mut ::libc::c_char,
+        Filename: *const ::libc::c_char,
         codegen: LLVMCodeGenFileType,
         ErrorMessage: *mut *mut ::libc::c_char,
     ) -> LLVMBool;
