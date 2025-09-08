@@ -12,7 +12,7 @@ use cuda_types::CUresult;
 use hip_common::zluda_ext::{CudaObjectKind, CudaResult};
 use r#impl::{context, stream};
 
-const DRIVER_VERSION: i32 = 12020;
+const DRIVER_VERSION: i32 = 12040;
 
 #[no_mangle]
 pub unsafe extern "C" fn zluda_get_hip_object(
