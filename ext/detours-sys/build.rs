@@ -11,11 +11,11 @@ mod windows {
     use std::error::Error;
 
     const CPP_FILES: [&'static str; 5] = [
-        "../ext/detours/src/creatwth.cpp",
-        "../ext/detours/src/detours.cpp",
-        "../ext/detours/src/disasm.cpp",
-        "../ext/detours/src/image.cpp",
-        "../ext/detours/src/modules.cpp",
+        "../detours/src/creatwth.cpp",
+        "../detours/src/detours.cpp",
+        "../detours/src/disasm.cpp",
+        "../detours/src/image.cpp",
+        "../detours/src/modules.cpp",
     ];
 
     pub fn main_impl() -> Result<(), Box<dyn Error>> {
@@ -27,12 +27,8 @@ mod windows {
     }
 
     fn build_detours() -> Result<(), Box<dyn Error>> {
-        add_target_options(
-            cc::Build::new()
-                .include("../ext/detours/src")
-                .files(&CPP_FILES),
-        )
-        .try_compile("detours")?;
+        add_target_options(cc::Build::new().include("../detours/src").files(&CPP_FILES))
+            .try_compile("detours")?;
         Ok(())
     }
     fn add_target_options(build: &mut cc::Build) -> &mut cc::Build {

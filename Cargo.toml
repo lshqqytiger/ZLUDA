@@ -9,7 +9,7 @@ members = [
     "comgr",
     "cuda_base",
     "cuda_types",
-    "detours-sys",
+    "ext/detours-sys",
     "ext/llvm-sys.rs",
     "hip_common",
     "hip_runtime-sys",

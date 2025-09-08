@@ -5,7 +5,7 @@ authors = ["Andrzej Janik <vosen@vosen.pl>"]
 edition = "2018"
 
 [dependencies]
-detours-sys = { path = "../detours-sys" }
+detours-sys = { path = "../ext/detours-sys" }
 libloading = "0.8"
 
 [dependencies.windows]
