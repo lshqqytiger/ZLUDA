@@ -41,7 +41,7 @@ Make sure you have the following installed:
 - Python 3
 - Rust (1.86 or newer)
 - C++ compiler
-- [ROCm](https://rocm.docs.amd.com/en/latest/deploy/linux/install_overview.html) 6.0+ (or [HIP SDK](https://rocm.docs.amd.com/projects/install-on-windows/en/latest/) on Windows)
+- [ROCm](https://rocm.docs.amd.com/en/latest/deploy/linux/install_overview.html) 6.4+ (or [HIP SDK](https://rocm.docs.amd.com/projects/install-on-windows/en/latest/) on Windows)
 - (Windows only) Recent [AMD Radeon Software Adrenalin](https://www.amd.com/en/technologies/software)
 - (Recommended, optional) [Ninja](https://ninja-build.org/)
 - (Optional) HIP SDK extension (see releases)
@@ -53,7 +53,7 @@ Alternatively, if you are building for Linux, [.devcontainer](.devcontainer) dir
 Checkout ZLUDA code with:
 
 ```
-git clone --recurse-submodules https://github.com/vosen/zluda.git
+git clone --recurse-submodules https://github.com/lshqqytiger/zluda.git
 ```
 
 ### Build
@@ -74,9 +74,8 @@ In order to compile and use nightly features, HIP SDK extension is required. (se
 cargo xtask --nightly
 ```
 
-This will enable the following modules.
+This will enable the following module.
 
-- cuBLASLt
 - cuDNN
 
 `--nightly` flag can be combined with `--release`.
