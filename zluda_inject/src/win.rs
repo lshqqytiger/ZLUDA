@@ -64,6 +64,7 @@ macro_rules! os_call {
     };
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct OsError {
     pub function: &'static str,

@@ -39,7 +39,7 @@ Make sure you have the following installed:
 - Git
 - CMake
 - Python 3
-- Rust (1.86 or newer)
+- Rust (1.89 or newer)
 - C++ compiler
 - [ROCm](https://rocm.docs.amd.com/en/latest/deploy/linux/install_overview.html) 6.4+ (or [HIP SDK](https://rocm.docs.amd.com/projects/install-on-windows/en/latest/) on Windows)
 - (Windows only) Recent [AMD Radeon Software Adrenalin](https://www.amd.com/en/technologies/software)
