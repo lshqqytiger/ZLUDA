@@ -3,6 +3,7 @@ use cuda_types::*;
 use hip_runtime_sys::*;
 use memoffset::offset_of;
 use static_assertions::assert_impl_one;
+use std::path::PathBuf;
 use std::{
     cell::Cell,
     ffi::{c_void, CStr},
@@ -11,8 +12,6 @@ use std::{
     ptr::{self, NonNull},
     sync::{atomic::AtomicI32, Once},
 };
-use std::path::{Path, PathBuf};
-
 
 use self::cache::KernelCache;
 
