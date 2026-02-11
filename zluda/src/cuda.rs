@@ -331,11 +331,17 @@ mod definitions {
         device::get_name(name, len, dev)
     }
 
-    pub(crate) unsafe fn cuDeviceGetUuid(uuid: *mut CUuuid, dev: hipDevice_t) -> CUresult {
+    pub(crate) unsafe fn cuDeviceGetUuid(
+        uuid: *mut CUuuid,
+        dev: hipDevice_t,
+    ) -> Result<(), CUresult> {
         device::get_uuid(uuid, dev)
     }
 
-    pub(crate) unsafe fn cuDeviceGetUuid_v2(uuid: *mut CUuuid, dev: hipDevice_t) -> CUresult {
+    pub(crate) unsafe fn cuDeviceGetUuid_v2(
+        uuid: *mut CUuuid,
+        dev: hipDevice_t,
+    ) -> Result<(), CUresult> {
         device::get_uuid(uuid, dev)
     }
 

@@ -437,14 +437,9 @@ pub(crate) unsafe fn get_attribute(
     }
 }
 
-// TODO
-pub(crate) fn get_uuid(uuid: *mut CUuuid_st, _dev: hipDevice_t) -> CUresult {
-    unsafe {
-        *uuid = CUuuid_st {
-            bytes: mem::zeroed(),
-        }
-    };
-    CUresult::CUDA_SUCCESS
+pub(crate) fn get_uuid(uuid: *mut CUuuid_st, dev: hipDevice_t) -> Result<(), CUresult> {
+    hip_call_cuda!(hipDeviceGetUuid(uuid as _, dev));
+    Ok(())
 }
 
 // TODO

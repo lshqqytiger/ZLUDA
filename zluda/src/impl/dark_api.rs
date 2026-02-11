@@ -362,7 +362,7 @@ impl CudaDarkApi for CudaDarkApiZluda {
                 .map(|dev| {
                     let mut device_attributes =
                         mem::zeroed::<zluda_dark_api::AntiZludaHashInputDevice>();
-                    cuda! { device::get_uuid(&mut device_attributes.guid, dev)};
+                    device::get_uuid(&mut device_attributes.guid, dev)?;
                     device::get_attribute(
                         &mut device_attributes.pci_bus as *mut u32 as _,
                         CUdevice_attribute::CU_DEVICE_ATTRIBUTE_PCI_BUS_ID,
