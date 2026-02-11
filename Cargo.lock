@@ -2542,7 +2542,7 @@ version = "0.0.0"
 
 [[package]]
 name = "zluda_inject"
-version = "3.9.5"
+version = "3.9.6"
 dependencies = [
  "argh",
  "detours-sys",
