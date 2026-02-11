@@ -8,8 +8,6 @@ fn main() {
     for flag in llvm_cxxflags.split_ascii_whitespace() {
         cc.flag(flag);
     }
-    cc.shared_flag(true)
-        .file("src/lib.cpp")
-        .compile("llvm_zluda_cpp");
+    cc.file("src/lib.cpp").compile("llvm_zluda_cpp");
     // rustc-link-lib and rustc-link-search are already set by cc
 }
