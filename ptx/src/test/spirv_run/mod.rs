@@ -1,7 +1,8 @@
 use crate::llvm;
 use crate::ptx;
 use crate::translate;
-use comgr::Comgr;
+use ::comgr::Comgr;
+use comgr::comgr;
 use half::f16;
 use hip_common::CompilationMode;
 use hip_runtime_sys::*;
@@ -635,7 +636,7 @@ unsafe fn run_cuda<Input: From<u8> + Copy + Debug, Output: From<u8> + Copy + Deb
     result
 }
 
-static mut COMGR: comgr::Result<Comgr> = comgr::Error::Generic;
+static mut COMGR: comgr::Result<Comgr> = Err(comgr::Error::Generic);
 static COMGR_INIT: Once = Once::new();
 
 fn get_comgr() -> comgr::Result<&'static Comgr> {

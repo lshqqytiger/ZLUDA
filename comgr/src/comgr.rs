@@ -4,7 +4,7 @@ use std::{mem, ptr};
 use crate::amd_comgr;
 use crate::amd_comgr_3;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Error {
     Generic,
     InvalidArgument,
