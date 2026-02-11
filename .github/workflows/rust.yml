@@ -121,7 +121,7 @@ jobs:
 
   build_win:
     name: Build and publish (Windows)
-    runs-on: windows-2019
+    runs-on: windows-2025
     needs: release
     steps:
       - uses: actions/checkout@v4
