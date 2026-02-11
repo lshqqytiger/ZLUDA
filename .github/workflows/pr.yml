@@ -5,7 +5,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  ROCM_VERSION: "6.2.4"
+  ROCM_VERSION: "7.1.1"
 
 jobs:
   build_lin:
@@ -54,22 +54,22 @@ jobs:
           $Env:HIP_PATH = "$Env:HIP_PATH\"
           cargo xtask -r --rocm5
 
-  build_win_6:
+  build_win:
     name: Build (Windows)
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Install AMD HIP SDK 6.2
+      - name: Install AMD HIP SDK 7.1
         run: |
-          C:\msys64\usr\bin\wget.exe https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-24.Q4-Win10-Win11-For-HIP.exe -O "amdgpu-install.exe"
+          C:\msys64\usr\bin\wget.exe https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-26.Q1-Win11-For-HIP.exe -O "amdgpu-install.exe"
           .\amdgpu-install.exe -Install -View:1
           Start-Sleep -Seconds 60
           $setupId = (Get-Process ATISetup).id
           Wait-Process -Id $setupId
       - uses: Swatinem/rust-cache@v2
-      - name: Build for ROCm 6.x
+      - name: Build for ROCm 7.x
         run: |
           $ROCm_PATH = "C:\Program Files\AMD\ROCm"
           $Env:HIP_PATH = "$ROCm_PATH\$(Get-ChildItem -Path $ROCm_PATH -Name)"
