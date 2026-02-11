@@ -106,7 +106,7 @@ extern "C" {
     pub fn LLVMInitializeBPFTarget();
     pub fn LLVMInitializeBPFTargetMC();
     pub fn LLVMInitializeBPFAsmPrinter();
-    // No AsmParser
+    pub fn LLVMInitializeBPFAsmParser();
     pub fn LLVMInitializeBPFDisassembler();
 
     pub fn LLVMInitializeLanaiTargetInfo();
@@ -122,6 +122,13 @@ extern "C" {
     pub fn LLVMInitializeRISCVAsmPrinter();
     pub fn LLVMInitializeRISCVAsmParser();
     pub fn LLVMInitializeRISCVDisassembler();
+
+    pub fn LLVMInitializeLoongArchTargetInfo();
+    pub fn LLVMInitializeLoongArchTarget();
+    pub fn LLVMInitializeLoongArchTargetMC();
+    pub fn LLVMInitializeLoongArchAsmPrinter();
+    pub fn LLVMInitializeLoongArchAsmParser();
+    pub fn LLVMInitializeLoongArchDisassembler();
 
     pub fn LLVMInitializeWebAssemblyTargetInfo();
     pub fn LLVMInitializeWebAssemblyTarget();
@@ -143,8 +150,8 @@ extern "C" {
     pub fn LLVMByteOrder(TD: LLVMTargetDataRef) -> LLVMByteOrdering;
     pub fn LLVMPointerSize(TD: LLVMTargetDataRef) -> ::libc::c_uint;
     pub fn LLVMPointerSizeForAS(TD: LLVMTargetDataRef, AS: ::libc::c_uint) -> ::libc::c_uint;
-    //pub fn LLVMIntPtrType(TD: LLVMTargetDataRef) -> LLVMTypeRef;
-    //pub fn LLVMIntPtrTypeForAS(TD: LLVMTargetDataRef, AS: ::libc::c_uint) -> LLVMTypeRef;
+    pub fn LLVMIntPtrType(TD: LLVMTargetDataRef) -> LLVMTypeRef;
+    pub fn LLVMIntPtrTypeForAS(TD: LLVMTargetDataRef, AS: ::libc::c_uint) -> LLVMTypeRef;
     pub fn LLVMIntPtrTypeInContext(C: LLVMContextRef, TD: LLVMTargetDataRef) -> LLVMTypeRef;
     pub fn LLVMIntPtrTypeForASInContext(
         C: LLVMContextRef,

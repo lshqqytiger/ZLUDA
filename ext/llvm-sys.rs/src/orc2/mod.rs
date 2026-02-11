@@ -434,10 +434,7 @@ extern "C" {
         Ctx: *mut ::libc::c_void,
         Dispose: LLVMOrcDisposeCAPIDefinitionGeneratorFunction,
     ) -> LLVMOrcDefinitionGeneratorRef;
-    pub fn LLVMOrcLookupStateContinueLookup(
-        S: LLVMOrcLookupStateRef,
-        Err: LLVMErrorRef,
-    );
+    pub fn LLVMOrcLookupStateContinueLookup(S: LLVMOrcLookupStateRef, Err: LLVMErrorRef);
     pub fn LLVMOrcCreateDynamicLibrarySearchGeneratorForProcess(
         Result: *mut LLVMOrcDefinitionGeneratorRef,
         GlobalPrefix: ::libc::c_char,

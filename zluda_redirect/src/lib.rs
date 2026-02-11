@@ -79,24 +79,29 @@ static mut DETOUR_STATE: Option<DetourDetachGuard> = None;
 #[used]
 pub static ZLUDA_REDIRECT: () = ();
 
+#[allow(non_snake_case)]
 static mut LOAD_LIBRARY_A: unsafe extern "system" fn(lpLibFileName: LPCSTR) -> HMODULE =
     LoadLibraryA;
 
+#[allow(non_snake_case)]
 static mut LOAD_LIBRARY_W: unsafe extern "system" fn(lpLibFileName: LPCWSTR) -> HMODULE =
     LoadLibraryW;
 
+#[allow(non_snake_case)]
 static mut LOAD_LIBRARY_EX_A: unsafe extern "system" fn(
     lpLibFileName: LPCSTR,
     hFile: HANDLE,
     dwFlags: DWORD,
 ) -> HMODULE = LoadLibraryExA;
 
+#[allow(non_snake_case)]
 static mut LOAD_LIBRARY_EX_W: unsafe extern "system" fn(
     lpLibFileName: LPCWSTR,
     hFile: HANDLE,
     dwFlags: DWORD,
 ) -> HMODULE = LoadLibraryExW;
 
+#[allow(non_snake_case)]
 static mut CREATE_PROCESS_A: unsafe extern "system" fn(
     lpApplicationName: LPCSTR,
     lpCommandLine: LPSTR,
@@ -110,6 +115,7 @@ static mut CREATE_PROCESS_A: unsafe extern "system" fn(
     lpProcessInformation: LPPROCESS_INFORMATION,
 ) -> BOOL = CreateProcessA;
 
+#[allow(non_snake_case)]
 static mut CREATE_PROCESS_W: unsafe extern "system" fn(
     lpApplicationName: LPCWSTR,
     lpCommandLine: LPWSTR,
@@ -123,6 +129,7 @@ static mut CREATE_PROCESS_W: unsafe extern "system" fn(
     lpProcessInformation: LPPROCESS_INFORMATION,
 ) -> BOOL = CreateProcessW;
 
+#[allow(non_snake_case)]
 static mut CREATE_PROCESS_AS_USER_W: unsafe extern "system" fn(
     hToken: HANDLE,
     lpApplicationName: LPCWSTR,
@@ -137,6 +144,7 @@ static mut CREATE_PROCESS_AS_USER_W: unsafe extern "system" fn(
     lpProcessInformation: LPPROCESS_INFORMATION,
 ) -> BOOL = CreateProcessAsUserW;
 
+#[allow(non_snake_case)]
 static mut CREATE_PROCESS_WITH_TOKEN_W: unsafe extern "system" fn(
     hToken: HANDLE,
     dwLogonFlags: DWORD,
@@ -149,6 +157,7 @@ static mut CREATE_PROCESS_WITH_TOKEN_W: unsafe extern "system" fn(
     lpProcessInformation: LPPROCESS_INFORMATION,
 ) -> BOOL = CreateProcessWithTokenW;
 
+#[allow(non_snake_case)]
 static mut CREATE_PROCESS_WITH_LOGON_W: unsafe extern "system" fn(
     lpUsername: LPCWSTR,
     lpDomain: LPCWSTR,

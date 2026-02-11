@@ -383,7 +383,7 @@ impl Comgr {
         executable_data.get_data()
     }
 
-    fn assemble_source(&self, isa: &CStr, src: &[u8]) -> Result<Data> {
+    fn assemble_source(&self, isa: &CStr, src: &[u8]) -> Result<Data<'_>> {
         let data = Data::new(
             self.get(),
             amd_comgr_3::amd_comgr_data_kind_t::AMD_COMGR_DATA_KIND_SOURCE,

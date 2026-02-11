@@ -12,7 +12,7 @@ use cuda_types::CUresult;
 use hip_common::zluda_ext::{CudaObjectKind, CudaResult};
 use r#impl::{context, stream};
 
-const DRIVER_VERSION: i32 = 12020;
+const DRIVER_VERSION: i32 = 12040;
 
 #[no_mangle]
 pub unsafe extern "C" fn zluda_get_hip_object(
@@ -37,6 +37,11 @@ pub unsafe extern "C" fn zluda_get_hip_object(
         }
     }
     zluda_get_hip_object_impl(cuda_object, kind).into()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn zluda_get_version() -> *const std::os::raw::c_char {
+    return env!("VERGEN_GIT_SHA").as_ptr() as _;
 }
 
 #[no_mangle]

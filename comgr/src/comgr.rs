@@ -4,7 +4,7 @@ use std::{mem, ptr};
 use crate::amd_comgr;
 use crate::amd_comgr_3;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Error {
     Generic,
     InvalidArgument,
@@ -188,7 +188,7 @@ impl ActionKind {
     }
 }
 
-pub(crate) type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 macro_rules! with {
     ($wrapper:expr, $comgr:ident => $expr:expr) => {

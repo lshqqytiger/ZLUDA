@@ -3768,7 +3768,7 @@ fn avoid_byte_array_returns<'input>(
     }
 }
 
-fn div_positive_round_up(dividend: u32, divisor: u32) -> u32 {
+fn div_positive_round_up(dividend: u64, divisor: u64) -> u64 {
     let mut result = dividend / divisor;
     if (dividend % divisor) != 0 {
         result += 1;
@@ -4576,34 +4576,6 @@ pub(crate) trait Visitable<From: ArgParamsEx, To: ArgParamsEx>: Sized {
         self,
         visitor: &mut impl ArgumentMapVisitor<From, To>,
     ) -> Result<Statement<ast::Instruction<To>, To>, TranslateError>;
-}
-
-struct VisitArgumentDescriptor<
-    'a,
-    Ctor: FnOnce(Id) -> Statement<ast::Instruction<U>, U>,
-    U: ArgParamsEx,
-> {
-    desc: ArgumentDescriptor<Id>,
-    typ: &'a ast::Type,
-    state_space: ast::StateSpace,
-    stmt_ctor: Ctor,
-}
-
-impl<
-        'a,
-        Ctor: FnOnce(Id) -> Statement<ast::Instruction<U>, U>,
-        T: ArgParamsEx<Id = Id>,
-        U: ArgParamsEx<Id = Id>,
-    > Visitable<T, U> for VisitArgumentDescriptor<'a, Ctor, U>
-{
-    fn visit(
-        self,
-        visitor: &mut impl ArgumentMapVisitor<T, U>,
-    ) -> Result<Statement<ast::Instruction<U>, U>, TranslateError> {
-        Ok((self.stmt_ctor)(
-            visitor.id(self.desc, Some((self.typ, self.state_space)))?,
-        ))
-    }
 }
 
 struct InsertMemSSAVisitor<'a, 'input> {
@@ -6757,7 +6729,7 @@ impl ast::Type {
                 kind: TypeKind::Vector,
                 state_space: ast::StateSpace::Reg,
                 scalar_kind: scalar.kind(),
-                components: vec![*components as u32],
+                components: vec![*components as u64],
                 width,
             },
             ast::Type::Array(scalar, components) => TypeParts {
@@ -6791,7 +6763,7 @@ impl ast::Type {
             ast::Type::Struct(fields) => {
                 let components = fields
                     .iter()
-                    .map(|field| unsafe { mem::transmute::<_, u16>(*field) as u32 })
+                    .map(|field| unsafe { mem::transmute::<_, u16>(*field) as u64 })
                     .collect();
                 TypeParts {
                     kind: TypeKind::Struct,
@@ -6868,7 +6840,7 @@ pub(crate) struct TypeParts {
     pub(crate) scalar_kind: ast::ScalarKind,
     pub(crate) width: u8,
     pub(crate) state_space: ast::StateSpace,
-    pub(crate) components: Vec<u32>,
+    pub(crate) components: Vec<u64>,
 }
 
 #[derive(Eq, PartialEq, Copy, Clone)]
@@ -9287,7 +9259,7 @@ impl<'a> ast::MethodDeclaration<'a, &'a str> {
 #[derive(Copy, Clone)]
 pub(crate) enum ConstType<'a> {
     Type(&'a ast::Type),
-    ArraySubtype(ast::ScalarType, &'a [u32]),
+    ArraySubtype(ast::ScalarType, &'a [u64]),
 }
 
 impl ast::ScalarType {

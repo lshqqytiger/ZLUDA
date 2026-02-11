@@ -1161,6 +1161,7 @@ unsafe fn transform_tensor(
 
 unsafe fn set_stream(handle: cudnnHandle_t, stream_id: *mut CUstream_st) -> cudnnStatus_t {
     let lib = hip_common::zluda_ext::get_cuda_library().unwrap();
+    #[allow(non_snake_case)]
     let cu_get_export_table = lib
         .get::<unsafe extern "C" fn(
             ppExportTable: *mut *const ::std::os::raw::c_void,

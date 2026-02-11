@@ -61,6 +61,39 @@ impl CudaDisplay for cuda_types::CUdeviceptr_v1 {
     }
 }
 
+impl CudaDisplay for cuda_types::CUasyncNotificationInfo_st__bindgen_ty_1 {
+    fn write(
+        &self,
+        _fn_name: &'static str,
+        _index: usize,
+        writer: &mut (impl std::io::Write + ?Sized),
+    ) -> std::io::Result<()> {
+        write!(writer, "{}", unsafe { self.overBudget.bytesOverBudget })
+    }
+}
+
+impl CudaDisplay for cuda_types::CUdevResourceType {
+    fn write(
+        &self,
+        _fn_name: &'static str,
+        _index: usize,
+        writer: &mut (impl std::io::Write + ?Sized),
+    ) -> std::io::Result<()> {
+        write!(writer, "{}", self.0)
+    }
+}
+
+impl CudaDisplay for cuda_types::CUdevResource_st__bindgen_ty_1 {
+    fn write(
+        &self,
+        _fn_name: &'static str,
+        _index: usize,
+        writer: &mut (impl std::io::Write + ?Sized),
+    ) -> std::io::Result<()> {
+        write!(writer, "{{ count: {} }}", unsafe { self.sm }.smCount)
+    }
+}
+
 impl CudaDisplay for u8 {
     fn write(
         &self,

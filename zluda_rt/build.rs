@@ -1,5 +1,5 @@
-use vergen::{Config, vergen};
+use vergen::EmitBuilder;
 
 fn main() {
-  vergen(Config::default()).unwrap()
+    EmitBuilder::builder().git_sha(true).emit().unwrap();
 }

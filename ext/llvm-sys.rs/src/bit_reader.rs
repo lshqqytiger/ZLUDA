@@ -3,23 +3,23 @@
 use super::prelude::*;
 
 extern "C" {
-    ///// Build a module from the bitcode in the specified memory buffer.
-    /////
-    ///// Returns 0 on success and the generated module in `OutModule`.
-    ///// Optionally returns a human-readable error message in `OutMessage`.
-    //#[deprecated(since = "3.8", note = "Use LLVMParseBitcode2")]
-    //pub fn LLVMParseBitcode(
-    //    MemBuf: LLVMMemoryBufferRef,
-    //    OutModule: *mut LLVMModuleRef,
-    //    OutMessage: *mut *mut ::libc::c_char,
-    //) -> LLVMBool;
-    ///// Build a module from the bitcode in the specified memory buffer.
-    /////
-    ///// Returns the created module in OutModule, returns 0 on success.
-    //pub fn LLVMParseBitcode2(
-    //    MemBuf: LLVMMemoryBufferRef,
-    //    OutModule: *mut LLVMModuleRef,
-    //) -> LLVMBool;
+    /// Build a module from the bitcode in the specified memory buffer.
+    ///
+    /// Returns 0 on success and the generated module in `OutModule`.
+    /// Optionally returns a human-readable error message in `OutMessage`.
+    #[deprecated(since = "3.8", note = "Use LLVMParseBitcode2")]
+    pub fn LLVMParseBitcode(
+        MemBuf: LLVMMemoryBufferRef,
+        OutModule: *mut LLVMModuleRef,
+        OutMessage: *mut *mut ::libc::c_char,
+    ) -> LLVMBool;
+    /// Build a module from the bitcode in the specified memory buffer.
+    ///
+    /// Returns the created module in OutModule, returns 0 on success.
+    pub fn LLVMParseBitcode2(
+        MemBuf: LLVMMemoryBufferRef,
+        OutModule: *mut LLVMModuleRef,
+    ) -> LLVMBool;
 
     #[deprecated(since = "3.8", note = "Use LLVMParseBitcodeInContext2")]
     pub fn LLVMParseBitcodeInContext(

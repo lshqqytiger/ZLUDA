@@ -5,7 +5,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  ROCM_VERSION: "6.2.4"
+  ROCM_VERSION: "7.1.1"
 
 jobs:
   release:
@@ -41,7 +41,7 @@ jobs:
         run: |
           sudo mkdir --parents --mode=0755 /etc/apt/keyrings
           sudo sh -c 'wget https://repo.radeon.com/rocm/rocm.gpg.key -O - |  gpg --dearmor | tee /etc/apt/keyrings/rocm.gpg > /dev/null'
-          sudo sh -c 'echo deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/${{ env.ROCM_VERSION }} focal main > /etc/apt/sources.list.d/rocm.list'
+          sudo sh -c 'echo deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/${{ env.ROCM_VERSION }} jammy main > /etc/apt/sources.list.d/rocm.list'
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends rocm-smi-lib hip-runtime-amd comgr hipblaslt-dev hipfft-dev rocblas-dev rocsolver-dev rocsparse-dev miopen-hip-dev rocm-device-libs
           echo 'export PATH="$PATH:/opt/rocm/bin"' | sudo tee /etc/profile.d/rocm.sh  
@@ -119,23 +119,23 @@ jobs:
           asset_name: ZLUDA-windows-rocm5-amd64.zip
           asset_content_type: application/zip
 
-  build_win_6:
+  build_win:
     name: Build and publish (Windows)
-    runs-on: windows-2019
+    runs-on: windows-2025
     needs: release
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Install AMD HIP SDK 6.2
+      - name: Install AMD HIP SDK 7.1
         run: |
-          C:\msys64\usr\bin\wget.exe https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-24.Q4-Win10-Win11-For-HIP.exe -O "amdgpu-install.exe"
+          C:\msys64\usr\bin\wget.exe https://download.amd.com/developer/eula/rocm-hub/AMD-Software-PRO-Edition-26.Q1-Win11-For-HIP.exe -O "amdgpu-install.exe"
           .\amdgpu-install.exe -Install -View:1
           Start-Sleep -Seconds 60
           $setupId = (Get-Process ATISetup).id
           Wait-Process -Id $setupId
       - uses: Swatinem/rust-cache@v2
-      - name: Build for ROCm 6.x
+      - name: Build for ROCm 7.x
         run: |
           $ROCm_PATH = "C:\Program Files\AMD\ROCm"
           $Env:HIP_PATH = "$ROCm_PATH\$(Get-ChildItem -Path $ROCm_PATH -Name)"
@@ -149,7 +149,7 @@ jobs:
       - name: Upload (artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: zluda-windows-rocm6-${{ env.SHORT_SHA }}
+          name: zluda-windows-${{ env.SHORT_SHA }}
           path: target/release/zluda
       - name: Upload (release)
         uses: actions/upload-release-asset@v1
@@ -158,5 +158,5 @@ jobs:
         with:
           upload_url: ${{ needs.release.outputs.upload_url }}
           asset_path: target/release/zluda.zip
-          asset_name: ZLUDA-windows-rocm6-amd64.zip
+          asset_name: ZLUDA-windows-amd64.zip
           asset_content_type: application/zip

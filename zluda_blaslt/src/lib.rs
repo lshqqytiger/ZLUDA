@@ -16,9 +16,10 @@ pub(crate) fn unsupported() -> cublasStatus_t {
     cublasStatus_t::CUBLAS_STATUS_NOT_SUPPORTED
 }
 
-// Not in the headers, but exported by library and used (by cuBLAS)
-// These traps allow us to load the original cuBLAS library
-// and ZLUDA simultaneously.
+// These functions are not declared in the headers,
+// but exported by the library and used (by cuBLAS)
+// These dummy functions allow us to load
+// the original cuBLAS library and ZLUDA simultaneously.
 decl!(cublasLtLegacyGemmUtilizationDDD);
 decl!(cublasLtLegacyGemmUtilizationCCC);
 decl!(cublasLtLegacyGemmUtilizationZZZ);

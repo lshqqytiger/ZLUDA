@@ -122,7 +122,7 @@ struct Project {
     #[serde(default)]
     windows_only: bool,
     #[serde(default)]
-    linux_only: bool,
+    windows_rocm5_unavailable: bool,
     #[serde(default)]
     debug_only: bool,
     #[serde(default)]
@@ -154,7 +154,7 @@ struct Workspace {
 }
 
 impl Workspace {
-    fn open(is_debug: bool, nightly: bool) -> Result<Self, DynError> {
+    fn open(is_debug: bool, rocm5: bool, nightly: bool) -> Result<Self, DynError> {
         let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
         let project_root = Self::project_root()?;
         let mut cmd = cargo_metadata::MetadataCommand::new();
@@ -164,7 +164,7 @@ impl Workspace {
             .packages
             .into_iter()
             .filter_map(Project::new)
-            .filter(|p| !p.skip_build(is_debug, nightly))
+            .filter(|p| !p.skip_build(is_debug, rocm5, nightly))
             .collect::<Vec<_>>();
         let mut target_directory = cargo_metadata.target_directory;
         target_directory.push(if is_debug { "debug" } else { "release" });
@@ -210,14 +210,14 @@ impl Project {
         Some(project)
     }
 
-    fn skip_build(&self, is_debug: bool, nightly: bool) -> bool {
+    fn skip_build(&self, is_debug: bool, rocm5: bool, nightly: bool) -> bool {
         if self.broken {
             return true;
         }
-        if cfg!(windows) && self.linux_only {
+        if !cfg!(windows) && self.windows_only {
             return true;
         }
-        if !cfg!(windows) && self.windows_only {
+        if cfg!(windows) && rocm5 && self.windows_rocm5_unavailable {
             return true;
         }
         if !is_debug && self.debug_only {
@@ -236,7 +236,7 @@ fn build(is_debug: bool, rocm5: bool, nightly: bool) -> Result<i32, DynError> {
 }
 
 fn build_impl(is_debug: bool, rocm5: bool, nightly: bool) -> Result<Workspace, DynError> {
-    let workspace = Workspace::open(is_debug, nightly)?;
+    let workspace = Workspace::open(is_debug, rocm5, nightly)?;
     let mut command = workspace.cargo_command();
     command.arg("build");
     command.arg("--locked");
@@ -256,20 +256,23 @@ fn build_impl(is_debug: bool, rocm5: bool, nightly: bool) -> Result<Workspace, D
         if rocm5 {
             features.push("rocm5");
         }
-        if let Ok(path_default) = env::var("HIP_PATH") {
-            env::set_var(
-                "HIP_PATH",
-                if rocm5 {
-                    env::var("HIP_PATH_57").or_else(|_| env::var("HIP_PATH_55"))
-                } else {
-                    env::var("HIP_PATH_62").or_else(|_| env::var("HIP_PATH_61"))
-                }
-                .unwrap_or(path_default),
-            );
-        } else {
-            return Err(
-                "Could not find HIP SDK installed. Please check if HIP_PATH is set.".into(),
-            );
+
+        if env::var("HIP_PATH").is_err() {
+            let hip_path = if rocm5 {
+                env::var("HIP_PATH_57").or_else(|_| env::var("HIP_PATH_55"))
+            } else {
+                env::var("HIP_PATH_71")
+                    .or_else(|_| env::var("HIP_PATH_64"))
+                    .or_else(|_| env::var("HIP_PATH_62"))
+                    .or_else(|_| env::var("HIP_PATH_61"))
+            };
+            if let Ok(hip_path) = hip_path {
+                env::set_var("HIP_PATH", hip_path);
+            } else {
+                return Err(
+                    "Could not find HIP SDK installed. Please check if HIP_PATH is set.".into(),
+                );
+            }
         }
 
         if nightly {

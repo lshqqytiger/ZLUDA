@@ -1,6 +1,6 @@
 [package]
 name = "zluda_inject"
-version = "0.0.0"
+version = "3.9.6"
 authors = ["Andrzej Janik <vosen@vosen.pl>"]
 edition = "2018"
 
@@ -12,7 +12,7 @@ path = "src/main.rs"
 winapi = { version = "0.3.9", features = ["jobapi", "jobapi2", "processenv", "processthreadsapi", "synchapi", "winbase", "std"] }
 tempfile = "3"
 argh = "0.1"
-detours-sys = { path = "../detours-sys" }
+detours-sys = { path = "../ext/detours-sys" }
 
 [dev-dependencies]
 # all of those are used in integration tests

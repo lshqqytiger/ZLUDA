@@ -219,6 +219,7 @@ fn type_from_cuda(type_: cudaDataType_t) -> rocblas_datatype {
 
 unsafe fn set_stream(handle: cublasHandle_t, stream_id: cudaStream_t) -> cublasStatus_t {
     let lib = hip_common::zluda_ext::get_cuda_library().unwrap();
+    #[allow(non_snake_case)]
     let cu_get_export_table = lib
         .get::<unsafe extern "C" fn(
             ppExportTable: *mut *const ::std::os::raw::c_void,

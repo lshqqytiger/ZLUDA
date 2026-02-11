@@ -219,7 +219,6 @@ pub(crate) unsafe fn emit_llvm_bitcode_and_linker_module<'input>(
     denorm_statistics: FxHashMap<Id, DenormSummary>,
 ) -> Result<(llvm::Context, llvm::Module), TranslateError> {
     let context = llvm::Context::create();
-    LLVMContextSetOpaquePointers(context.get(), 1);
     let llvm_module = llvm::Module::create(b"\0".as_ptr() as _, context.get());
     {
         let mut emit_ctx = EmitContext::new(
@@ -454,7 +453,7 @@ unsafe fn get_llvm_const_scalar(
 unsafe fn get_llvm_const_array(
     ctx: &mut EmitContext,
     scalar_type: ast::ScalarType,
-    dimensions: &[u32],
+    dimensions: &[u64],
     initializer: Vec<ast::Initializer<Id>>,
 ) -> Result<LLVMValueRef, TranslateError> {
     let llvm_type: *mut LLVMType = get_llvm_type(ctx, &ast::Type::Scalar(scalar_type))?;
@@ -487,7 +486,7 @@ unsafe fn get_llvm_const_array(
                     }
                 })
                 .collect::<Result<Vec<_>, _>>()?;
-            LLVMConstArray(inner_array_type, subinits.as_mut_ptr(), *dim)
+            LLVMConstArray2(inner_array_type, subinits.as_mut_ptr(), *dim)
         }
     })
 }
@@ -3900,17 +3899,17 @@ fn get_llvm_address_space(
     })
 }
 
-unsafe fn get_llvm_array_type(inner_type: LLVMTypeRef, dims: &[u32]) -> LLVMTypeRef {
+unsafe fn get_llvm_array_type(inner_type: LLVMTypeRef, dims: &[u64]) -> LLVMTypeRef {
     match dims.split_last() {
         Some((dim, dims)) => {
-            let current_array_type = LLVMArrayType(inner_type, *dim);
+            let current_array_type = LLVMArrayType2(inner_type, *dim);
             if dims.len() > 0 {
                 get_llvm_array_type(current_array_type, dims)
             } else {
                 current_array_type
             }
         }
-        None => LLVMArrayType(inner_type, 0),
+        None => LLVMArrayType2(inner_type, 0),
     }
 }
 

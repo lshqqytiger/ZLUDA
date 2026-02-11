@@ -212,6 +212,7 @@ pub fn cuda_function_declarations(tokens: TokenStream) -> TokenStream {
                         use_normal_macro,
                     ))
                 }
+                ForeignItem::Static(_) => None,
                 _ => unreachable!(),
             },
             _ => None,
@@ -378,6 +379,7 @@ fn cuda_derive_display_trait_for_item(
                     },
                 })
             }
+            ForeignItem::Static(_) => None,
             _ => unreachable!(),
         },
         Item::Impl(mut item_impl) => {

@@ -3,7 +3,6 @@ extern crate zluda_dark_api;
 use crate::log::LogEntry;
 use crate::{log, os};
 use cuda_types::*;
-use std::hash::Hash;
 use std::{
     collections::{hash_map, HashMap},
     ffi::c_void,
@@ -22,15 +21,6 @@ pub(crate) struct DarkApiState {
     // the guid
     overrides: HashMap<Box<[u8; 16]>, (Vec<*const c_void>, *const *const c_void)>,
     known_exports: CudaDarkApiKnownExports,
-}
-
-#[derive(Eq, PartialEq)]
-pub(crate) struct CUuuidWrapper(pub CUuuid);
-
-impl Hash for CUuuidWrapper {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.bytes.hash(state);
-    }
 }
 
 impl DarkApiState {

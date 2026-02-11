@@ -1,18 +1,17 @@
 use super::context::{ContextInnerMutable, ContextVariant, PrimaryContextData};
-use super::{
-    context, LiveCheck, GLOBAL_STATE
-};
-use crate::r#impl::context::ContextData;
-use crate::{r#impl::IntoCuda, hip_call_cuda};
+use super::{context, LiveCheck, GLOBAL_STATE};
 use crate::hip_call;
-use cuda_types::{CUdevice_attribute, CUdevprop, CUuuid_st, CUresult};
+use crate::r#impl::context::ContextData;
+use crate::{hip_call_cuda, r#impl::IntoCuda};
+use cuda_types::{CUdevice_attribute, CUdevprop, CUresult, CUuuid_st};
 use hip_common::CompilationMode;
 use hip_runtime_sys::*;
 use paste::paste;
 use std::{
+    ffi::CString,
     mem,
     os::raw::{c_char, c_uint},
-    ptr,ffi::CString,
+    ptr,
 };
 
 const ZLUDA_SUFFIX: &'static [u8] = b" [ZLUDA]\0";
@@ -22,7 +21,6 @@ const ZLUDA_SUFFIX: &'static [u8] = b" [ZLUDA]\0";
 pub const COMPUTE_CAPABILITY_MAJOR: u32 = 8;
 pub const COMPUTE_CAPABILITY_MINOR: u32 = 8;
 
-
 pub(crate) struct Device {
     pub(crate) compilation_mode: CompilationMode,
     pub(crate) comgr_isa: CString,
@@ -31,9 +29,10 @@ pub(crate) struct Device {
 
 impl Device {
     pub(crate) fn new(index: usize) -> Result<Self, CUresult> {
-        let comgr_isa = unsafe { hip_common::comgr_isa(index as i32) }.map_err(hipError_t::into_cuda)?;
+        let comgr_isa =
+            unsafe { hip_common::comgr_isa(index as i32) }.map_err(hipError_t::into_cuda)?;
         let mut warp_size = 0i32;
-        hip_call_cuda!{ hipDeviceGetAttribute(&mut warp_size, hipDeviceAttribute_t::hipDeviceAttributeWarpSize, index as i32) };
+        hip_call_cuda! { hipDeviceGetAttribute(&mut warp_size, hipDeviceAttribute_t::hipDeviceAttributeWarpSize, index as i32) };
         let compilation_mode = if warp_size == 32 {
             CompilationMode::Wave32
         } else if warp_size == 64 {
@@ -121,8 +120,8 @@ pub(crate) unsafe fn get_attribute(
         | CUdevice_attribute::CU_DEVICE_ATTRIBUTE_UNIFIED_ADDRESSING
         | CUdevice_attribute::CU_DEVICE_ATTRIBUTE_STREAM_PRIORITIES_SUPPORTED
         | CUdevice_attribute::CU_DEVICE_ATTRIBUTE_GLOBAL_L1_CACHE_SUPPORTED
-        | CUdevice_attribute::CU_DEVICE_ATTRIBUTE_LOCAL_L1_CACHE_SUPPORTED 
-        | CUdevice_attribute::CU_DEVICE_ATTRIBUTE_COMPUTE_PREEMPTION_SUPPORTED=> {
+        | CUdevice_attribute::CU_DEVICE_ATTRIBUTE_LOCAL_L1_CACHE_SUPPORTED
+        | CUdevice_attribute::CU_DEVICE_ATTRIBUTE_COMPUTE_PREEMPTION_SUPPORTED => {
             *pi = 1;
             return Ok(());
         }
@@ -189,14 +188,21 @@ pub(crate) unsafe fn get_attribute(
             return Ok(());
         }
         CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR => {
+            #[cfg(windows)]
+            {
+                let mut version = 0;
+                hip_call_cuda! { hipRuntimeGetVersion(&mut version) };
+                if version < 70000000 {
+                    // Workaround for HIP SDK 6 bug:
+                    // HIP SDK 6 returns 0 for hipDeviceAttributeMaxRegistersPerBlock
+                    *pi = 65536;
+                    return Ok(());
+                }
+            }
+
             // My 1060 returns same for CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR and
             // CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_BLOCK, not sure what is the difference
-            // hipDeviceAttribute_t::hipDeviceAttributeMaxRegistersPerBlock
-
-            // Workaround for HIP SDK 6 bug:
-            // HIP SDK 6 returns 0 for hipDeviceAttributeMaxRegistersPerBlock
-            *pi = 65536;
-            return Ok(());
+            hipDeviceAttribute_t::hipDeviceAttributeMaxRegistersPerBlock
         }
         CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN => {
             hipDeviceAttribute_t::hipDeviceAttributeMaxSharedMemoryPerBlock
@@ -429,17 +435,11 @@ pub(crate) unsafe fn get_attribute(
     } else {
         Err(error.into_cuda())
     }
-    
 }
 
-// TODO
-pub(crate) fn get_uuid(uuid: *mut CUuuid_st, _dev: hipDevice_t) -> CUresult {
-    unsafe {
-        *uuid = CUuuid_st {
-            bytes: mem::zeroed(),
-        }
-    };
-    CUresult::CUDA_SUCCESS
+pub(crate) fn get_uuid(uuid: *mut CUuuid_st, dev: hipDevice_t) -> Result<(), CUresult> {
+    hip_call_cuda!(hipDeviceGetUuid(uuid as _, dev));
+    Ok(())
 }
 
 // TODO
@@ -517,13 +517,13 @@ pub(crate) unsafe fn primary_ctx_retain(
 unsafe fn primary_ctx_get_or_retain(
     pctx: *mut *mut context::Context,
     hip_dev: hipDevice_t,
-    increment_refcount: bool
+    increment_refcount: bool,
 ) -> Result<(), CUresult> {
     if pctx == ptr::null_mut() {
         return Err(CUresult::CUDA_ERROR_INVALID_VALUE);
     }
     let ctx = primary_ctx(hip_dev, |ctx, raw_ctx| {
-        if increment_refcount || ctx.ref_count == 0  {
+        if increment_refcount || ctx.ref_count == 0 {
             ctx.ref_count += 1;
         }
         Ok(raw_ctx.cast_mut())
@@ -578,9 +578,7 @@ pub(crate) unsafe fn primary_ctx_get_state(
     if flags_ptr == ptr::null_mut() || active_ptr == ptr::null_mut() {
         return Err(CUresult::CUDA_ERROR_INVALID_VALUE);
     }
-    let (flags, active) = primary_ctx(hip_dev, |ctx, _| {
-        (ctx.flags, (ctx.ref_count > 0) as i32)
-    })?;
+    let (flags, active) = primary_ctx(hip_dev, |ctx, _| (ctx.flags, (ctx.ref_count > 0) as i32))?;
     *flags_ptr = flags;
     *active_ptr = active;
     Ok(())
@@ -595,15 +593,17 @@ pub(crate) unsafe fn primary_ctx<T>(
     let context = device.primary_context.as_ref_unchecked();
     match context.variant {
         ContextVariant::Primary(ref mutex_over_primary_ctx) => {
-            let mut primary_ctx = mutex_over_primary_ctx.lock().map_err(|_| CUresult::CUDA_ERROR_UNKNOWN)?;
+            let mut primary_ctx = mutex_over_primary_ctx
+                .lock()
+                .map_err(|_| CUresult::CUDA_ERROR_UNKNOWN)?;
             Ok(fn_(&mut primary_ctx, raw_ptr))
-        },
-        ContextVariant::NonPrimary(..) => Err(CUresult::CUDA_ERROR_UNKNOWN)
+        }
+        ContextVariant::NonPrimary(..) => Err(CUresult::CUDA_ERROR_UNKNOWN),
     }
 }
 
 pub(crate) unsafe fn get_name(name: *mut i8, len: i32, device: i32) -> hipError_t {
-    let result= hipDeviceGetName(name, len, device);
+    let result = hipDeviceGetName(name, len, device);
     if result != hipError_t::hipSuccess {
         return result;
     }
@@ -613,13 +613,16 @@ pub(crate) unsafe fn get_name(name: *mut i8, len: i32, device: i32) -> hipError_
 
 unsafe fn append_zluda_suffix(name: *mut i8, len: i32) {
     let len = len as usize;
-    let str_len = (0..len).position(|i| unsafe { *name.add(i) == 0 } ).unwrap();
+    let str_len = (0..len).position(|i| unsafe { *name.add(i) == 0 }).unwrap();
     if (str_len + ZLUDA_SUFFIX.len()) > len {
         return;
     }
-    ptr::copy_nonoverlapping(ZLUDA_SUFFIX.as_ptr() as _,name.add(str_len),  ZLUDA_SUFFIX.len());
+    ptr::copy_nonoverlapping(
+        ZLUDA_SUFFIX.as_ptr() as _,
+        name.add(str_len),
+        ZLUDA_SUFFIX.len(),
+    );
 }
-
 
 #[cfg(test)]
 mod tests {
